@@ -1,5 +1,5 @@
-import { AntdProvider } from "@/providers/antd-provider";
-import { QueryProvider } from "@/providers/query-provider";
+import { AntdProvider } from "@/common/providers/antd-provider";
+import { QueryProvider } from "@/common/providers/query-provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

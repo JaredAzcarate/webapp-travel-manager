@@ -1,4 +1,4 @@
-import { db } from "@/lib/firebase";
+import { db } from "@/common/lib/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { CreateUserInput, User } from "../types/user.types";
 
