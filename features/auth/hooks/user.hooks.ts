@@ -1,10 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
-import { createUser as createUserService } from "../services/user.services";
-import { CreateUserInput } from "../types/user.types";
+import { CreateUserInput } from "../models/user.model";
+import { UserRepository } from "../repositories/user.repository";
+
+const repository = new UserRepository();
 
 export const useCreateUser = () => {
   const mutation = useMutation({
-    mutationFn: (input: CreateUserInput) => createUserService(input),
+    mutationFn: (input: CreateUserInput) => repository.create(input),
   });
 
   const createUser = (input: CreateUserInput) => {

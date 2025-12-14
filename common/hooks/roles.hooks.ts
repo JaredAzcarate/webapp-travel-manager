@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRoles } from "../services/roles.services";
+import { RoleRepository } from "../repositories/roles.repository";
+
+const repository = new RoleRepository();
 
 export const useRoles = () => {
   const {
@@ -8,7 +10,7 @@ export const useRoles = () => {
     error,
   } = useQuery({
     queryKey: ["roles"],
-    queryFn: getRoles,
+    queryFn: () => repository.getAll(),
   });
 
   return {
@@ -17,7 +19,7 @@ export const useRoles = () => {
     error: error
       ? error instanceof Error
         ? error.message
-        : "Error desconocido"
+        : "Erro desconhecido"
       : null,
   };
 };

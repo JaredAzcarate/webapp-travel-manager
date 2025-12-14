@@ -4,8 +4,8 @@
 
 - **Componentes React**: PascalCase (ej: `UserCard.tsx`)
 - **Hooks**: camelCase con prefijo `use` (ej: `useAuth.tsx`)
-- **Utilidades/Servicios**: camelCase (ej: `auth.service.ts`)
-- **Tipos**: camelCase con sufijo `.types.ts` (ej: `user.types.ts`)
+- **Repositorios**: camelCase con sufijo `.repository.ts` (ej: `user.repository.ts`)
+- **Modelos**: camelCase con sufijo `.model.ts` (ej: `user.model.ts`)
 - **Constantes**: UPPER_SNAKE_CASE (ej: `API_ENDPOINTS.ts`)
 
 ## Nombres de Variables y Funciones
@@ -35,8 +35,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button } from "antd";
 import { useQuery } from "@tanstack/react-query";
-import { authService } from "@/lib/auth/auth.service";
-import { User } from "@/types/models/user.types";
+import { UserRepository } from "@/features/auth/repositories/user.repository";
+import { User } from "@/features/auth/models/user.model";
 import type { FormProps } from "antd";
 ```
 
@@ -80,6 +80,7 @@ const user = await userRepository.getById(userId);
 **⚠️ IMPORTANTE: Todo el texto de la UI y feedback al usuario DEBE estar en portugués de Portugal.**
 
 Esto incluye:
+
 - Labels de formularios
 - Mensajes de notificación
 - Mensajes de error
@@ -91,7 +92,7 @@ Esto incluye:
 // ✅ Correcto - UI en portugués
 <Form.Item label="Nome Completo" name="name">
   <Input placeholder="João Silva" />
-</Form.Item>
+</Form.Item>;
 
 notification.success({
   title: "Sucesso",
@@ -101,7 +102,7 @@ notification.success({
 // ❌ Incorrecto - UI en inglés
 <Form.Item label="Full Name" name="name">
   <Input placeholder="John Doe" />
-</Form.Item>
+</Form.Item>;
 
 notification.success({
   title: "Success",
@@ -118,16 +119,23 @@ notification.success({
 ```typescript
 // ✅ Correcto
 const userName = "João";
-const getUserById = (id: string) => { /* ... */ };
-interface UserCardProps { /* ... */ }
+const getUserById = (id: string) => {
+  /* ... */
+};
+interface UserCardProps {
+  /* ... */
+}
 
 // ❌ Incorrecto
 const nomeUtilizador = "João";
-const obterUtilizadorPorId = (id: string) => { /* ... */ };
-interface PropsCartaoUtilizador { /* ... */ }
+const obterUtilizadorPorId = (id: string) => {
+  /* ... */
+};
+interface PropsCartaoUtilizador {
+  /* ... */
+}
 ```
 
 ---
 
 **Ver también**: [Manejo de Estado](./05-estado-datos.md) | [Feedback al Usuario](./09-feedback-usuario.md) | [Índice](./development.md)
-

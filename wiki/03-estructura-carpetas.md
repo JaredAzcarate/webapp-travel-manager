@@ -2,7 +2,7 @@
 
 ## Organización por Features
 
-El proyecto está organizado siguiendo un patrón de **features** donde cada feature agrupa todo su código relacionado (hooks, services, types, components). El código compartido entre features se encuentra en `common/`.
+El proyecto está organizado siguiendo un patrón de **features** donde cada feature agrupa todo su código relacionado (models, repositories, hooks, components). El código compartido entre features se encuentra en `common/`.
 
 ```
 /
@@ -23,26 +23,30 @@ El proyecto está organizado siguiendo un patrón de **features** donde cada fea
 │
 ├── features/                     # Features de la aplicación
 │   ├── auth/                    # Feature de autenticación
-│   │   ├── hooks/              # Hooks específicos (useCreateUser, etc.)
-│   │   ├── services/           # Servicios específicos (user.services.ts)
-│   │   ├── types/              # Tipos específicos (user.types.ts)
-│   │   └── components/         # Componentes específicos (si aplica)
+│   │   ├── models/             # Modelos específicos (user.model.ts)
+│   │   ├── repositories/       # Repositorios específicos (user.repository.ts)
+│   │   ├── hooks/              # Hooks específicos (user.hooks.ts)
+│   │   └── components/         # Componentes específicos (opcional)
 │   ├── caravans/               # Feature de caravanas
+│   │   ├── models/
+│   │   ├── repositories/
 │   │   ├── hooks/
-│   │   ├── services/
-│   │   ├── types/
 │   │   └── components/
 │   ├── chapels/                # Feature de capillas
+│   │   ├── models/
+│   │   ├── repositories/
 │   │   ├── hooks/
-│   │   ├── services/
-│   │   ├── types/
 │   │   └── components/
 │   └── [otras-features]/       # Otras features siguiendo el mismo patrón
 │
 ├── common/                      # Código compartido entre features
-│   ├── hooks/                  # Hooks compartidos (roles.hooks.ts)
-│   ├── services/               # Servicios compartidos (roles.services.ts)
-│   ├── types/                  # Tipos compartidos (roles.types.ts)
+│   ├── models/                 # Modelos compartidos y helpers genéricos
+│   │   ├── index.ts            # Helper types genéricos (WithId, CreateInput, UpdateInput)
+│   │   └── roles.model.ts      # Modelo de roles
+│   ├── repositories/           # Repositorios compartidos
+│   │   └── roles.repository.ts # Repository de roles
+│   ├── hooks/                  # Hooks compartidos
+│   │   └── roles.hooks.ts      # useRoles
 │   ├── components/             # Componentes reutilizables globales
 │   │   ├── layout/             # Componentes de layout
 │   │   └── shared/             # Componentes compartidos genéricos
@@ -50,7 +54,6 @@ El proyecto está organizado siguiendo un patrón de **features** donde cada fea
 │   │   ├── antd-provider.tsx
 │   │   └── query-provider.tsx
 │   ├── lib/                    # Configuración y utilidades base
-│   │   ├── repositories/       # Repositorios (Repository Pattern)
 │   │   └── firebase.js         # Configuración de Firebase
 │   └── utils/                  # Utilidades generales
 │       └── firestore/          # Utilidades de Firestore
@@ -65,34 +68,39 @@ El proyecto está organizado siguiendo un patrón de **features** donde cada fea
 ### Cuándo usar `features/`
 
 - Código específico de una feature de negocio (auth, caravans, chapels, users, buses)
-- Hooks, services, types y components que solo se usan en esa feature
+- Models, repositories, hooks y components que solo se usan en esa feature
 - Ejemplo: `features/auth/` contiene todo lo relacionado con autenticación
 
 **Estructura estándar de una feature:**
 
 ```
 features/[feature]/
-  ├── hooks/          # Hooks específicos de la feature
-  ├── services/       # Servicios específicos de la feature
-  ├── types/          # Tipos específicos de la feature
-  └── components/     # Componentes específicos de la feature (opcional)
+  ├── models/          # Modelos específicos de la feature
+  ├── repositories/    # Repositorios específicos de la feature
+  ├── hooks/           # Hooks específicos de la feature
+  └── components/      # Componentes específicos de la feature (opcional)
 ```
 
 ### Cuándo usar `common/`
 
 - Código compartido entre múltiples features
-- Utilidades y helpers genéricos
+- Modelos y helpers genéricos (tipos helper como `WithId`, `CreateInput`, etc.)
+- Repositorios compartidos (ej: roles)
+- Hooks compartidos (ej: useRoles)
 - Componentes reutilizables globales (layout, shared)
 - Providers de React (Ant Design, React Query)
-- Configuración base (Firebase, repositories)
+- Configuración base (Firebase)
 - Utilidades generales (firestore helpers, etc.)
 
 **Ejemplos:**
 
-- `common/roles/` - Se usa en auth y otras features
+- `common/models/index.ts` - Helper types genéricos compartidos
+- `common/models/roles.model.ts` - Modelo de roles compartido
+- `common/repositories/roles.repository.ts` - Repository de roles
+- `common/hooks/roles.hooks.ts` - Hook de roles compartido
 - `common/components/layout/` - Componentes de layout compartidos
 - `common/providers/` - Providers globales de React
-- `common/lib/` - Configuración de Firebase y repositorios
+- `common/lib/firebase.js` - Configuración de Firebase
 - `common/utils/` - Utilidades generales de Firestore
 
 ## Ejemplos Concretos
@@ -101,25 +109,74 @@ features/[feature]/
 
 ```
 features/auth/
+  ├── models/
+  │   └── user.model.ts          # User, CreateUserInput, UpdateUserInput, UserWithId
+  ├── repositories/
+  │   └── user.repository.ts     # UserRepository con métodos CRUD
   ├── hooks/
-  │   └── user.hooks.ts          # useCreateUser, etc.
-  ├── services/
-  │   └── user.services.ts      # createUser, etc.
-  ├── types/
-  │   └── user.types.ts          # User, CreateUserInput, etc.
-  └── components/                # Componentes específicos de auth (opcional)
+  │   └── user.hooks.ts          # useCreateUser, etc. (usan repository directamente)
+  └── components/                 # Componentes específicos de auth (opcional)
 ```
 
-### Código Compartido: `common/roles/`
+### Feature: `features/chapels/`
+
+```
+features/chapels/
+  ├── models/
+  │   └── chapels.model.ts       # Chapel, CreateChapelInput, UpdateChapelInput, ChapelWithId
+  ├── repositories/
+  │   └── chapels.repository.ts  # ChapelRepository con métodos CRUD
+  ├── hooks/
+  │   └── chapels.hooks.ts       # useChapels, useCreateChapel, etc. (usan repository directamente)
+  └── components/                # Componentes específicos de chapels (opcional)
+```
+
+### Código Compartido: `common/`
 
 ```
 common/
-  ├── hooks/
-  │   └── roles.hooks.ts         # useRoles
-  ├── services/
-  │   └── roles.services.ts      # getRoles
-  └── types/
-      └── roles.types.ts          # Role
+  ├── models/
+  │   ├── index.ts               # Helper types: WithId<T>, CreateInput<T>, UpdateInput<T>
+  │   └── roles.model.ts         # Role, CreateRoleInput, UpdateRoleInput, RoleWithId
+  ├── repositories/
+  │   └── roles.repository.ts    # RoleRepository
+  └── hooks/
+      └── roles.hooks.ts         # useRoles (usa repository directamente)
+```
+
+## Flujo de Datos
+
+1. **Modelo** (`models/[feature].model.ts`): Define la interfaz y tipos derivados
+2. **Repository** (`repositories/[feature].repository.ts`): Implementa operaciones CRUD con Firestore
+3. **Hook** (`hooks/[feature].hooks.ts`): Expone la funcionalidad usando React Query, llamando al repository
+4. **Componente**: Usa el hook para obtener datos y realizar mutaciones
+
+**Ejemplo de flujo:**
+
+```typescript
+// 1. Modelo
+export interface User {
+  /* ... */
+}
+export type CreateUserInput = CreateInput<User>;
+
+// 2. Repository
+export class UserRepository {
+  async create(input: CreateUserInput): Promise<UserWithId> {
+    /* ... */
+  }
+}
+
+// 3. Hook
+export const useCreateUser = () => {
+  const repository = new UserRepository();
+  return useMutation({
+    mutationFn: (input: CreateUserInput) => repository.create(input),
+  });
+};
+
+// 4. Componente
+const { createUser } = useCreateUser();
 ```
 
 ## Beneficios de esta Estructura

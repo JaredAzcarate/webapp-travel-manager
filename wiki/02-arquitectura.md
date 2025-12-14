@@ -35,20 +35,24 @@ El proyecto sigue los principios SOLID:
 ### Repository Pattern
 
 - Todos los accesos a Firestore se hacen a través de repositorios
-- Ubicación: `/lib/repositories/`
-- Ejemplo: `UserRepository`, `ChapelRepository`, etc.
+- Ubicación: `features/[feature]/repositories/` o `common/repositories/`
+- Cada feature tiene su propio repository (ej: `UserRepository`, `ChapelRepository`)
+- Los hooks llaman directamente a los repositories (sin capa de servicios intermedia)
+- Ejemplo: `features/auth/repositories/user.repository.ts`, `features/chapels/repositories/chapels.repository.ts`
 
-### Service Layer
+### Model Pattern
 
-- Lógica de negocio encapsulada en servicios
-- Ubicación: `/lib/auth/`, `/lib/services/`
-- Ejemplo: `AuthService`
+- Cada feature tiene su modelo completo en `features/[feature]/models/[feature].model.ts`
+- El modelo incluye la interfaz principal y tipos derivados (`CreateInput`, `UpdateInput`, `WithId`)
+- Helper types genéricos en `common/models/index.ts` (`WithId<T>`, `CreateInput<T>`, `UpdateInput<T>`)
+- Ejemplo: `features/auth/models/user.model.ts`, `features/chapels/models/chapels.model.ts`
 
 ### Custom Hooks
 
 - Lógica reutilizable encapsulada en hooks
-- Ubicación: `/hooks/`
-- Ejemplo: `useAuth`, `useAuthState`
+- Ubicación: `features/[feature]/hooks/` o `common/hooks/`
+- Los hooks usan React Query y llaman directamente a los repositories
+- Ejemplo: `useCreateUser`, `useChapels`, `useRoles`
 
 ### Context API + React Query
 
@@ -59,4 +63,3 @@ El proyecto sigue los principios SOLID:
 ---
 
 **Ver también**: [Estructura de Carpetas](./03-estructura-carpetas.md) | [Índice](./development.md)
-

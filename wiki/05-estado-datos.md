@@ -7,17 +7,21 @@
 ### Queries (Lectura de datos)
 
 ```typescript
+// En el hook (features/caravans/hooks/caravans.hooks.ts)
+const repository = new CaravanRepository();
 const { data, isLoading, error } = useQuery({
   queryKey: ["caravans"],
-  queryFn: () => caravanRepository.getAll(),
+  queryFn: () => repository.getAll(),
 });
 ```
 
 ### Mutations (Escritura de datos)
 
 ```typescript
+// En el hook (features/caravans/hooks/caravans.hooks.ts)
+const repository = new CaravanRepository();
 const mutation = useMutation({
-  mutationFn: (data: CreateInput) => caravanRepository.create(data),
+  mutationFn: (data: CreateCaravanInput) => repository.create(data),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ["caravans"] });
   },
@@ -43,4 +47,3 @@ const mutation = useMutation({
 ---
 
 **Ver también**: [Formularios](./06-formularios.md) | [Índice](./development.md)
-

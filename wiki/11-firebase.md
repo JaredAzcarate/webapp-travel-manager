@@ -15,18 +15,30 @@
 
 **Todas las operaciones de Firestore pasan por repositorios**
 
-- Ubicación: `/lib/repositories/`
+- Ubicación: `features/[feature]/repositories/` o `common/repositories/`
 - Métodos estándar: `getAll()`, `getById()`, `create()`, `update()`, `delete()`
+- Los hooks llaman directamente a los repositories (sin capa de servicios)
 
 ### Ejemplo
 
 ```typescript
-export class CaravanRepository {
-  async getAll(): Promise<WithId<Caravan>[]> {
+// features/chapels/repositories/chapels.repository.ts
+export class ChapelRepository {
+  private collectionName = "chapels";
+
+  async getAll(): Promise<ChapelWithId[]> {
+    const snap = await getDocs(collection(db, this.collectionName));
+    return snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as ChapelWithId[];
+  }
+
+  async getById(id: string): Promise<ChapelWithId> {
     // Implementación con Firestore
   }
 
-  async getById(id: string): Promise<WithId<Caravan>> {
+  async create(input: CreateChapelInput): Promise<ChapelWithId> {
     // Implementación con Firestore
   }
 }
@@ -34,9 +46,10 @@ export class CaravanRepository {
 
 ## Tipos TypeScript
 
-- Interfaces para cada modelo en `/types/models/`
-- Helper types: `WithId<T>`, `CreateInput<T>`, `UpdateInput<T>`
-- Converters para Timestamps
+- Modelos completos en `features/[feature]/models/[feature].model.ts`
+- Helper types genéricos en `common/models/index.ts`: `WithId<T>`, `CreateInput<T>`, `UpdateInput<T>`
+- Cada modelo exporta: `[Model]`, `Create[Model]Input`, `Update[Model]Input`, `[Model]WithId`
+- Uso de `Timestamp` de Firestore para fechas (`createdAt`, `updatedAt`)
 
 ## Errores
 
@@ -46,4 +59,3 @@ export class CaravanRepository {
 ---
 
 **Ver también**: [Testing y Validación](./12-testing.md) | [Índice](./development.md)
-
