@@ -1,9 +1,8 @@
+import { AntdProvider } from "@/providers/antd-provider";
+import { QueryProvider } from "@/providers/query-provider";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AntdProvider } from "@/components/providers/antd-provider";
-import { QueryProvider } from "@/components/providers/query-provider";
-import { AuthProvider } from "@/hooks/auth/useAuth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProvider>
-          <AntdProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </AntdProvider>
+          <AntdProvider>{children}</AntdProvider>
         </QueryProvider>
       </body>
     </html>

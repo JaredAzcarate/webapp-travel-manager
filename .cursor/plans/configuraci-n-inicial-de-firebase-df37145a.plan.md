@@ -1,4 +1,9 @@
-<!-- df37145a-ff60-4fef-9a17-195d10bc3e8f aee6b4a8-52b7-4aa6-a23b-536b4dc82af0 -->
+---
+name: "Feature 02: Autenticación y Protección de Rutas"
+overview: ""
+todos: []
+---
+
 # Feature 02: Autenticación y Protección de Rutas
 
 ## Objetivo
