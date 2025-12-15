@@ -6,13 +6,19 @@ import {
   useCaravan,
 } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
-import { App, Button, Form, Input, Radio, Select, Switch } from "antd";
-import { useEffect, useMemo } from "react";
-import { useCreateRegistration } from "../hooks/registrations.hooks";
+import {
+  useCreateRegistration,
+  useUpdateRegistration,
+} from "@/features/registrations/hooks/registrations.hooks";
 import {
   CreateRegistrationInput,
   OrdinanceType,
-} from "../models/registrations.model";
+  RegistrationWithId,
+  UpdateRegistrationInput,
+} from "@/features/registrations/models/registrations.model";
+import { App, Button, Form, Input, Radio, Select, Switch } from "antd";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
 
 interface FormValues {
   caravanId: string;
@@ -53,11 +59,37 @@ const ORDINANCE_SLOTS: Record<OrdinanceType, string[]> = {
   SEALING: ["10:00-11:00", "11:00-12:00", "15:00-16:00", "16:00-17:00"],
 };
 
-export const CreateRegistrationForm = () => {
+interface RegistrationFormProps {
+  mode: "create" | "edit";
+  registrationId?: string;
+  initialRegistrationData?: RegistrationWithId;
+  onSuccess?: () => void;
+}
+
+export const RegistrationForm = ({
+  mode,
+  registrationId,
+  initialRegistrationData,
+  onSuccess,
+}: RegistrationFormProps) => {
   const { notification } = App.useApp();
+  const router = useRouter();
   const [form] = Form.useForm<FormValues>();
-  const { createRegistration, isPending, isSuccess, error } =
-    useCreateRegistration();
+
+  const {
+    createRegistration,
+    isPending: isCreating,
+    isSuccess: created,
+    error: createError,
+  } = useCreateRegistration();
+
+  const {
+    updateRegistration,
+    isPending: isUpdating,
+    isSuccess: updated,
+    error: updateError,
+  } = useUpdateRegistration();
+
   const { caravans: activeCaravans, loading: loadingCaravans } =
     useActiveCaravans();
   const { chapels, loading: loadingChapels } = useChapels();
@@ -80,74 +112,155 @@ export const CreateRegistrationForm = () => {
   }, [selectedOrdinanceType]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (mode === "edit" && initialRegistrationData) {
+      form.setFieldsValue({
+        caravanId: initialRegistrationData.caravanId,
+        chapelId: initialRegistrationData.chapelId,
+        busId: initialRegistrationData.busId,
+        phone: initialRegistrationData.phone,
+        fullName: initialRegistrationData.fullName,
+        isAdult: initialRegistrationData.isAdult,
+        gender: initialRegistrationData.gender,
+        isOfficiator: initialRegistrationData.isOfficiator,
+        legalGuardianName: initialRegistrationData.legalGuardianName,
+        legalGuardianEmail: initialRegistrationData.legalGuardianEmail,
+        legalGuardianPhone: initialRegistrationData.legalGuardianPhone,
+        ordinanceType: initialRegistrationData.ordinanceType,
+        ordinanceSlot: initialRegistrationData.ordinanceSlot,
+        isFirstTimeConvert: initialRegistrationData.isFirstTimeConvert,
+      });
+    }
+  }, [mode, initialRegistrationData, form]);
+
+  useEffect(() => {
+    if (mode === "create" && created) {
       notification.success({
         title: "Sucesso",
         description: "A inscrição foi criada com sucesso",
       });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/admin/registrations");
+      }
       form.resetFields();
     }
-  }, [isSuccess, form, notification]);
+  }, [mode, created, form, notification, onSuccess, router]);
 
   useEffect(() => {
-    if (error) {
+    if (mode === "edit" && updated) {
+      notification.success({
+        title: "Sucesso",
+        description: "A inscrição foi atualizada com sucesso",
+      });
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push("/admin/registrations");
+      }
+    }
+  }, [mode, updated, notification, onSuccess, router]);
+
+  useEffect(() => {
+    if (mode === "create" && createError) {
       const errorMessage =
-        error instanceof Error ? error.message : "Erro desconhecido";
+        createError instanceof Error
+          ? createError.message
+          : "Erro desconhecido";
       notification.error({
         title: "Erro",
         description: `Não foi possível criar a inscrição: ${errorMessage}`,
       });
     }
-  }, [error, notification]);
+  }, [mode, createError, notification]);
 
   useEffect(() => {
-    if (selectedOrdinanceType && availableSlots.length > 0) {
+    if (mode === "edit" && updateError) {
+      const errorMessage =
+        updateError instanceof Error
+          ? updateError.message
+          : "Erro desconhecido";
+      notification.error({
+        title: "Erro",
+        description: `Não foi possível atualizar a inscrição: ${errorMessage}`,
+      });
+    }
+  }, [mode, updateError, notification]);
+
+  useEffect(() => {
+    if (
+      selectedOrdinanceType &&
+      availableSlots.length > 0 &&
+      mode === "create"
+    ) {
       form.setFieldsValue({ ordinanceSlot: availableSlots[0] });
     }
-  }, [selectedOrdinanceType, availableSlots, form]);
+  }, [selectedOrdinanceType, availableSlots, form, mode]);
 
   useEffect(() => {
-    if (!isAdult) {
+    if (!isAdult && mode === "create") {
       form.setFieldsValue({
         legalGuardianName: undefined,
         legalGuardianEmail: undefined,
         legalGuardianPhone: undefined,
       });
     }
-  }, [isAdult, form]);
+  }, [isAdult, form, mode]);
 
   const handleSubmit = (values: FormValues) => {
-    const paymentStatus: "PENDING" | "FREE" = values.isFirstTimeConvert
-      ? "FREE"
-      : "PENDING";
+    if (mode === "create") {
+      const paymentStatus: "PENDING" | "FREE" = values.isFirstTimeConvert
+        ? "FREE"
+        : "PENDING";
 
-    const input: CreateRegistrationInput = {
-      caravanId: values.caravanId,
-      chapelId: values.chapelId,
-      busId: values.busId,
-      phone: values.phone,
-      fullName: values.fullName,
-      isAdult: values.isAdult,
-      gender: values.gender,
-      isOfficiator: values.isOfficiator,
-      legalGuardianName: values.legalGuardianName,
-      legalGuardianEmail: values.legalGuardianEmail,
-      legalGuardianPhone: values.legalGuardianPhone,
-      ordinanceType: values.ordinanceType,
-      ordinanceSlot: values.ordinanceSlot,
-      isFirstTimeConvert: values.isFirstTimeConvert,
-      paymentStatus,
-      participationStatus: "ACTIVE",
-    };
-    createRegistration(input);
+      const input: CreateRegistrationInput = {
+        caravanId: values.caravanId,
+        chapelId: values.chapelId,
+        busId: values.busId,
+        phone: values.phone,
+        fullName: values.fullName,
+        isAdult: values.isAdult,
+        gender: values.gender,
+        isOfficiator: values.isOfficiator,
+        legalGuardianName: values.legalGuardianName,
+        legalGuardianEmail: values.legalGuardianEmail,
+        legalGuardianPhone: values.legalGuardianPhone,
+        ordinanceType: values.ordinanceType,
+        ordinanceSlot: values.ordinanceSlot,
+        isFirstTimeConvert: values.isFirstTimeConvert,
+        paymentStatus,
+        participationStatus: "ACTIVE",
+      };
+      createRegistration(input);
+    } else if (mode === "edit" && registrationId) {
+      const input: UpdateRegistrationInput = {
+        caravanId: values.caravanId,
+        chapelId: values.chapelId,
+        busId: values.busId,
+        phone: values.phone,
+        fullName: values.fullName,
+        isAdult: values.isAdult,
+        gender: values.gender,
+        isOfficiator: values.isOfficiator,
+        legalGuardianName: values.legalGuardianName,
+        legalGuardianEmail: values.legalGuardianEmail,
+        legalGuardianPhone: values.legalGuardianPhone,
+        ordinanceType: values.ordinanceType,
+        ordinanceSlot: values.ordinanceSlot,
+        isFirstTimeConvert: values.isFirstTimeConvert,
+      };
+      updateRegistration(registrationId, input);
+    }
   };
+
+  const isPending = mode === "create" ? isCreating : isUpdating;
 
   return (
     <Form
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
-      style={{ maxWidth: 800 }}
+      style={{ width: "100%" }}
     >
       <Form.Item
         name="caravanId"
@@ -336,10 +449,20 @@ export const CreateRegistrationForm = () => {
       </Form.Item>
 
       <Form.Item>
-        <Button type="primary" htmlType="submit" loading={isPending} block>
-          {isPending ? "A criar..." : "Criar Inscrição"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => router.back()}>Cancelar</Button>
+          <Button type="primary" htmlType="submit" loading={isPending}>
+            {isPending
+              ? mode === "create"
+                ? "A criar..."
+                : "A atualizar..."
+              : mode === "create"
+              ? "Criar"
+              : "Atualizar"}
+          </Button>
+        </div>
       </Form.Item>
     </Form>
   );
 };
+

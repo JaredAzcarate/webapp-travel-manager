@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CreateCaravanInput,
   UpdateCaravanInput,
-} from "../models/caravans.model";
-import { CaravanRepository } from "../repositories/caravans.repository";
+} from "@/features/caravans/models/caravans.model";
+import { CaravanRepository } from "@/features/caravans/repositories/caravans.repository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const repository = new CaravanRepository();
 

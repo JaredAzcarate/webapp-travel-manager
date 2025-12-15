@@ -1,6 +1,9 @@
+import {
+  CreateChapelInput,
+  UpdateChapelInput,
+} from "@/features/chapels/models/chapels.model";
+import { ChapelRepository } from "@/features/chapels/repositories/chapels.repository";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChapelRepository } from "../repositories/chapels.repository";
-import { CreateChapelInput, UpdateChapelInput } from "../models/chapels.model";
 
 const repository = new ChapelRepository();
 

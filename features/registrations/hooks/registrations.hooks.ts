@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CreateRegistrationInput,
   UpdateRegistrationInput,
-} from "../models/registrations.model";
-import { RegistrationRepository } from "../repositories/registrations.repository";
+} from "@/features/registrations/models/registrations.model";
+import { RegistrationRepository } from "@/features/registrations/repositories/registrations.repository";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const repository = new RegistrationRepository();
 

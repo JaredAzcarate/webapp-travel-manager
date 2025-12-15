@@ -17,9 +17,11 @@ export class UserRepository {
 
     return {
       id: docRef.id,
-      ...input,
+      name: input.name as string,
+      email: input.email as string,
+      roleId: input.roleId as string,
       createdAt: now,
       updatedAt: now,
-    };
+    } as UserWithId;
   }
 }
