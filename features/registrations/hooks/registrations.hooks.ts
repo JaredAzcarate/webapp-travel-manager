@@ -254,3 +254,31 @@ export const useDeleteRegistration = () => {
     error: mutation.error,
   };
 };
+
+export const useFilteredRegistrations = (
+  caravanId: string,
+  filters?: {
+    chapelId?: string;
+    paymentStatus?: string;
+  }
+) => {
+  const {
+    data: registrations = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["registrations", "filtered", caravanId, filters],
+    queryFn: () => repository.getFiltered(caravanId, filters),
+    enabled: !!caravanId,
+  });
+
+  return {
+    registrations,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Erro desconhecido"
+      : null,
+  };
+};

@@ -1,16 +1,20 @@
 "use client";
 
 import { useBus } from "@/features/buses/hooks/buses.hooks";
+import { CaravanForm } from "@/features/caravans/components/CaravanForm";
+import { PaymentStatusDrawer } from "@/features/caravans/components/PaymentStatusDrawer";
 import {
+  useCaravan,
   useCaravans,
   useDeleteCaravan,
 } from "@/features/caravans/hooks/caravans.hooks";
 import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { useCountActiveByBus } from "@/features/registrations/hooks/registrations.hooks";
-import { App, Button, Space, Table, Tag, Typography } from "antd";
+import { App, Button, Drawer, Space, Spin, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const { Title } = Typography;
 
@@ -70,6 +74,41 @@ export const CaravansList = () => {
   const { notification, modal } = App.useApp();
   const { caravans, loading } = useCaravans();
   const { deleteCaravan, isPending: isDeleting } = useDeleteCaravan();
+
+  const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
+  const [selectedCaravanForPayment, setSelectedCaravanForPayment] = useState<
+    string | null
+  >(null);
+
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [selectedCaravanForEdit, setSelectedCaravanForEdit] = useState<
+    string | null
+  >(null);
+
+  const handleViewPaymentStatus = (caravanId: string) => {
+    setSelectedCaravanForPayment(caravanId);
+    setPaymentDrawerOpen(true);
+  };
+
+  const handleClosePaymentDrawer = () => {
+    setPaymentDrawerOpen(false);
+    setSelectedCaravanForPayment(null);
+  };
+
+  const handleEdit = (caravanId: string) => {
+    setSelectedCaravanForEdit(caravanId);
+    setEditDrawerOpen(true);
+  };
+
+  const handleCloseEditDrawer = () => {
+    setEditDrawerOpen(false);
+    setSelectedCaravanForEdit(null);
+  };
+
+  const handleEditSuccess = () => {
+    setEditDrawerOpen(false);
+    setSelectedCaravanForEdit(null);
+  };
 
   const handleDelete = (caravan: CaravanWithId) => {
     modal.confirm({
@@ -148,10 +187,7 @@ export const CaravansList = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button
-            type="link"
-            onClick={() => router.push(`/admin/caravans/edit/${record.id}`)}
-          >
+          <Button type="link" onClick={() => handleEdit(record.id)}>
             Editar
           </Button>
           <Button
@@ -160,7 +196,13 @@ export const CaravansList = () => {
               router.push(`/admin/caravans/distribution?caravanId=${record.id}`)
             }
           >
-            Ver Distribuição
+            Inscrições
+          </Button>
+          <Button
+            type="link"
+            onClick={() => handleViewPaymentStatus(record.id)}
+          >
+            Ver Status de Pagos
           </Button>
           <Button
             type="link"
@@ -202,6 +244,64 @@ export const CaravansList = () => {
           emptyText: "Nenhuma caravana criada ainda",
         }}
       />
+
+      {selectedCaravanForPayment && (
+        <PaymentStatusDrawer
+          open={paymentDrawerOpen}
+          onClose={handleClosePaymentDrawer}
+          caravanId={selectedCaravanForPayment}
+        />
+      )}
+
+      {selectedCaravanForEdit && (
+        <EditCaravanDrawer
+          open={editDrawerOpen}
+          onClose={handleCloseEditDrawer}
+          caravanId={selectedCaravanForEdit}
+          onSuccess={handleEditSuccess}
+        />
+      )}
     </>
+  );
+};
+
+interface EditCaravanDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  caravanId: string;
+  onSuccess: () => void;
+}
+
+const EditCaravanDrawer = ({
+  open,
+  onClose,
+  caravanId,
+  onSuccess,
+}: EditCaravanDrawerProps) => {
+  const { caravan, loading } = useCaravan(caravanId);
+
+  return (
+    <Drawer
+      title="Editar Caravana"
+      open={open}
+      onClose={onClose}
+      size="large"
+      destroyOnClose
+    >
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Spin size="large" />
+        </div>
+      ) : caravan ? (
+        <CaravanForm
+          mode="edit"
+          caravanId={caravan.id}
+          initialCaravanData={caravan}
+          onSuccess={onSuccess}
+        />
+      ) : (
+        <p className="text-gray-500">Caravana não encontrada.</p>
+      )}
+    </Drawer>
   );
 };

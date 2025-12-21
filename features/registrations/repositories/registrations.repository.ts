@@ -153,4 +153,29 @@ export class RegistrationRepository {
     const registrations = await this.getByPhone(phone, caravanId);
     return registrations.length === 0;
   }
+
+  async getFiltered(
+    caravanId: string,
+    filters?: {
+      chapelId?: string;
+      paymentStatus?: string;
+    }
+  ): Promise<RegistrationWithId[]> {
+    const constraints = [where("caravanId", "==", caravanId)];
+
+    if (filters?.chapelId) {
+      constraints.push(where("chapelId", "==", filters.chapelId));
+    }
+
+    if (filters?.paymentStatus) {
+      constraints.push(where("paymentStatus", "==", filters.paymentStatus));
+    }
+
+    const q = query(collection(db, this.collectionName), ...constraints);
+    const snap = await getDocs(q);
+    return snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as RegistrationWithId[];
+  }
 }
