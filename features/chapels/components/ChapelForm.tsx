@@ -11,6 +11,7 @@ import {
 } from "@/features/chapels/models/chapels.model";
 import { App, Button, Form, Input } from "antd";
 import { useRouter } from "next/navigation";
+import { Check, X } from "phosphor-react";
 import { useEffect } from "react";
 
 interface FormValues {
@@ -176,8 +177,15 @@ export const ChapelForm = ({
 
       <Form.Item>
         <div className="flex gap-2">
-          <Button onClick={() => router.back()}>Cancelar</Button>
-          <Button type="primary" htmlType="submit" loading={isPending}>
+          <Button icon={<X size={16} />} onClick={() => router.back()}>
+            Cancelar
+          </Button>
+          <Button
+            type="primary"
+            icon={<Check size={16} />}
+            htmlType="submit"
+            loading={isPending}
+          >
             {isPending
               ? mode === "create"
                 ? "A criar..."
@@ -191,4 +199,3 @@ export const ChapelForm = ({
     </Form>
   );
 };
-

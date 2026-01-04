@@ -9,6 +9,7 @@ import { App, Button, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { Pencil, Plus, Trash } from "phosphor-react";
 
 const { Title } = Typography;
 
@@ -77,6 +78,7 @@ export const ChapelsList = () => {
         <Space>
           <Button
             type="link"
+            icon={<Pencil size={16} />}
             onClick={() => router.push(`/admin/chapels/edit/${record.id}`)}
           >
             Editar
@@ -84,6 +86,7 @@ export const ChapelsList = () => {
           <Button
             type="link"
             danger
+            icon={<Trash size={16} />}
             onClick={() => handleDelete(record)}
             loading={isDeleting}
           >
@@ -102,6 +105,7 @@ export const ChapelsList = () => {
         </Title>
         <Button
           type="primary"
+          icon={<Plus size={16} />}
           onClick={() => router.push("/admin/chapels/new")}
         >
           Nova Capela
@@ -124,4 +128,3 @@ export const ChapelsList = () => {
     </>
   );
 };
-

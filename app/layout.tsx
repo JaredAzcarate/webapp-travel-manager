@@ -1,22 +1,15 @@
 import { AntdProvider } from "@/common/providers/antd-provider";
 import { QueryProvider } from "@/common/providers/query-provider";
+import { SessionProvider } from "@/providers/session-provider";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Temple Caravan Management System",
-  description: "Sistema de gestión de caravanas al templo LDS",
+  title: "Agendamentos do Templo",
+  description: "Sistema de gestão de caravanas ao templo",
 };
 
 export default function RootLayout({
@@ -26,12 +19,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <QueryProvider>
-          <AntdProvider>{children}</AntdProvider>
-        </QueryProvider>
+      <body className={inter.className}>
+        <SessionProvider>
+          <QueryProvider>
+            <AntdProvider>{children}</AntdProvider>
+          </QueryProvider>
+        </SessionProvider>
       </body>
     </html>
   );

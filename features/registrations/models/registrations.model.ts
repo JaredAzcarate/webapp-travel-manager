@@ -9,7 +9,7 @@ export type OrdinanceType =
 
 export type PaymentStatus = "PENDING" | "PAID" | "FREE" | "CANCELLED";
 
-export type ParticipationStatus = "ACTIVE" | "CANCELLED";
+export type ParticipationStatus = "ACTIVE" | "CANCELLED" | "WAITLIST";
 
 export interface Registration {
   caravanId: string; // references caravans.id
@@ -26,8 +26,11 @@ export interface Registration {
   legalGuardianEmail?: string;
   legalGuardianPhone?: string;
 
-  ordinanceType: OrdinanceType;
-  ordinanceSlot: string; // e.g. "9:30-10:00"
+  ordinances: Array<{
+    type: OrdinanceType;
+    slot: string; // e.g. "9:30-10:00"
+    isPersonal?: boolean; // indica si la ordenanza es personal
+  }>; // Máximo 3, mínimo 0 (opcional)
 
   isFirstTimeConvert: boolean;
   paymentStatus: PaymentStatus;

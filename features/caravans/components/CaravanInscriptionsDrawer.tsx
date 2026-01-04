@@ -14,6 +14,7 @@ import {
 } from "@/features/registrations/models/registrations.model";
 import { Button, Card, Drawer, Spin, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { Pencil } from "phosphor-react";
 import { useMemo, useState } from "react";
 
 const ORDINANCE_TYPE_MAP: Record<OrdinanceType, string> = {
@@ -201,16 +202,30 @@ const BusInscriptionsCard = ({
       title: "Ordenança",
       key: "ordinance",
       render: (_, record) => {
-        const ordinanceTypeLabel =
-          ORDINANCE_TYPE_MAP[record.ordinanceType] || record.ordinanceType;
-        return `${ordinanceTypeLabel} - ${record.ordinanceSlot}`;
+        if (
+          record.ordinances &&
+          Array.isArray(record.ordinances) &&
+          record.ordinances.length > 0
+        ) {
+          return record.ordinances
+            .map((ord) => {
+              const typeLabel = ORDINANCE_TYPE_MAP[ord.type] || ord.type;
+              return `${typeLabel} - ${ord.slot}`;
+            })
+            .join(", ");
+        }
+        return "-";
       },
     },
     {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Button type="link" onClick={() => handleEdit(record)}>
+        <Button
+          type="link"
+          icon={<Pencil size={16} />}
+          onClick={() => handleEdit(record)}
+        >
           Editar
         </Button>
       ),

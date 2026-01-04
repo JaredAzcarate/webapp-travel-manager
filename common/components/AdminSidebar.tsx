@@ -1,7 +1,9 @@
 "use client";
 
+import { useSignOut } from "@/features/auth/hooks/auth.hooks";
 import { Layout, Menu } from "antd";
 import { usePathname, useRouter } from "next/navigation";
+import { Buildings, Bus, Scroll, SignOut, Truck } from "phosphor-react";
 import { useMemo } from "react";
 
 const { Sider } = Layout;
@@ -10,6 +12,7 @@ interface MenuItem {
   key: string;
   label: string;
   path: string;
+  icon: React.ReactNode;
 }
 
 const menuItems: MenuItem[] = [
@@ -17,27 +20,32 @@ const menuItems: MenuItem[] = [
     key: "chapels",
     label: "Capelas",
     path: "/admin/chapels",
+    icon: <Buildings size={20} />,
   },
   {
     key: "caravans",
     label: "Caravanas",
     path: "/admin/caravans",
+    icon: <Bus size={20} />,
   },
   {
     key: "buses",
     label: "Autocarros",
     path: "/admin/buses",
+    icon: <Truck size={20} />,
   },
   {
-    key: "registrations",
-    label: "Inscrições",
-    path: "/admin/registrations",
+    key: "ordinances",
+    label: "Ordenanças",
+    path: "/admin/ordinances",
+    icon: <Scroll size={20} />,
   },
 ];
 
 export const AdminSidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const { signOut } = useSignOut();
 
   const selectedKey = useMemo(() => {
     const item = menuItems.find((item) => pathname?.startsWith(item.path));
@@ -51,6 +59,10 @@ export const AdminSidebar = () => {
     }
   };
 
+  const handleSignOut = () => {
+    signOut();
+  };
+
   return (
     <Sider
       width={200}
@@ -61,6 +73,8 @@ export const AdminSidebar = () => {
         left: 0,
         top: 0,
         bottom: 0,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div className="p-4 text-white text-lg font-semibold">
@@ -73,9 +87,20 @@ export const AdminSidebar = () => {
         items={menuItems.map((item) => ({
           key: item.key,
           label: item.label,
+          icon: item.icon,
         }))}
         onClick={handleMenuClick}
+        style={{ flex: 1 }}
       />
+      <div
+        className="p-4 border-t border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors"
+        onClick={handleSignOut}
+      >
+        <div className="flex items-center gap-3 text-white">
+          <SignOut size={20} />
+          <span>Sair</span>
+        </div>
+      </div>
     </Sider>
   );
 };

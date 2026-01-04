@@ -14,6 +14,7 @@ import { App, Button, DatePicker, Form, Input, Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { Check, X } from "phosphor-react";
 import { useEffect } from "react";
 
 interface FormValues {
@@ -388,8 +389,15 @@ export const CaravanForm = ({
 
       <Form.Item>
         <div className="flex gap-2">
-          <Button onClick={() => router.back()}>Cancelar</Button>
-          <Button type="primary" htmlType="submit" loading={isPending}>
+          <Button icon={<X size={16} />} onClick={() => router.back()}>
+            Cancelar
+          </Button>
+          <Button
+            type="primary"
+            icon={<Check size={16} />}
+            htmlType="submit"
+            loading={isPending}
+          >
             {isPending
               ? mode === "create"
                 ? "A criar..."

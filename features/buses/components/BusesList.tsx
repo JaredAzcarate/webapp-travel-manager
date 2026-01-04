@@ -8,6 +8,7 @@ import { App, Button, Space, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { MapPin, Pencil, Plus, Trash } from "phosphor-react";
 import { useMemo, useState } from "react";
 
 const { Title } = Typography;
@@ -101,6 +102,7 @@ export const BusesList = () => {
         <Space>
           <Button
             type="link"
+            icon={<MapPin size={16} />}
             onClick={() => handleViewStops(record.id)}
             disabled={record.stopsCount === 0}
           >
@@ -108,6 +110,7 @@ export const BusesList = () => {
           </Button>
           <Button
             type="link"
+            icon={<Pencil size={16} />}
             onClick={() => router.push(`/admin/buses/edit/${record.id}`)}
           >
             Editar
@@ -115,6 +118,7 @@ export const BusesList = () => {
           <Button
             type="link"
             danger
+            icon={<Trash size={16} />}
             onClick={() => handleDelete(record)}
             loading={isDeleting}
           >
@@ -131,7 +135,11 @@ export const BusesList = () => {
         <Title level={4} style={{ margin: 0 }}>
           Lista de Autocarros
         </Title>
-        <Button type="primary" onClick={() => router.push("/admin/buses/new")}>
+        <Button
+          type="primary"
+          icon={<Plus size={16} />}
+          onClick={() => router.push("/admin/buses/new")}
+        >
           Novo Autocarro
         </Button>
       </div>

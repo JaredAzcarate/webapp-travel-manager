@@ -1,5 +1,12 @@
+import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
+import {
+  getCountForGender,
+  getLimitForGender,
+  type CapacityValue,
+} from "@/features/caravans/utils/ordinanceCapacity.utils";
 import {
   CreateRegistrationInput,
+  OrdinanceType,
   UpdateRegistrationInput,
 } from "@/features/registrations/models/registrations.model";
 import { RegistrationRepository } from "@/features/registrations/repositories/registrations.repository";
@@ -137,14 +144,86 @@ export const useRegistrationsByBusId = (busId: string, caravanId: string) => {
   };
 };
 
+export const useActiveRegistrationsByBusId = (
+  busId: string,
+  caravanId: string
+) => {
+  const {
+    data: registrations = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["registrations", "active", busId, caravanId],
+    queryFn: () => repository.getActiveByBusId(busId, caravanId),
+    enabled: !!busId && !!caravanId,
+  });
+
+  return {
+    registrations,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Erro desconhecido"
+      : null,
+  };
+};
+
+export const useCancelledRegistrationsByBusId = (
+  busId: string,
+  caravanId: string
+) => {
+  const {
+    data: registrations = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["registrations", "cancelled", busId, caravanId],
+    queryFn: () => repository.getCancelledByBusId(busId, caravanId),
+    enabled: !!busId && !!caravanId,
+  });
+
+  return {
+    registrations,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Erro desconhecido"
+      : null,
+  };
+};
+
 export const useCountActiveByBus = (caravanId: string, busId: string) => {
   const {
     data: count = 0,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["registrations", "count", caravanId, busId],
+    queryKey: ["registrations", "count", "active", caravanId, busId],
     queryFn: () => repository.countActiveByBus(caravanId, busId),
+    enabled: !!caravanId && !!busId,
+  });
+
+  return {
+    count,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Erro desconhecido"
+      : null,
+  };
+};
+
+export const useCountCancelledByBus = (caravanId: string, busId: string) => {
+  const {
+    data: count = 0,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["registrations", "count", "cancelled", caravanId, busId],
+    queryFn: () => repository.countCancelledByBus(caravanId, busId),
     enabled: !!caravanId && !!busId,
   });
 
@@ -176,6 +255,10 @@ export const useCreateRegistration = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ["registrations", "count", data.caravanId, data.busId],
+      });
+      // Invalidate waitlist query
+      queryClient.invalidateQueries({
+        queryKey: ["waitlist", data.caravanId],
       });
     },
   });
@@ -280,5 +363,146 @@ export const useFilteredRegistrations = (
         ? error.message
         : "Erro desconhecido"
       : null,
+  };
+};
+
+export const useMarkPaymentAsPaid = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await repository.markPaymentAsPaid(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+    },
+  });
+
+  const markPaymentAsPaid = async (id: string) => {
+    return mutation.mutateAsync(id);
+  };
+
+  return {
+    markPaymentAsPaid,
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error,
+  };
+};
+
+export const useCancelRegistration = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await repository.cancelRegistration(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+    },
+  });
+
+  const cancelRegistration = async (id: string) => {
+    return mutation.mutateAsync(id);
+  };
+
+  return {
+    cancelRegistration,
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error,
+  };
+};
+
+export const useOrdinanceAvailabilityFromCaravan = (
+  caravanId: string | null,
+  type: OrdinanceType | null,
+  slot: string | null,
+  gender: "M" | "F" | null
+) => {
+  const { caravan, loading } = useCaravan(caravanId || "");
+
+  const availability = useQuery({
+    queryKey: ["ordinance-availability", caravanId, type, slot, gender],
+    queryFn: () => {
+      if (!caravan || !type || !slot) {
+        return { available: 0, maxCapacity: 0 };
+      }
+
+      const limitValue: CapacityValue | undefined =
+        caravan.ordinanceCapacityLimits?.[type]?.[slot];
+      const countValue: CapacityValue | undefined =
+        caravan.ordinanceCapacityCounts?.[type]?.[slot];
+
+      if (limitValue === undefined || countValue === undefined) {
+        return { available: 0, maxCapacity: 0 };
+      }
+
+      const limit: number = getLimitForGender(limitValue, gender);
+      const count: number = getCountForGender(countValue, gender);
+
+      return {
+        available: Math.max(0, limit - count),
+        maxCapacity: limit,
+      };
+    },
+    enabled: !!caravanId && !!type && !!slot && !!caravan,
+  });
+
+  return {
+    available: availability.data?.available ?? 0,
+    maxCapacity: availability.data?.maxCapacity ?? 0,
+    loading: loading || availability.isLoading,
+  };
+};
+
+export const useWaitlistByCaravanId = (caravanId: string) => {
+  const query = useQuery({
+    queryKey: ["waitlist", caravanId],
+    queryFn: () => repository.getWaitlistByCaravanId(caravanId),
+    enabled: !!caravanId,
+  });
+
+  return {
+    waitlist: query.data || [],
+    loading: query.isLoading,
+    error: query.error,
+  };
+};
+
+export const usePromoteFromWaitlist = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (id: string) => repository.promoteFromWaitlist(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "byCaravan", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "byBus", data.busId, data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "registrations",
+          "count",
+          "active",
+          data.caravanId,
+          data.busId,
+        ],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["waitlist", data.caravanId],
+      });
+    },
+  });
+
+  const promoteFromWaitlist = async (id: string) => {
+    return mutation.mutateAsync(id);
+  };
+
+  return {
+    promoteFromWaitlist,
+    isPending: mutation.isPending,
+    isSuccess: mutation.isSuccess,
+    error: mutation.error,
   };
 };

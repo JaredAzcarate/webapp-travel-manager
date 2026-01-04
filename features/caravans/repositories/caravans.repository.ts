@@ -1,4 +1,7 @@
+import { ORDINANCE_SLOTS } from "@/common/constants/ordinances";
 import { db } from "@/common/lib/firebase";
+import { ordinanceRepository } from "@/features/ordinances/repositories/ordinances.repository";
+import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import {
   addDoc,
   collection,
@@ -42,11 +45,131 @@ export class CaravanRepository {
 
   async create(input: CreateCaravanInput): Promise<CaravanWithId> {
     const now = Timestamp.now();
-    const docRef = await addDoc(collection(db, this.collectionName), {
-      ...input,
+
+    // Read ordinances from collection and transform to capacity limits
+    const ordinances = await ordinanceRepository.getAll();
+    const ordinanceCapacityLimits: CaravanWithId["ordinanceCapacityLimits"] =
+      {};
+    const initialCounts: CaravanWithId["ordinanceCapacityCounts"] = {};
+
+    if (ordinances.length > 0) {
+      // Transform Ordinance.sessions into ordinanceCapacityLimits structure
+      // Group by type in case there are multiple ordinances of the same type
+      for (const ordinance of ordinances) {
+        const type = ordinance.type;
+
+        // Skip if type is not valid
+        if (!type) continue;
+
+        // Initialize if not exists
+        if (!ordinanceCapacityLimits[type]) {
+          ordinanceCapacityLimits[type] = {};
+        }
+        if (!initialCounts[type]) {
+          initialCounts[type] = {};
+        }
+
+        // Add all sessions for this ordinance type
+        if (ordinance.sessions && Array.isArray(ordinance.sessions)) {
+          // Detect if this ordinance has gender-specific sessions
+          const hasGenderSpecificSessions = ordinance.sessions.some(
+            (s) => s.gender === "M" || s.gender === "F"
+          );
+
+          if (hasGenderSpecificSessions) {
+            // Group sessions by slot and gender
+            const slotMap = new Map<string, { M?: number; F?: number }>();
+
+            for (const session of ordinance.sessions) {
+              if (
+                session &&
+                session.slot &&
+                session.maxCapacity !== undefined
+              ) {
+                if (!slotMap.has(session.slot)) {
+                  slotMap.set(session.slot, {});
+                }
+                const slotData = slotMap.get(session.slot)!;
+
+                if (session.gender === "M") {
+                  slotData.M = (slotData.M || 0) + session.maxCapacity;
+                } else if (session.gender === "F") {
+                  slotData.F = (slotData.F || 0) + session.maxCapacity;
+                } else {
+                  // gender is null - add to both
+                  slotData.M = (slotData.M || 0) + session.maxCapacity;
+                  slotData.F = (slotData.F || 0) + session.maxCapacity;
+                }
+              }
+            }
+
+            // Convert to final structure
+            for (const [slot, capacities] of slotMap.entries()) {
+              ordinanceCapacityLimits[type]![slot] = {
+                M: capacities.M || 0,
+                F: capacities.F || 0,
+              };
+              initialCounts[type]![slot] = { M: 0, F: 0 };
+            }
+          } else {
+            // All sessions are mixed (gender: null) - sum capacities per slot
+            const slotMap = new Map<string, number>();
+
+            for (const session of ordinance.sessions) {
+              if (
+                session &&
+                session.slot &&
+                session.maxCapacity !== undefined
+              ) {
+                const current = slotMap.get(session.slot) || 0;
+                slotMap.set(session.slot, current + session.maxCapacity);
+              }
+            }
+
+            // Convert to final structure
+            for (const [slot, capacity] of slotMap.entries()) {
+              ordinanceCapacityLimits[type]![slot] = capacity;
+              initialCounts[type]![slot] = 0;
+            }
+          }
+        }
+      }
+    } else {
+      // Fallback: if no ordinances configured, use ORDINANCE_SLOTS with 0 limits
+      for (const [type, slots] of Object.entries(ORDINANCE_SLOTS) as [
+        OrdinanceType,
+        string[]
+      ][]) {
+        ordinanceCapacityLimits[type] = {};
+        initialCounts[type] = {};
+        for (const slot of slots) {
+          ordinanceCapacityLimits[type]![slot] = 0;
+          initialCounts[type]![slot] = 0;
+        }
+      }
+    }
+
+    // Remove ordinanceCapacityLimits from input if it was provided (we use templates instead)
+    const { ordinanceCapacityLimits: _, ...inputWithoutLimits } = input;
+
+    const dataToSave: any = {
+      ...inputWithoutLimits,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+
+    // Only add if we have data
+    if (Object.keys(ordinanceCapacityLimits).length > 0) {
+      dataToSave.ordinanceCapacityLimits = ordinanceCapacityLimits;
+    }
+    if (Object.keys(initialCounts).length > 0) {
+      dataToSave.ordinanceCapacityCounts = initialCounts;
+    }
+
+    const docRef = await addDoc(
+      collection(db, this.collectionName),
+      dataToSave
+    );
 
     const createdDoc = await getDoc(docRef);
     return {
@@ -87,5 +210,18 @@ export class CaravanRepository {
 
       return nowMillis >= openMillis && nowMillis <= closeMillis;
     });
+  }
+
+  async updateCapacityCounts(
+    id: string,
+    counts: CaravanWithId["ordinanceCapacityCounts"]
+  ): Promise<CaravanWithId> {
+    const docRef = doc(db, this.collectionName, id);
+    await updateDoc(docRef, {
+      ordinanceCapacityCounts: counts,
+      updatedAt: Timestamp.now(),
+    });
+
+    return this.getById(id);
   }
 }

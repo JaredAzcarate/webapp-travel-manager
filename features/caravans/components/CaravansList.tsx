@@ -14,6 +14,7 @@ import { App, Button, Drawer, Space, Spin, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { Pencil, Plus, Trash } from "phosphor-react";
 import { useState } from "react";
 
 const { Title } = Typography;
@@ -63,7 +64,7 @@ const BusOccupation = ({ busId, caravanId }: BusOccupationProps) => {
   return (
     <div className="text-sm">
       <Tag color={color}>
-        {bus.name}: {count}/{bus.capacity} ({available} disponíveis)
+        {bus.name}: {available} disponíveis
       </Tag>
     </div>
   );
@@ -187,9 +188,6 @@ export const CaravansList = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button type="link" onClick={() => handleEdit(record.id)}>
-            Editar
-          </Button>
           <Button
             type="link"
             onClick={() =>
@@ -202,16 +200,20 @@ export const CaravansList = () => {
             type="link"
             onClick={() => handleViewPaymentStatus(record.id)}
           >
-            Ver Status de Pagos
+            Pagos
           </Button>
           <Button
             type="link"
+            icon={<Pencil size={16} />}
+            onClick={() => handleEdit(record.id)}
+          />
+          <Button
+            type="link"
             danger
+            icon={<Trash size={16} />}
             onClick={() => handleDelete(record)}
             loading={isDeleting}
-          >
-            Eliminar
-          </Button>
+          />
         </Space>
       ),
     },
@@ -225,6 +227,7 @@ export const CaravansList = () => {
         </Title>
         <Button
           type="primary"
+          icon={<Plus size={16} />}
           onClick={() => router.push("/admin/caravans/new")}
         >
           Nova Caravana

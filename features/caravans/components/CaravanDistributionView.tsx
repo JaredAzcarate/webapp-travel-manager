@@ -1,12 +1,16 @@
 "use client";
 
+import { ORDINANCE_NAMES } from "@/common/constants/ordinances";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
+import { CancelledRegistrationsList } from "@/features/registrations/components/CancelledRegistrationsList";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
 import {
+  useActiveRegistrationsByBusId,
+  useCancelRegistration,
   useCountActiveByBus,
-  useRegistrationsByBusId,
+  useCountCancelledByBus,
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
   OrdinanceType,
@@ -25,21 +29,24 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "next/navigation";
+import { FilePdf, List, Pencil, Plus, XCircle } from "phosphor-react";
 import { useMemo, useState } from "react";
+import { WaitlistDrawer } from "./WaitlistDrawer";
 
 const { Title } = Typography;
-
-const ORDINANCE_TYPE_MAP: Record<OrdinanceType, string> = {
-  BAPTISTRY: "Batistério",
-  INITIATORY: "Iniciatória",
-  ENDOWMENT: "Investidura",
-  SEALING: "Selamento",
-};
 
 export const CaravanDistributionView = () => {
   const searchParams = useSearchParams();
   const caravanId = searchParams.get("caravanId");
   const { chapels, loading: loadingChapels } = useChapels();
+
+  const ordinanceTypeToNameMap = useMemo(() => {
+    const map = new Map<OrdinanceType, string>();
+    Object.entries(ORDINANCE_NAMES).forEach(([type, name]) => {
+      map.set(type as OrdinanceType, name);
+    });
+    return map;
+  }, []);
 
   const { caravan: selectedCaravan, loading: loadingCaravan } = useCaravan(
     caravanId || ""
@@ -67,9 +74,46 @@ export const CaravanDistributionView = () => {
     );
   }
 
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [waitlistDrawerOpen, setWaitlistDrawerOpen] = useState(false);
+
+  const handleCreateRegistration = () => {
+    setCreateDrawerOpen(true);
+  };
+
+  const handleCreateSuccess = () => {
+    setCreateDrawerOpen(false);
+  };
+
+  const handleOpenWaitlist = () => {
+    setWaitlistDrawerOpen(true);
+  };
+
+  const handleCloseWaitlist = () => {
+    setWaitlistDrawerOpen(false);
+  };
+
   return (
-    <div className="space-y-4">
-      <Title level={4}>Distribuição de Passageiros</Title>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <Title level={4} style={{ margin: 0 }}>
+          Distribuição de Passageiros
+        </Title>
+        {selectedCaravan && (
+          <Space>
+            <Button icon={<List size={16} />} onClick={handleOpenWaitlist}>
+              Ver Waitlist
+            </Button>
+            <Button
+              type="primary"
+              icon={<Plus size={16} />}
+              onClick={handleCreateRegistration}
+            >
+              Criar Registro
+            </Button>
+          </Space>
+        )}
+      </div>
 
       {loadingCaravan && (
         <div className="flex justify-center">
@@ -78,7 +122,7 @@ export const CaravanDistributionView = () => {
       )}
 
       {!loadingCaravan && selectedCaravan && (
-        <div className="space-y-4">
+        <div className="space-y-8">
           {selectedCaravan.busIds && selectedCaravan.busIds.length > 0 ? (
             selectedCaravan.busIds.map((busId) => (
               <BusDistributionCard
@@ -88,6 +132,7 @@ export const CaravanDistributionView = () => {
                 caravanName={selectedCaravan.name}
                 chapelMap={chapelMap}
                 loadingChapels={loadingChapels}
+                ordinanceTypeToNameMap={ordinanceTypeToNameMap}
               />
             ))
           ) : (
@@ -105,6 +150,31 @@ export const CaravanDistributionView = () => {
           <p className="text-gray-500">Caravana não encontrada.</p>
         </Card>
       )}
+
+      <Drawer
+        title="Criar Inscrição"
+        open={createDrawerOpen}
+        onClose={() => setCreateDrawerOpen(false)}
+        size="large"
+        destroyOnClose
+      >
+        {selectedCaravan && (
+          <RegistrationForm
+            mode="create"
+            caravanId={selectedCaravan.id}
+            onSuccess={handleCreateSuccess}
+          />
+        )}
+      </Drawer>
+
+      {caravanId && (
+        <WaitlistDrawer
+          open={waitlistDrawerOpen}
+          onClose={handleCloseWaitlist}
+          caravanId={caravanId}
+          chapelMap={chapelMap}
+        />
+      )}
     </div>
   );
 };
@@ -115,6 +185,7 @@ interface BusDistributionCardProps {
   caravanName: string;
   chapelMap: Map<string, string>;
   loadingChapels: boolean;
+  ordinanceTypeToNameMap: Map<OrdinanceType, string>;
 }
 
 const BusDistributionCard = ({
@@ -123,18 +194,23 @@ const BusDistributionCard = ({
   caravanName,
   chapelMap,
   loadingChapels,
+  ordinanceTypeToNameMap,
 }: BusDistributionCardProps) => {
-  const { notification } = App.useApp();
+  const { notification, modal } = App.useApp();
   const { bus, loading: loadingBus } = useBus(busId);
-  const { registrations, loading: loadingRegistrations } =
-    useRegistrationsByBusId(busId, caravanId);
+  const { registrations: activeRegistrations, loading: loadingRegistrations } =
+    useActiveRegistrationsByBusId(busId, caravanId);
 
   const { count } = useCountActiveByBus(caravanId, busId);
+  const { count: cancelledCount } = useCountCancelledByBus(caravanId, busId);
+  const { cancelRegistration, isPending: isCancelling } =
+    useCancelRegistration();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<RegistrationWithId | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [cancelledDrawerOpen, setCancelledDrawerOpen] = useState(false);
 
   const handleEdit = (record: RegistrationWithId) => {
     setSelectedRegistration(record);
@@ -149,6 +225,33 @@ const BusDistributionCard = ({
   const handleEditSuccess = () => {
     setDrawerOpen(false);
     setSelectedRegistration(null);
+  };
+
+  const handleCancelParticipation = (registration: RegistrationWithId) => {
+    modal.confirm({
+      title: "Cancelar Participação",
+      content: `Tem certeza que deseja cancelar a participação de ${registration.fullName}? Esta ação liberará o lugar no autocarro.`,
+      okText: "Sim, cancelar",
+      okType: "danger",
+      cancelText: "Não",
+      onOk: async () => {
+        try {
+          await cancelRegistration(registration.id);
+          notification.success({
+            title: "Sucesso",
+            description: "Participação cancelada com sucesso",
+          });
+        } catch (error) {
+          console.error("Error canceling registration:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : "Erro desconhecido";
+          notification.error({
+            title: "Erro",
+            description: `Não foi possível cancelar a participação: ${errorMessage}`,
+          });
+        }
+      },
+    });
   };
 
   const handleExportPDF = async () => {
@@ -186,7 +289,7 @@ const BusDistributionCard = ({
       doc.text(`Exportado em: ${exportDate}`, 10, yPosition);
       yPosition += 15;
 
-      if (registrations.length === 0) {
+      if (activeRegistrations.length === 0) {
         doc.setFontSize(12);
         doc.text(
           "Nenhum passageiro registrado neste autocarro.",
@@ -202,11 +305,11 @@ const BusDistributionCard = ({
 
         const headers = [
           "Nome Completo",
-          "Capela",
-          "Status de Pagamento",
-          "Ordenança",
+          "Ordenança 1",
+          "Ordenança 2",
+          "Ordenança 3",
         ];
-        const colWidths = [60, 50, 40, 50];
+        const colWidths = [60, 45, 45, 45];
         const startX = 10;
 
         headers.forEach((header, i) => {
@@ -222,35 +325,40 @@ const BusDistributionCard = ({
 
         doc.setFont("helvetica", "normal");
 
-        registrations.forEach((registration) => {
+        activeRegistrations.forEach((registration) => {
           if (yPosition > 280) {
             doc.addPage();
             yPosition = 20;
           }
 
-          const chapelName =
-            chapelMap.get(registration.chapelId) || registration.chapelId;
+          const ordinances = registration.ordinances || [];
 
-          const statusMap: Record<string, string> = {
-            PENDING: "Pendente",
-            PAID: "Pago",
-            FREE: "Grátis",
-            CANCELLED: "Cancelado",
-          };
-
-          const statusLabel =
-            statusMap[registration.paymentStatus] || registration.paymentStatus;
-
-          const ordinanceTypeLabel =
-            ORDINANCE_TYPE_MAP[registration.ordinanceType] ||
-            registration.ordinanceType;
-          const ordinanceLabel = `${ordinanceTypeLabel} - ${registration.ordinanceSlot}`;
+          const ordinanceLabels = [
+            ordinances[0]
+              ? `${
+                  ordinanceTypeToNameMap.get(ordinances[0].type) ||
+                  ordinances[0].type
+                } - ${ordinances[0].slot}`
+              : "-",
+            ordinances[1]
+              ? `${
+                  ordinanceTypeToNameMap.get(ordinances[1].type) ||
+                  ordinances[1].type
+                } - ${ordinances[1].slot}`
+              : "-",
+            ordinances[2]
+              ? `${
+                  ordinanceTypeToNameMap.get(ordinances[2].type) ||
+                  ordinances[2].type
+                } - ${ordinances[2].slot}`
+              : "-",
+          ];
 
           const rowData = [
             registration.fullName || "N/A",
-            chapelName,
-            statusLabel,
-            ordinanceLabel,
+            ordinanceLabels[0],
+            ordinanceLabels[1],
+            ordinanceLabels[2],
           ];
 
           rowData.forEach((text, i) => {
@@ -310,6 +418,47 @@ const BusDistributionCard = ({
       title: "Nome Completo",
       dataIndex: "fullName",
       key: "fullName",
+      render: (_, record) => {
+        const tags = [];
+
+        // Tag "Jovem" si es menor de edad
+        if (!record.isAdult) {
+          tags.push(
+            <Tag key="jovem" color="blue">
+              Jovem
+            </Tag>
+          );
+        }
+
+        // Tag "Primeira vez" si es primera vez
+        if (record.isFirstTimeConvert) {
+          tags.push(
+            <Tag key="primeira-vez" color="green">
+              Primeira vez
+            </Tag>
+          );
+        }
+
+        // Tag "Ord. propia" si alguna ordenanza es personal
+        if (
+          record.ordinances &&
+          Array.isArray(record.ordinances) &&
+          record.ordinances.some((ord) => ord.isPersonal)
+        ) {
+          tags.push(
+            <Tag key="ord-propria" color="purple">
+              Ord. propia
+            </Tag>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            <span>{record.fullName}</span>
+            {tags.length > 0 && <Space size={4}>{tags}</Space>}
+          </div>
+        );
+      },
     },
     {
       title: "Capela",
@@ -346,31 +495,69 @@ const BusDistributionCard = ({
       title: "Ordenança",
       key: "ordinance",
       render: (_, record) => {
-        const ordinanceTypeLabel =
-          ORDINANCE_TYPE_MAP[record.ordinanceType] || record.ordinanceType;
-        return `${ordinanceTypeLabel} - ${record.ordinanceSlot}`;
+        if (
+          record.ordinances &&
+          Array.isArray(record.ordinances) &&
+          record.ordinances.length > 0
+        ) {
+          return record.ordinances
+            .map((ord) => {
+              const typeLabel =
+                ordinanceTypeToNameMap.get(ord.type) || ord.type;
+              return `${typeLabel} - ${ord.slot}`;
+            })
+            .join(", ");
+        }
+        return "-";
       },
     },
     {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Button type="link" onClick={() => handleEdit(record)}>
-          Editar
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            icon={<Pencil size={16} />}
+            onClick={() => handleEdit(record)}
+          >
+            Editar
+          </Button>
+          {record.participationStatus === "ACTIVE" && (
+            <Button
+              type="link"
+              danger
+              icon={<XCircle size={16} />}
+              onClick={() => handleCancelParticipation(record)}
+              loading={isCancelling}
+            >
+              Cancelar Participação
+            </Button>
+          )}
+        </Space>
       ),
     },
   ];
 
   return (
-    <>
+    <div>
       <Card
         title={
           <div className="flex items-center justify-between">
             <span>{bus.name}</span>
             <Space>
+              {cancelledCount > 0 && (
+                <Button
+                  type="default"
+                  onClick={() => setCancelledDrawerOpen(true)}
+                  size="small"
+                >
+                  Cancelados ({cancelledCount})
+                </Button>
+              )}
               <Button
                 type="default"
+                icon={<FilePdf size={16} />}
                 onClick={handleExportPDF}
                 loading={isExporting}
                 size="small"
@@ -386,7 +573,7 @@ const BusDistributionCard = ({
       >
         <Table
           columns={columns}
-          dataSource={registrations}
+          dataSource={activeRegistrations}
           rowKey="id"
           loading={loadingRegistrations}
           pagination={{
@@ -416,6 +603,20 @@ const BusDistributionCard = ({
           />
         )}
       </Drawer>
-    </>
+
+      <Drawer
+        title="Passageiros Cancelados"
+        open={cancelledDrawerOpen}
+        onClose={() => setCancelledDrawerOpen(false)}
+        size="large"
+        destroyOnClose
+      >
+        <CancelledRegistrationsList
+          busId={busId}
+          caravanId={caravanId}
+          chapelMap={chapelMap}
+        />
+      </Drawer>
+    </div>
   );
 };
