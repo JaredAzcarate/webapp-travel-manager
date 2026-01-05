@@ -239,27 +239,30 @@ export default function ConfirmPaymentPage() {
 
           <Form
             form={form}
-            layout="inline"
+            layout="vertical"
             onFinish={handleSubmit}
             className="mb-6"
           >
-            <Form.Item
-              name="phone"
-              label="Número de Telefone"
-              rules={[
-                {
-                  required: true,
-                  message: "Por favor, insira o número de telefone",
-                },
-              ]}
-            >
-              <Input placeholder="Ex: +351912345678" style={{ width: 250 }} />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Buscar
-              </Button>
-            </Form.Item>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Form.Item
+                name="phone"
+                label="Número de Telefone"
+                className="flex-1"
+                rules={[
+                  {
+                    required: true,
+                    message: "Por favor, insira o número de telefone",
+                  },
+                ]}
+              >
+                <Input placeholder="Ex: +351912345678" size="large" />
+              </Form.Item>
+              <Form.Item label=" " className="sm:pt-8">
+                <Button type="primary" htmlType="submit" size="large" block>
+                  Buscar
+                </Button>
+              </Form.Item>
+            </div>
           </Form>
 
           {phone && (
@@ -279,10 +282,12 @@ export default function ConfirmPaymentPage() {
                   columns={columns}
                   dataSource={registrations}
                   rowKey="id"
+                  scroll={{ x: true }}
                   pagination={{
                     pageSize: 10,
                     showSizeChanger: true,
                     showTotal: (total) => `Total: ${total} inscrições`,
+                    responsive: true,
                   }}
                 />
               )}

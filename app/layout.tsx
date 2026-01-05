@@ -1,4 +1,5 @@
 import { AntdProvider } from "@/common/providers/antd-provider";
+import { PublicLayout } from "@/common/components/PublicLayout";
 import { QueryProvider } from "@/common/providers/query-provider";
 import { SessionProvider } from "@/providers/session-provider";
 import type { Metadata } from "next";
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <SessionProvider>
           <QueryProvider>
-            <AntdProvider>{children}</AntdProvider>
+            <AntdProvider>
+              <PublicLayout>{children}</PublicLayout>
+            </AntdProvider>
           </QueryProvider>
         </SessionProvider>
       </body>

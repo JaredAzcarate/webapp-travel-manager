@@ -116,10 +116,12 @@ export const ChapelsList = () => {
         dataSource={chapels}
         rowKey="id"
         loading={loading}
+        scroll={{ x: true }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
           showTotal: (total) => `Total: ${total} capelas`,
+          responsive: true,
         }}
         locale={{
           emptyText: "Nenhuma capela criada ainda",

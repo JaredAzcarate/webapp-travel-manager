@@ -148,10 +148,12 @@ export const BusesList = () => {
         dataSource={tableData}
         rowKey="id"
         loading={loadingBuses || loadingStops}
+        scroll={{ x: true }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
           showTotal: (total) => `Total: ${total} autocarros`,
+          responsive: true,
         }}
         locale={{
           emptyText: "Nenhum autocarro criado ainda",

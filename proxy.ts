@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth/config";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow access to API routes (no auth needed for public APIs)
@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
     const session = await auth();
 
     if (!session) {
-      const loginUrl = new URL("/login", request.url);
+      const loginUrl = new URL("/auth/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
   }

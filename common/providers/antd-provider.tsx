@@ -16,7 +16,7 @@ export function AntdProvider({ children }: AntdProviderProps) {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#1890ff",
+          colorPrimary: "#007da5",
         },
       }}
     >

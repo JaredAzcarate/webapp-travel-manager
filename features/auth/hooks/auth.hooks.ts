@@ -18,7 +18,7 @@ export function useSignOut() {
 
   const signOutUser = async () => {
     await signOut({ redirect: false });
-    router.push("/login");
+    router.push("/auth/login");
     router.refresh();
   };
 

@@ -101,10 +101,12 @@ export const OrdinancesList = () => {
         dataSource={ordinances}
         rowKey="id"
         loading={loading}
+        scroll={{ x: true }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
           showTotal: (total) => `Total: ${total} ordenanças`,
+          responsive: true,
         }}
         locale={{
           emptyText: "Nenhuma ordenança criada ainda",

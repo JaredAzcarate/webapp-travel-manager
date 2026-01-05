@@ -40,8 +40,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <Title level={1}>Caravanas para o Templo</Title>
-          <Paragraph className="text-lg text-gray-600">
+          <Title level={1} className="text-2xl sm:text-3xl md:text-4xl">
+            Caravanas para o Templo
+          </Title>
+          <Paragraph className="text-sm sm:text-base md:text-lg text-gray-600">
             Sistema de gestão de inscrições para caravanas ao Templo de Lisboa
           </Paragraph>
         </div>

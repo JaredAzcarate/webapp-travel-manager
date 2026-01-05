@@ -238,10 +238,12 @@ export const CaravansList = () => {
         dataSource={caravans}
         rowKey="id"
         loading={loading}
+        scroll={{ x: true }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
           showTotal: (total) => `Total: ${total} caravanas`,
+          responsive: true,
         }}
         locale={{
           emptyText: "Nenhuma caravana criada ainda",

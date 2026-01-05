@@ -3,7 +3,7 @@
 import { useSignOut } from "@/features/auth/hooks/auth.hooks";
 import { Layout, Menu } from "antd";
 import { usePathname, useRouter } from "next/navigation";
-import { Buildings, Bus, Scroll, SignOut, Truck } from "phosphor-react";
+import { Buildings, Bus, Scroll, SignOut, Truck, Users } from "phosphor-react";
 import { useMemo } from "react";
 
 const { Sider } = Layout;
@@ -39,6 +39,12 @@ const menuItems: MenuItem[] = [
     label: "Ordenanças",
     path: "/admin/ordinances",
     icon: <Scroll size={20} />,
+  },
+  {
+    key: "managers",
+    label: "Gestores",
+    path: "/admin/managers",
+    icon: <Users size={20} />,
   },
 ];
 
