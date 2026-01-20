@@ -1,9 +1,9 @@
 "use client";
 
-import { ORDINANCE_NAMES } from "@/common/constants/ordinances";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
+import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import { CancelledRegistrationsList } from "@/features/registrations/components/CancelledRegistrationsList";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
 import {
@@ -12,10 +12,7 @@ import {
   useCountActiveByBus,
   useCountCancelledByBus,
 } from "@/features/registrations/hooks/registrations.hooks";
-import {
-  OrdinanceType,
-  RegistrationWithId,
-} from "@/features/registrations/models/registrations.model";
+import { RegistrationWithId } from "@/features/registrations/models/registrations.model";
 import {
   App,
   Button,
@@ -39,14 +36,15 @@ export const CaravanDistributionView = () => {
   const searchParams = useSearchParams();
   const caravanId = searchParams.get("caravanId");
   const { chapels, loading: loadingChapels } = useChapels();
+  const { ordinances } = useOrdinances();
 
-  const ordinanceTypeToNameMap = useMemo(() => {
-    const map = new Map<OrdinanceType, string>();
-    Object.entries(ORDINANCE_NAMES).forEach(([type, name]) => {
-      map.set(type as OrdinanceType, name);
+  const ordinanceIdToNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    ordinances.forEach((ordinance) => {
+      map.set(ordinance.id, ordinance.name);
     });
     return map;
-  }, []);
+  }, [ordinances]);
 
   const { caravan: selectedCaravan, loading: loadingCaravan } = useCaravan(
     caravanId || ""
@@ -132,7 +130,7 @@ export const CaravanDistributionView = () => {
                 caravanName={selectedCaravan.name}
                 chapelMap={chapelMap}
                 loadingChapels={loadingChapels}
-                ordinanceTypeToNameMap={ordinanceTypeToNameMap}
+                ordinanceIdToNameMap={ordinanceIdToNameMap}
               />
             ))
           ) : (
@@ -185,7 +183,7 @@ interface BusDistributionCardProps {
   caravanName: string;
   chapelMap: Map<string, string>;
   loadingChapels: boolean;
-  ordinanceTypeToNameMap: Map<OrdinanceType, string>;
+  ordinanceIdToNameMap: Map<string, string>;
 }
 
 const BusDistributionCard = ({
@@ -194,7 +192,7 @@ const BusDistributionCard = ({
   caravanName,
   chapelMap,
   loadingChapels,
-  ordinanceTypeToNameMap,
+  ordinanceIdToNameMap,
 }: BusDistributionCardProps) => {
   const { notification, modal } = App.useApp();
   const { bus, loading: loadingBus } = useBus(busId);
@@ -336,20 +334,20 @@ const BusDistributionCard = ({
           const ordinanceLabels = [
             ordinances[0]
               ? `${
-                  ordinanceTypeToNameMap.get(ordinances[0].type) ||
-                  ordinances[0].type
+                  ordinanceIdToNameMap.get(ordinances[0].ordinanceId) ||
+                  ordinances[0].ordinanceId
                 } - ${ordinances[0].slot}`
               : "-",
             ordinances[1]
               ? `${
-                  ordinanceTypeToNameMap.get(ordinances[1].type) ||
-                  ordinances[1].type
+                  ordinanceIdToNameMap.get(ordinances[1].ordinanceId) ||
+                  ordinances[1].ordinanceId
                 } - ${ordinances[1].slot}`
               : "-",
             ordinances[2]
               ? `${
-                  ordinanceTypeToNameMap.get(ordinances[2].type) ||
-                  ordinances[2].type
+                  ordinanceIdToNameMap.get(ordinances[2].ordinanceId) ||
+                  ordinances[2].ordinanceId
                 } - ${ordinances[2].slot}`
               : "-",
           ];
@@ -503,7 +501,7 @@ const BusDistributionCard = ({
           return record.ordinances
             .map((ord) => {
               const typeLabel =
-                ordinanceTypeToNameMap.get(ord.type) || ord.type;
+                ordinanceIdToNameMap.get(ord.ordinanceId) || ord.ordinanceId;
               return `${typeLabel} - ${ord.slot}`;
             })
             .join(", ");

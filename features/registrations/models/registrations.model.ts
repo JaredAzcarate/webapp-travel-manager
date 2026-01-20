@@ -1,12 +1,6 @@
 import { CreateInput, UpdateInput, WithId } from "@/common/models/index";
 import { Timestamp } from "firebase/firestore";
 
-export type OrdinanceType =
-  | "BAPTISTRY"
-  | "INITIATORY"
-  | "ENDOWMENT"
-  | "SEALING";
-
 export type PaymentStatus = "PENDING" | "PAID" | "FREE" | "CANCELLED";
 
 export type ParticipationStatus = "ACTIVE" | "CANCELLED" | "WAITLIST";
@@ -27,7 +21,7 @@ export interface Registration {
   legalGuardianPhone?: string;
 
   ordinances: Array<{
-    type: OrdinanceType;
+    ordinanceId: string; // references ordinances.id
     slot: string; // e.g. "9:30-10:00"
     isPersonal?: boolean; // indica si la ordenanza es personal
   }>; // Máximo 3, mínimo 0 (opcional)

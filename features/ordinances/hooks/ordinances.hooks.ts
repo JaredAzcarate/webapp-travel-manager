@@ -1,4 +1,3 @@
-import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import { RegistrationRepository } from "@/features/registrations/repositories/registrations.repository";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -48,27 +47,6 @@ export const useOrdinance = (id: string) => {
   };
 };
 
-export const useOrdinanceByType = (type: OrdinanceType | null) => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["ordinances", "byType", type],
-    queryFn: () => {
-      if (!type) return null;
-      return ordinanceRepository.getByType(type);
-    },
-    enabled: !!type,
-  });
-
-  return {
-    ordinance: data || null,
-    loading: isLoading,
-    error: error
-      ? error instanceof Error
-        ? error.message
-        : "Erro desconhecido"
-      : null,
-  };
-};
-
 export const useCreateOrdinance = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
@@ -99,9 +77,6 @@ export const useUpdateOrdinance = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["ordinances"] });
       queryClient.invalidateQueries({ queryKey: ["ordinances", variables.id] });
-      queryClient.invalidateQueries({
-        queryKey: ["ordinances", "byType"],
-      });
     },
   });
 
@@ -138,41 +113,3 @@ export const useDeleteOrdinance = () => {
   };
 };
 
-export const useOrdinanceAvailability = (
-  caravanId: string | null,
-  type: OrdinanceType | null,
-  slot: string | null
-) => {
-  const { ordinance, loading: loadingOrdinance } = useOrdinanceByType(type);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["ordinanceAvailability", caravanId, type, slot],
-    queryFn: async () => {
-      if (!caravanId || !type || !slot || !ordinance) {
-        return { available: 0, occupied: 0, maxCapacity: 0 };
-      }
-
-      const session = ordinance.sessions.find((s) => s.slot === slot);
-      if (!session) {
-        return { available: 0, occupied: 0, maxCapacity: 0 };
-      }
-
-      // This method is deprecated - now using ordinanceCapacityCounts from caravan
-      // Returning maxCapacity for now until we implement proper capacity checking
-      return {
-        available: session.maxCapacity,
-        occupied: 0,
-        maxCapacity: session.maxCapacity,
-      };
-    },
-    enabled:
-      !!caravanId && !!type && !!slot && !!ordinance && !loadingOrdinance,
-  });
-
-  return {
-    available: data?.available ?? 0,
-    occupied: data?.occupied ?? 0,
-    maxCapacity: data?.maxCapacity ?? 0,
-    loading: isLoading || loadingOrdinance,
-  };
-};

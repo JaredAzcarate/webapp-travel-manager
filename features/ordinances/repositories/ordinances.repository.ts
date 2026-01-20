@@ -1,5 +1,4 @@
 import { db } from "@/common/lib/firebase";
-import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import {
   addDoc,
   collection,
@@ -7,10 +6,8 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
   Timestamp,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import {
   CreateOrdinanceInput,
@@ -44,23 +41,6 @@ export class OrdinanceRepository {
     } as OrdinanceWithId;
   }
 
-  async getByType(type: OrdinanceType): Promise<OrdinanceWithId | null> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("type", "==", type)
-    );
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      return null;
-    }
-
-    return {
-      id: snap.docs[0].id,
-      ...snap.docs[0].data(),
-    } as OrdinanceWithId;
-  }
-
   async create(input: CreateOrdinanceInput): Promise<string> {
     const now = Timestamp.now();
     const docRef = await addDoc(collection(db, this.collectionName), {
@@ -83,18 +63,6 @@ export class OrdinanceRepository {
   async delete(id: string): Promise<void> {
     const docRef = doc(db, this.collectionName, id);
     await deleteDoc(docRef);
-  }
-
-  async getSessionByTypeAndSlot(
-    type: OrdinanceType,
-    slot: string
-  ): Promise<OrdinanceSession | null> {
-    const ordinance = await this.getByType(type);
-    if (!ordinance) {
-      return null;
-    }
-
-    return ordinance.sessions.find((session) => session.slot === slot) || null;
   }
 }
 

@@ -1,9 +1,5 @@
 "use client";
 
-import {
-  ORDINANCE_NAMES,
-  ORDINANCE_SLOTS,
-} from "@/common/constants/ordinances";
 import { useBus, useBuses } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import {
@@ -21,7 +17,6 @@ import {
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
   CreateRegistrationInput,
-  OrdinanceType,
   RegistrationWithId,
   UpdateRegistrationInput,
 } from "@/features/registrations/models/registrations.model";
@@ -44,7 +39,7 @@ import { Check, X } from "phosphor-react";
 import React, { useEffect, useMemo, useRef } from "react";
 
 interface OrdinanceFormValue {
-  type?: OrdinanceType;
+  ordinanceId?: string;
   slot?: string;
   isPersonal?: boolean;
 }
@@ -84,10 +79,10 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
   ordinances,
   isMinor = false,
 }) => {
-  const ordinanceType = Form.useWatch(
-    ["ordinances", name, "type"],
+  const ordinanceId = Form.useWatch(
+    ["ordinances", name, "ordinanceId"],
     form
-  ) as OrdinanceType | null;
+  ) as string | null;
   const ordinanceSlot = Form.useWatch(["ordinances", name, "slot"], form);
 
   const {
@@ -96,20 +91,19 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
     loading: loadingAvailability,
   } = useOrdinanceAvailabilityFromCaravan(
     selectedCaravanId,
-    ordinanceType,
+    ordinanceId,
     ordinanceSlot,
     gender
   );
 
   // Get available slots filtered by gender
   const availableSlots = useMemo(() => {
-    if (!ordinanceType) return [];
+    if (!ordinanceId) return [];
 
-    // Find ordinance by type
-    const ordinance = ordinances.find((o) => o.type === ordinanceType);
+    // Find ordinance by ID
+    const ordinance = ordinances.find((o) => o.id === ordinanceId);
     if (!ordinance) {
-      // Fallback to constants if ordinance not found
-      return ORDINANCE_SLOTS[ordinanceType] || [];
+      return [];
     }
 
     // Filter sessions by gender
@@ -128,7 +122,7 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
     });
 
     return Array.from(slotSet);
-  }, [ordinanceType, gender, ordinances]);
+  }, [ordinanceId, gender, ordinances]);
 
   return (
     <div className="mb-4">
@@ -138,23 +132,22 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
         align="baseline"
         className="w-full"
       >
-        <Form.Item {...restField} name={[name, "type"]} className="flex-1">
+        <Form.Item {...restField} name={[name, "ordinanceId"]} className="flex-1">
           <Select
             placeholder="Selecione a ordenança"
             allowClear
-            options={
-              isMinor
-                ? Object.entries(ORDINANCE_NAMES)
-                    .filter(([type]) => type === "BAPTISTRY")
-                    .map(([type, name]) => ({
-                      label: name,
-                      value: type,
-                    }))
-                : Object.entries(ORDINANCE_NAMES).map(([type, name]) => ({
-                    label: name,
-                    value: type,
-                  }))
-            }
+            options={ordinances
+              .filter((o) => {
+                // If minor, only show BAPTISTRY ordinances (we check by name containing "Batistério")
+                if (isMinor) {
+                  return o.name.toLowerCase().includes("batistério");
+                }
+                return true;
+              })
+              .map((ordinance) => ({
+                label: ordinance.name,
+                value: ordinance.id,
+              }))}
           />
         </Form.Item>
 
@@ -162,7 +155,7 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
           <Select
             placeholder="Selecione o horário"
             allowClear
-            disabled={!ordinanceType}
+            disabled={!ordinanceId}
             options={availableSlots.map((slot) => ({
               label: slot,
               value: slot,
@@ -170,7 +163,7 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
           />
         </Form.Item>
 
-        {ordinanceType && ordinanceSlot && (
+        {ordinanceId && ordinanceSlot && (
           <div className="w-32">
             {loadingAvailability ? (
               <Tag>Carregando...</Tag>
@@ -339,16 +332,16 @@ export const RegistrationForm = ({
           : [];
 
       const ordinancesData = existingOrdinances
-        .filter((ord) => ord.type && ord.slot)
+        .filter((ord) => ord.ordinanceId && ord.slot)
         .map((ord) => ({
-          type: ord.type!,
+          ordinanceId: ord.ordinanceId!,
           slot: ord.slot!,
           isPersonal: ord.isPersonal ?? false,
         }));
 
       while (ordinancesData.length < 3) {
         ordinancesData.push({
-          type: undefined as any,
+          ordinanceId: undefined as any,
           slot: undefined as any,
           isPersonal: false,
         });
@@ -377,9 +370,9 @@ export const RegistrationForm = ({
       form.setFieldsValue({
         caravanId: propCaravanId,
         ordinances: [
-          { type: undefined, slot: undefined, isPersonal: false },
-          { type: undefined, slot: undefined, isPersonal: false },
-          { type: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
         ],
       });
     }
@@ -578,9 +571,9 @@ export const RegistrationForm = ({
           legalGuardianPhone: values.legalGuardianPhone,
         }),
         ordinances: (values.ordinances || [])
-          .filter((ord) => ord.type && ord.slot)
+          .filter((ord) => ord.ordinanceId && ord.slot)
           .map((ord) => ({
-            type: ord.type!,
+            ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
             isPersonal: ord.isPersonal ?? false,
           })),
@@ -614,9 +607,9 @@ export const RegistrationForm = ({
           legalGuardianPhone: values.legalGuardianPhone,
         }),
         ordinances: (values.ordinances || [])
-          .filter((ord) => ord.type && ord.slot)
+          .filter((ord) => ord.ordinanceId && ord.slot)
           .map((ord) => ({
-            type: ord.type!,
+            ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
             isPersonal: ord.isPersonal ?? false,
           })),
@@ -639,9 +632,9 @@ export const RegistrationForm = ({
         isOfficiator: false,
         isFirstTimeConvert: false,
         ordinances: [
-          { type: undefined, slot: undefined, isPersonal: false },
-          { type: undefined, slot: undefined, isPersonal: false },
-          { type: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
+          { ordinanceId: undefined, slot: undefined, isPersonal: false },
         ],
       }}
     >
@@ -844,11 +837,11 @@ export const RegistrationForm = ({
               }
 
               const filledOrdinances = ordinances.filter(
-                (o: OrdinanceFormValue) => o.type && o.slot
+                (o: OrdinanceFormValue) => o.ordinanceId && o.slot
               );
               const unique = new Set(
                 filledOrdinances.map(
-                  (o: OrdinanceFormValue) => `${o.type}-${o.slot}`
+                  (o: OrdinanceFormValue) => `${o.ordinanceId}-${o.slot}`
                 )
               );
               if (unique.size !== filledOrdinances.length) {

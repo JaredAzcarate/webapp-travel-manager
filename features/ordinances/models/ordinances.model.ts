@@ -1,5 +1,4 @@
 import { CreateInput, UpdateInput, WithId } from "@/common/models/index";
-import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import { Timestamp } from "firebase/firestore";
 
 export interface OrdinanceSession {
@@ -10,7 +9,6 @@ export interface OrdinanceSession {
 }
 
 export interface Ordinance {
-  type?: OrdinanceType; // Optional: "BAPTISTRY" | "INITIATORY" | "ENDOWMENT" | "SEALING"
   name: string; // "Batistério", "Iniciatória", etc.
   description?: string;
   sessions: OrdinanceSession[];

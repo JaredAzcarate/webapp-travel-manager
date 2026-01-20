@@ -3,26 +3,17 @@
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
+import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
 import {
   useCountActiveByBus,
   useRegistrationsByBusId,
 } from "@/features/registrations/hooks/registrations.hooks";
-import {
-  OrdinanceType,
-  RegistrationWithId,
-} from "@/features/registrations/models/registrations.model";
+import { RegistrationWithId } from "@/features/registrations/models/registrations.model";
 import { Button, Card, Drawer, Spin, Table, Tag } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Pencil } from "phosphor-react";
 import { useMemo, useState } from "react";
-
-const ORDINANCE_TYPE_MAP: Record<OrdinanceType, string> = {
-  BAPTISTRY: "Batistério",
-  INITIATORY: "Iniciatória",
-  ENDOWMENT: "Investidura",
-  SEALING: "Selamento",
-};
 
 interface CaravanInscriptionsDrawerProps {
   open: boolean;
@@ -37,6 +28,7 @@ export const CaravanInscriptionsDrawer = ({
 }: CaravanInscriptionsDrawerProps) => {
   const { caravan, loading: loadingCaravan } = useCaravan(caravanId);
   const { chapels } = useChapels();
+  const { ordinances } = useOrdinances();
 
   const chapelMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -45,6 +37,14 @@ export const CaravanInscriptionsDrawer = ({
     });
     return map;
   }, [chapels]);
+
+  const ordinanceIdToNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    ordinances.forEach((ordinance) => {
+      map.set(ordinance.id, ordinance.name);
+    });
+    return map;
+  }, [ordinances]);
 
   if (loadingCaravan) {
     return (
@@ -209,7 +209,8 @@ const BusInscriptionsCard = ({
         ) {
           return record.ordinances
             .map((ord) => {
-              const typeLabel = ORDINANCE_TYPE_MAP[ord.type] || ord.type;
+              const typeLabel =
+                ordinanceIdToNameMap.get(ord.ordinanceId) || ord.ordinanceId;
               return `${typeLabel} - ${ord.slot}`;
             })
             .join(", ");

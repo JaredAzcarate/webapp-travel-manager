@@ -6,7 +6,6 @@ import {
 } from "@/features/caravans/utils/ordinanceCapacity.utils";
 import {
   CreateRegistrationInput,
-  OrdinanceType,
   UpdateRegistrationInput,
 } from "@/features/registrations/models/registrations.model";
 import { RegistrationRepository } from "@/features/registrations/repositories/registrations.repository";
@@ -414,23 +413,23 @@ export const useCancelRegistration = () => {
 
 export const useOrdinanceAvailabilityFromCaravan = (
   caravanId: string | null,
-  type: OrdinanceType | null,
+  ordinanceId: string | null,
   slot: string | null,
   gender: "M" | "F" | null
 ) => {
   const { caravan, loading } = useCaravan(caravanId || "");
 
   const availability = useQuery({
-    queryKey: ["ordinance-availability", caravanId, type, slot, gender],
+    queryKey: ["ordinance-availability", caravanId, ordinanceId, slot, gender],
     queryFn: () => {
-      if (!caravan || !type || !slot) {
+      if (!caravan || !ordinanceId || !slot) {
         return { available: 0, maxCapacity: 0 };
       }
 
       const limitValue: CapacityValue | undefined =
-        caravan.ordinanceCapacityLimits?.[type]?.[slot];
+        caravan.ordinanceCapacityLimits?.[ordinanceId]?.[slot];
       const countValue: CapacityValue | undefined =
-        caravan.ordinanceCapacityCounts?.[type]?.[slot];
+        caravan.ordinanceCapacityCounts?.[ordinanceId]?.[slot];
 
       if (limitValue === undefined || countValue === undefined) {
         return { available: 0, maxCapacity: 0 };
@@ -444,7 +443,7 @@ export const useOrdinanceAvailabilityFromCaravan = (
         maxCapacity: limit,
       };
     },
-    enabled: !!caravanId && !!type && !!slot && !!caravan,
+    enabled: !!caravanId && !!ordinanceId && !!slot && !!caravan,
   });
 
   return {

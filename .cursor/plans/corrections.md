@@ -3,7 +3,7 @@ Gestão de Capelas
 - Data de Criação no es necesario en la tabla
 
 Distribuição de Passageiros
-- Necesitamos poder exportar a excel los inscriptos (con formato del templo)
+- Necesitamos poder exportar a excel los inscriptos (con formato del templo). Para esto utilizaremos la libreria "ExcelJS" para completar un template que usa el templo para las caravanas (el template estara en public).
 
 Formulario de participante
 - El campo "É uma ordenança personal?" debe estar antes de las ordenanzas (como un checkbox unico y no por cada ordenanza), si es verdadero entonces mostrar solo un campo de ordenança. SI no es verdadero mostrar la opcion de las 3 ordennazas.
@@ -20,6 +20,8 @@ Formulario de participante
   - PASO 3 (ORDENANÇAS) (No puede haber interpolacion entre las horas seleccionadas. por ejemplo: si se selecciona una sesion de las 11 a las 12 en la ordenanza 1, luego la ordenanza 2 tiene que mostrar los horarios que no interfieren con la ordenanza 1)
     - (Esta inscrição é de um jovem menor de idade) ou (É a sua primeira vez no templo como recém-converso?) ou (Tem menos de 1 ano como membro?) SIM: Ordenança 1, Ordenança 2, Ordenança 3 (solo puede hacer batisterio)
     - (Esta inscrição é de um jovem menor de idade) ou (É a sua primeira vez no templo como recém-converso?) ou (Tem menos de 1 ano como membro?) NAO: Ordenança 1, Ordenança 2, Ordenança 3
+      - (Sexo masculino) TRUE: No mostrar la ordenanza "Iniciatória - Irmãs"
+      - (Sexo femenino) TRUE: No mostrar la ordenanza "Iniciatória - Irmãos"
   - PASO 4 (Politicas de privacidad)
     - Checkbox que acepta la utilizacion de los datos registrados y explicar para que es utilizado e inidcar que este sistema no es oficial de la iglesia.
 

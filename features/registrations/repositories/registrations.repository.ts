@@ -102,13 +102,13 @@ export class RegistrationRepository {
         const userGender = input.gender;
         for (const ordinance of input.ordinances) {
           const limitValue: CapacityValue | undefined =
-            caravan.ordinanceCapacityLimits?.[ordinance.type]?.[ordinance.slot];
+            caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[ordinance.slot];
           const countValue: CapacityValue | undefined =
-            caravan.ordinanceCapacityCounts?.[ordinance.type]?.[ordinance.slot];
+            caravan.ordinanceCapacityCounts?.[ordinance.ordinanceId]?.[ordinance.slot];
 
           if (limitValue === undefined || countValue === undefined) {
             throw new Error(
-              `Ordenança ${ordinance.type} - ${ordinance.slot} não configurada para esta caravana`
+              `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta caravana`
             );
           }
 
@@ -117,7 +117,7 @@ export class RegistrationRepository {
 
           if (count >= limit) {
             throw new Error(
-              `Não há cupos disponíveis para ${ordinance.type} - ${ordinance.slot}`
+              `Não há cupos disponíveis para ${ordinance.ordinanceId} - ${ordinance.slot}`
             );
           }
         }
@@ -138,25 +138,25 @@ export class RegistrationRepository {
         const updatedCounts = { ...(caravan.ordinanceCapacityCounts || {}) };
 
         for (const ordinance of input.ordinances) {
-          if (!updatedCounts[ordinance.type]) {
-            updatedCounts[ordinance.type] = {};
+          if (!updatedCounts[ordinance.ordinanceId]) {
+            updatedCounts[ordinance.ordinanceId] = {};
           }
 
-          const currentCount = updatedCounts[ordinance.type][ordinance.slot];
+          const currentCount = updatedCounts[ordinance.ordinanceId][ordinance.slot];
           const currentLimit =
-            caravan.ordinanceCapacityLimits?.[ordinance.type]?.[ordinance.slot];
+            caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[ordinance.slot];
 
           // Initialize if doesn't exist
           if (currentCount === undefined) {
             if (isGenderSpecificLimit(currentLimit as CapacityValue)) {
-              updatedCounts[ordinance.type][ordinance.slot] = { M: 0, F: 0 };
+              updatedCounts[ordinance.ordinanceId][ordinance.slot] = { M: 0, F: 0 };
             } else {
-              updatedCounts[ordinance.type][ordinance.slot] = 0;
+              updatedCounts[ordinance.ordinanceId][ordinance.slot] = 0;
             }
           }
 
           // Increment based on structure
-          const slotCounts = updatedCounts[ordinance.type] as Record<
+          const slotCounts = updatedCounts[ordinance.ordinanceId] as Record<
             string,
             CapacityValue
           >;
@@ -213,22 +213,22 @@ export class RegistrationRepository {
       if (newOrdinances.length > 0) {
         for (const ordinance of newOrdinances) {
           const wasInOld = oldOrdinances.some(
-            (old) => old.type === ordinance.type && old.slot === ordinance.slot
+            (old) => old.ordinanceId === ordinance.ordinanceId && old.slot === ordinance.slot
           );
 
           if (!wasInOld) {
             const limitValue: CapacityValue | undefined =
-              caravan.ordinanceCapacityLimits?.[ordinance.type]?.[
+              caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[
                 ordinance.slot
               ];
             const countValue: CapacityValue | undefined =
-              caravan.ordinanceCapacityCounts?.[ordinance.type]?.[
+              caravan.ordinanceCapacityCounts?.[ordinance.ordinanceId]?.[
                 ordinance.slot
               ];
 
             if (limitValue === undefined || countValue === undefined) {
               throw new Error(
-                `Ordenança ${ordinance.type} - ${ordinance.slot} não configurada para esta caravana`
+                `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta caravana`
               );
             }
 
@@ -237,7 +237,7 @@ export class RegistrationRepository {
 
             if (count >= limit) {
               throw new Error(
-                `Não há cupos disponíveis para ${ordinance.type} - ${ordinance.slot}`
+                `Não há cupos disponíveis para ${ordinance.ordinanceId} - ${ordinance.slot}`
               );
             }
           }
@@ -255,14 +255,14 @@ export class RegistrationRepository {
       // Decrement counts for removed ordinances
       for (const oldOrd of oldOrdinances) {
         const isInNew = newOrdinances.some(
-          (newOrd) => newOrd.type === oldOrd.type && newOrd.slot === oldOrd.slot
+          (newOrd) => newOrd.ordinanceId === oldOrd.ordinanceId && newOrd.slot === oldOrd.slot
         );
 
         if (!isInNew) {
-          if (!updatedCounts[oldOrd.type]) {
-            updatedCounts[oldOrd.type] = {};
+          if (!updatedCounts[oldOrd.ordinanceId]) {
+            updatedCounts[oldOrd.ordinanceId] = {};
           }
-          const slotCounts = updatedCounts[oldOrd.type] as Record<
+          const slotCounts = updatedCounts[oldOrd.ordinanceId] as Record<
             string,
             CapacityValue
           >;
@@ -273,28 +273,28 @@ export class RegistrationRepository {
       // Increment counts for new ordinances
       for (const newOrd of newOrdinances) {
         const wasInOld = oldOrdinances.some(
-          (oldOrd) => oldOrd.type === newOrd.type && oldOrd.slot === newOrd.slot
+          (oldOrd) => oldOrd.ordinanceId === newOrd.ordinanceId && oldOrd.slot === newOrd.slot
         );
 
         if (!wasInOld) {
-          if (!updatedCounts[newOrd.type]) {
-            updatedCounts[newOrd.type] = {};
+          if (!updatedCounts[newOrd.ordinanceId]) {
+            updatedCounts[newOrd.ordinanceId] = {};
           }
 
-          const currentCount = updatedCounts[newOrd.type][newOrd.slot];
+          const currentCount = updatedCounts[newOrd.ordinanceId][newOrd.slot];
           const currentLimit =
-            caravan.ordinanceCapacityLimits?.[newOrd.type]?.[newOrd.slot];
+            caravan.ordinanceCapacityLimits?.[newOrd.ordinanceId]?.[newOrd.slot];
 
           // Initialize if doesn't exist
           if (currentCount === undefined) {
             if (isGenderSpecificLimit(currentLimit as CapacityValue)) {
-              updatedCounts[newOrd.type][newOrd.slot] = { M: 0, F: 0 };
+              updatedCounts[newOrd.ordinanceId][newOrd.slot] = { M: 0, F: 0 };
             } else {
-              updatedCounts[newOrd.type][newOrd.slot] = 0;
+              updatedCounts[newOrd.ordinanceId][newOrd.slot] = 0;
             }
           }
 
-          const slotCounts = updatedCounts[newOrd.type] as Record<
+          const slotCounts = updatedCounts[newOrd.ordinanceId] as Record<
             string,
             CapacityValue
           >;
@@ -546,10 +546,10 @@ export class RegistrationRepository {
         const updatedCounts = { ...(caravan.ordinanceCapacityCounts || {}) };
 
         for (const ordinance of existingRegistration.ordinances) {
-          if (!updatedCounts[ordinance.type]) {
-            updatedCounts[ordinance.type] = {};
+          if (!updatedCounts[ordinance.ordinanceId]) {
+            updatedCounts[ordinance.ordinanceId] = {};
           }
-          const slotCounts = updatedCounts[ordinance.type] as Record<
+          const slotCounts = updatedCounts[ordinance.ordinanceId] as Record<
             string,
             CapacityValue
           >;
@@ -629,25 +629,25 @@ export class RegistrationRepository {
         const updatedCounts = { ...(caravan.ordinanceCapacityCounts || {}) };
 
         for (const ordinance of existingRegistration.ordinances) {
-          if (!updatedCounts[ordinance.type]) {
-            updatedCounts[ordinance.type] = {};
+          if (!updatedCounts[ordinance.ordinanceId]) {
+            updatedCounts[ordinance.ordinanceId] = {};
           }
 
-          const currentCount = updatedCounts[ordinance.type][ordinance.slot];
+          const currentCount = updatedCounts[ordinance.ordinanceId][ordinance.slot];
           const currentLimit =
-            caravan.ordinanceCapacityLimits?.[ordinance.type]?.[ordinance.slot];
+            caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[ordinance.slot];
 
           // Initialize if doesn't exist
           if (currentCount === undefined) {
             if (isGenderSpecificLimit(currentLimit as CapacityValue)) {
-              updatedCounts[ordinance.type][ordinance.slot] = { M: 0, F: 0 };
+              updatedCounts[ordinance.ordinanceId][ordinance.slot] = { M: 0, F: 0 };
             } else {
-              updatedCounts[ordinance.type][ordinance.slot] = 0;
+              updatedCounts[ordinance.ordinanceId][ordinance.slot] = 0;
             }
           }
 
           // Increment based on structure
-          const slotCounts = updatedCounts[ordinance.type] as Record<
+          const slotCounts = updatedCounts[ordinance.ordinanceId] as Record<
             string,
             CapacityValue
           >;

@@ -1,7 +1,5 @@
-import { ORDINANCE_SLOTS } from "@/common/constants/ordinances";
 import { db } from "@/common/lib/firebase";
 import { ordinanceRepository } from "@/features/ordinances/repositories/ordinances.repository";
-import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import {
   addDoc,
   collection,
@@ -54,19 +52,16 @@ export class CaravanRepository {
 
     if (ordinances.length > 0) {
       // Transform Ordinance.sessions into ordinanceCapacityLimits structure
-      // Group by type in case there are multiple ordinances of the same type
+      // Group by ordinance ID
       for (const ordinance of ordinances) {
-        const type = ordinance.type;
-
-        // Skip if type is not valid
-        if (!type) continue;
+        const ordinanceId = ordinance.id;
 
         // Initialize if not exists
-        if (!ordinanceCapacityLimits[type]) {
-          ordinanceCapacityLimits[type] = {};
+        if (!ordinanceCapacityLimits[ordinanceId]) {
+          ordinanceCapacityLimits[ordinanceId] = {};
         }
-        if (!initialCounts[type]) {
-          initialCounts[type] = {};
+        if (!initialCounts[ordinanceId]) {
+          initialCounts[ordinanceId] = {};
         }
 
         // Add all sessions for this ordinance type
@@ -105,11 +100,11 @@ export class CaravanRepository {
 
             // Convert to final structure
             for (const [slot, capacities] of slotMap.entries()) {
-              ordinanceCapacityLimits[type]![slot] = {
+              ordinanceCapacityLimits[ordinanceId]![slot] = {
                 M: capacities.M || 0,
                 F: capacities.F || 0,
               };
-              initialCounts[type]![slot] = { M: 0, F: 0 };
+              initialCounts[ordinanceId]![slot] = { M: 0, F: 0 };
             }
           } else {
             // All sessions are mixed (gender: null) - sum capacities per slot
@@ -128,23 +123,10 @@ export class CaravanRepository {
 
             // Convert to final structure
             for (const [slot, capacity] of slotMap.entries()) {
-              ordinanceCapacityLimits[type]![slot] = capacity;
-              initialCounts[type]![slot] = 0;
+              ordinanceCapacityLimits[ordinanceId]![slot] = capacity;
+              initialCounts[ordinanceId]![slot] = 0;
             }
           }
-        }
-      }
-    } else {
-      // Fallback: if no ordinances configured, use ORDINANCE_SLOTS with 0 limits
-      for (const [type, slots] of Object.entries(ORDINANCE_SLOTS) as [
-        OrdinanceType,
-        string[]
-      ][]) {
-        ordinanceCapacityLimits[type] = {};
-        initialCounts[type] = {};
-        for (const slot of slots) {
-          ordinanceCapacityLimits[type]![slot] = 0;
-          initialCounts[type]![slot] = 0;
         }
       }
     }
