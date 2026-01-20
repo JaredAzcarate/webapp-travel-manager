@@ -9,19 +9,11 @@ import {
   OrdinanceWithId,
   UpdateOrdinanceInput,
 } from "@/features/ordinances/models/ordinances.model";
-import { OrdinanceType } from "@/features/registrations/models/registrations.model";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { App, Button, Form, Input, InputNumber, Select, Space } from "antd";
 import { useRouter } from "next/navigation";
 import { Check, X } from "phosphor-react";
 import { useEffect } from "react";
-
-const NAME_TO_TYPE_MAP: Record<string, OrdinanceType> = {
-  Batistério: "BAPTISTRY",
-  Iniciatória: "INITIATORY",
-  Investidura: "ENDOWMENT",
-  Selamento: "SEALING",
-};
 
 interface SessionFormValue {
   slot: string;
@@ -143,18 +135,7 @@ export const OrdinanceForm = ({
     }));
 
     if (mode === "create") {
-      const type = NAME_TO_TYPE_MAP[values.name];
-      if (!type) {
-        notification.error({
-          title: "Erro",
-          description:
-            "Nome de ordenança inválido. Use: Batistério, Iniciatória, Investidura ou Selamento",
-        });
-        return;
-      }
-
       const input: CreateOrdinanceInput = {
-        type,
         name: values.name,
         sessions,
       };

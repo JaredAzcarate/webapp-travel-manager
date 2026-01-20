@@ -10,7 +10,7 @@ export interface OrdinanceSession {
 }
 
 export interface Ordinance {
-  type: OrdinanceType; // "BAPTISTRY" | "INITIATORY" | "ENDOWMENT" | "SEALING"
+  type?: OrdinanceType; // Optional: "BAPTISTRY" | "INITIATORY" | "ENDOWMENT" | "SEALING"
   name: string; // "Batistério", "Iniciatória", etc.
   description?: string;
   sessions: OrdinanceSession[];

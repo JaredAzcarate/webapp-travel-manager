@@ -3,9 +3,11 @@ import { comparePassword, hashPassword } from "@/lib/auth/password.utils";
 import {
   addDoc,
   collection,
+  doc,
   getDocs,
   query,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import { AdminWithId, CreateAdminInput } from "../models/admin.model";
@@ -56,6 +58,15 @@ export class AdminRepository {
     hashedPassword: string
   ): Promise<boolean> {
     return comparePassword(plainPassword, hashedPassword);
+  }
+
+  async updatePassword(adminId: string, newPassword: string): Promise<void> {
+    const hashedPassword = await hashPassword(newPassword);
+    const docRef = doc(db, this.collectionName, adminId);
+    await updateDoc(docRef, {
+      password: hashedPassword,
+      updatedAt: Timestamp.now(),
+    });
   }
 }
 
