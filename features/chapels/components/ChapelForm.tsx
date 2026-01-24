@@ -1,13 +1,13 @@
 "use client";
 
 import {
-  useCreateChapel,
-  useUpdateChapel,
+    useCreateChapel,
+    useUpdateChapel,
 } from "@/features/chapels/hooks/chapels.hooks";
 import {
-  ChapelWithId,
-  CreateChapelInput,
-  UpdateChapelInput,
+    ChapelWithId,
+    CreateChapelInput,
+    UpdateChapelInput,
 } from "@/features/chapels/models/chapels.model";
 import { App, Button, Form, Input } from "antd";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ interface FormValues {
   whatsappPhone?: string;
   email?: string;
   address?: string;
+  busDepartureLocation?: string;
 }
 
 interface ChapelFormProps {
@@ -59,6 +60,7 @@ export const ChapelForm = ({
         whatsappPhone: initialChapelData.whatsappPhone,
         email: initialChapelData.email,
         address: initialChapelData.address,
+        busDepartureLocation: initialChapelData.busDepartureLocation,
       });
     }
   }, [mode, initialChapelData, form]);
@@ -125,6 +127,7 @@ export const ChapelForm = ({
         whatsappPhone: values.whatsappPhone,
         email: values.email,
         address: values.address,
+        busDepartureLocation: values.busDepartureLocation,
       };
       createChapel(input);
     } else if (mode === "edit" && chapelId) {
@@ -133,6 +136,7 @@ export const ChapelForm = ({
         whatsappPhone: values.whatsappPhone,
         email: values.email,
         address: values.address,
+        busDepartureLocation: values.busDepartureLocation,
       };
       updateChapel(chapelId, input);
     }
@@ -173,6 +177,13 @@ export const ChapelForm = ({
 
       <Form.Item name="address" label="Endereço">
         <Input placeholder="Ex: Rua Exemplo, 123, Lisboa" />
+      </Form.Item>
+
+      <Form.Item
+        name="busDepartureLocation"
+        label="Lugar de saida do autocarro"
+      >
+        <Input placeholder="Ex: Rua Principal, 456, Porto" />
       </Form.Item>
 
       <Form.Item>

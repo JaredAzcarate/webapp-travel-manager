@@ -1,8 +1,8 @@
 "use client";
 
-import { ORDINANCE_NAMES } from "@/common/constants/ordinances";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
+import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import {
   useCancelRegistration,
   useMarkPaymentAsPaid,
@@ -40,6 +40,7 @@ export default function ConfirmPaymentPage() {
 
   const { registrations, loading } = useRegistrationsByPhone(phone);
   const { chapels } = useChapels();
+  const { ordinances } = useOrdinances();
   const { markPaymentAsPaid, isPending: isMarkingPaid } =
     useMarkPaymentAsPaid();
   const { cancelRegistration, isPending: isCancelling } =
@@ -52,6 +53,14 @@ export default function ConfirmPaymentPage() {
     });
     return map;
   }, [chapels]);
+
+  const ordinanceIdToNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    ordinances.forEach((o) => {
+      map.set(o.id, o.name);
+    });
+    return map;
+  }, [ordinances]);
 
   const handleSubmit = (values: FormValues) => {
     setPhone(values.phone);
@@ -167,8 +176,9 @@ export default function ConfirmPaymentPage() {
         ) {
           return record.ordinances
             .map((ord) => {
-              const typeLabel = ORDINANCE_NAMES[ord.type] || ord.type;
-              return `${typeLabel} - ${ord.slot}`;
+              const name =
+                ordinanceIdToNameMap.get(ord.ordinanceId) || ord.ordinanceId;
+              return `${name} - ${ord.slot}`;
             })
             .join(", ");
         }
@@ -316,9 +326,9 @@ const CaravanNameCell = ({ caravanId, message }: CaravanNameCellProps) => {
   if (message) {
     return (
       <span>
-        {message} "{caravanName}"? Esta ação liberará o seu lugar no autocarro.
+        {message} {caravanName}? Esta ação liberará o seu lugar no autocarro.
       </span>
-    );
+    );  
   }
 
   return <span>{caravanName}</span>;

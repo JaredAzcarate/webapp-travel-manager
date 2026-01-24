@@ -1,6 +1,7 @@
 "use client";
 
-import { useBus, useBuses } from "@/features/buses/hooks/buses.hooks";
+import { CardRadioGroup } from "@/common/components/CardRadioGroup";
+import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import {
   useActiveCaravans,
@@ -16,6 +17,7 @@ import {
   useUpdateRegistration,
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
+  AgeCategory,
   CreateRegistrationInput,
   RegistrationWithId,
   UpdateRegistrationInput,
@@ -33,42 +35,92 @@ import {
   Space,
   Switch,
   Tag,
+  Typography,
+  type FormListFieldData
 } from "antd";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { Check, X } from "phosphor-react";
 import React, { useEffect, useMemo, useRef } from "react";
+
+const { Paragraph, Title } = Typography;
+
+const sectionAnimation = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+function sectionTransition(delay = 0) {
+  return { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const, delay };
+}
 
 interface OrdinanceFormValue {
   ordinanceId?: string;
   slot?: string;
-  isPersonal?: boolean;
 }
 
 interface FormValues {
   caravanId: string;
   chapelId: string;
   busId?: string;
-  phone: string;
+  phone?: string;
   fullName: string;
-  isMinor: boolean;
+  ageCategory: AgeCategory;
   gender: "M" | "F";
-  isOfficiator: boolean;
+  isOfficiator?: boolean;
   legalGuardianName?: string;
   legalGuardianEmail?: string;
   legalGuardianPhone?: string;
   ordinances: OrdinanceFormValue[];
   isFirstTimeConvert: boolean;
+  hasLessThanOneYearAsMember: boolean;
+  isPersonalOrdinance: boolean;
+  privacyPolicyAccepted: boolean;
 }
 
 interface OrdinanceFormItemProps {
   name: number;
-  restField: any;
-  form: any;
+  restField: Omit<FormListFieldData, "name" | "key">;
+  form: ReturnType<typeof Form.useForm<FormValues>>[0];
   selectedCaravanId: string | null;
   gender: "M" | "F" | null;
   ordinances: OrdinanceWithId[];
-  isMinor?: boolean;
+  ageCategory: AgeCategory;
+  isFirstTimeConvert: boolean;
+  hasLessThanOneYearAsMember: boolean;
+  selectedOrdinances: OrdinanceFormValue[];
+  disabled?: boolean;
 }
+
+// Utility function to parse time slot (e.g., "9:30-10:00" -> { start: "9:30", end: "10:00" })
+const parseTimeSlot = (slot: string): { start: string; end: string } | null => {
+  const match = slot.match(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/);
+  if (!match) return null;
+  return { start: match[1], end: match[2] };
+};
+
+// Utility function to convert time to minutes for comparison
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+// Check if two time slots overlap
+const doTimeSlotsOverlap = (
+  slot1: string,
+  slot2: string
+): boolean => {
+  const parsed1 = parseTimeSlot(slot1);
+  const parsed2 = parseTimeSlot(slot2);
+  if (!parsed1 || !parsed2) return false;
+
+  const start1 = timeToMinutes(parsed1.start);
+  const end1 = timeToMinutes(parsed1.end);
+  const start2 = timeToMinutes(parsed2.start);
+  const end2 = timeToMinutes(parsed2.end);
+
+  return !(end1 <= start2 || end2 <= start1);
+};
 
 const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
   name,
@@ -77,7 +129,11 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
   selectedCaravanId,
   gender,
   ordinances,
-  isMinor = false,
+  ageCategory,
+  isFirstTimeConvert,
+  hasLessThanOneYearAsMember,
+  selectedOrdinances,
+  disabled = false,
 }) => {
   const ordinanceId = Form.useWatch(
     ["ordinances", name, "ordinanceId"],
@@ -90,17 +146,49 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
     maxCapacity,
     loading: loadingAvailability,
   } = useOrdinanceAvailabilityFromCaravan(
-    selectedCaravanId,
-    ordinanceId,
-    ordinanceSlot,
+    selectedCaravanId ?? null,
+    ordinanceId ?? null,
+    ordinanceSlot ?? null,
     gender
   );
 
-  // Get available slots filtered by gender
+  // Filter ordinances based on age category and restrictions
+  const availableOrdinances = useMemo(() => {
+    const isRestricted =
+      ageCategory === "YOUTH" || isFirstTimeConvert || hasLessThanOneYearAsMember;
+
+    return ordinances.filter((o) => {
+      // If restricted, only show BAPTISTRY ordinances
+      if (isRestricted) {
+        return o.name.toLowerCase().includes("batistério");
+      }
+
+      // Filter by gender: don't show ordinances that only have sessions for the opposite gender
+      if (gender) {
+        const hasAvailableSessions = o.sessions.some((session) => {
+          if (!session.gender) return true; // null = both genders
+          return session.gender === gender;
+        });
+        if (!hasAvailableSessions) return false;
+
+        // Don't show "Iniciatória - Irmãs" for men
+        if (gender === "M" && o.name.toLowerCase().includes("iniciatória") && o.name.toLowerCase().includes("irmãs")) {
+          return false;
+        }
+        // Don't show "Iniciatória - Irmãos" for women
+        if (gender === "F" && o.name.toLowerCase().includes("iniciatória") && o.name.toLowerCase().includes("irmãos")) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [ordinances, gender, ageCategory, isFirstTimeConvert, hasLessThanOneYearAsMember]);
+
+  // Get available slots filtered by gender and non-overlapping with other selected ordinances
   const availableSlots = useMemo(() => {
     if (!ordinanceId) return [];
 
-    // Find ordinance by ID
     const ordinance = ordinances.find((o) => o.id === ordinanceId);
     if (!ordinance) {
       return [];
@@ -121,8 +209,20 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
       }
     });
 
-    return Array.from(slotSet);
-  }, [ordinanceId, gender, ordinances]);
+    let availableSlotsList = Array.from(slotSet);
+
+    // Filter out slots that overlap with already selected ordinances
+    if (selectedOrdinances.length > 0) {
+      availableSlotsList = availableSlotsList.filter((slot) => {
+        return !selectedOrdinances.some((selected) => {
+          if (!selected.slot || selected.ordinanceId === ordinanceId) return false;
+          return doTimeSlotsOverlap(slot, selected.slot);
+        });
+      });
+    }
+
+    return availableSlotsList;
+  }, [ordinanceId, gender, ordinances, selectedOrdinances]);
 
   return (
     <div className="mb-4">
@@ -136,18 +236,11 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
           <Select
             placeholder="Selecione a ordenança"
             allowClear
-            options={ordinances
-              .filter((o) => {
-                // If minor, only show BAPTISTRY ordinances (we check by name containing "Batistério")
-                if (isMinor) {
-                  return o.name.toLowerCase().includes("batistério");
-                }
-                return true;
-              })
-              .map((ordinance) => ({
-                label: ordinance.name,
-                value: ordinance.id,
-              }))}
+            disabled={disabled}
+            options={availableOrdinances.map((ordinance) => ({
+              label: ordinance.name,
+              value: ordinance.id,
+            }))}
           />
         </Form.Item>
 
@@ -155,7 +248,7 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
           <Select
             placeholder="Selecione o horário"
             allowClear
-            disabled={!ordinanceId}
+            disabled={disabled || !ordinanceId}
             options={availableSlots.map((slot) => ({
               label: slot,
               value: slot,
@@ -175,15 +268,153 @@ const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
           </div>
         )}
       </Space>
-      <Form.Item
-        {...restField}
-        name={[name, "isPersonal"]}
-        valuePropName="checked"
-        className="mt-2"
-      >
-        <Checkbox>É uma ordenança personal?</Checkbox>
-      </Form.Item>
     </div>
+  );
+};
+
+// Component to handle ordinances list with proper hook usage
+interface OrdinancesListFieldProps {
+  form: ReturnType<typeof Form.useForm<FormValues>>[0];
+  isPersonalOrdinance: boolean;
+  selectedCaravanId: string | null;
+  gender: "M" | "F" | null;
+  ordinances: OrdinanceWithId[];
+  ageCategory: AgeCategory;
+  isFirstTimeConvert: boolean;
+  hasLessThanOneYearAsMember: boolean;
+  ordinancesList: OrdinanceFormValue[];
+  disabled?: boolean;
+}
+
+const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
+  form,
+  isPersonalOrdinance,
+  selectedCaravanId,
+  gender,
+  ordinances,
+  ageCategory,
+  isFirstTimeConvert,
+  hasLessThanOneYearAsMember,
+  ordinancesList,
+  disabled = false,
+}) => {
+  // Adjust fields when isPersonalOrdinance changes
+  useEffect(() => {
+    try {
+      const currentOrdinances = form.getFieldValue("ordinances") || [];
+      
+      // Initialize if empty
+      if (currentOrdinances.length === 0) {
+        const initialCount = isPersonalOrdinance ? 1 : 3;
+        const initialOrdinances = Array.from({ length: initialCount }, () => ({
+          ordinanceId: undefined,
+          slot: undefined,
+        }));
+        form.setFieldsValue({
+          ordinances: initialOrdinances,
+        });
+        return;
+      }
+      
+      if (isPersonalOrdinance && currentOrdinances.length > 1) {
+        // Keep only the first ordinance
+        form.setFieldsValue({
+          ordinances: [currentOrdinances[0] || { ordinanceId: undefined, slot: undefined }],
+        });
+      } else if (!isPersonalOrdinance) {
+        if (currentOrdinances.length < 3) {
+          // Add empty fields up to 3
+          const newOrdinances = [...currentOrdinances];
+          while (newOrdinances.length < 3) {
+            newOrdinances.push({ ordinanceId: undefined, slot: undefined });
+          }
+          form.setFieldsValue({
+            ordinances: newOrdinances,
+          });
+        } else if (currentOrdinances.length > 3) {
+          // Keep only first 3
+          form.setFieldsValue({
+            ordinances: currentOrdinances.slice(0, 3),
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error adjusting ordinances fields:", error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPersonalOrdinance]);
+
+  return (
+    <Form.List
+      name="ordinances"
+      rules={[
+        {
+          validator: async (_, ordinancesList) => {
+            const filledOrdinances = ordinancesList.filter(
+              (o: OrdinanceFormValue) => o.ordinanceId && o.slot
+            );
+
+            // Check for overlapping time slots
+            for (let i = 0; i < filledOrdinances.length; i++) {
+              for (let j = i + 1; j < filledOrdinances.length; j++) {
+                if (
+                  filledOrdinances[i].slot &&
+                  filledOrdinances[j].slot &&
+                  doTimeSlotsOverlap(
+                    filledOrdinances[i].slot!,
+                    filledOrdinances[j].slot!
+                  )
+                ) {
+                  return Promise.reject(
+                    new Error(
+                      "Os horários das ordenanças não podem se sobrepor"
+                    )
+                  );
+                }
+              }
+            }
+          },
+        },
+      ]}
+    >
+      {(fields) => {
+        const maxFields = isPersonalOrdinance ? 1 : 3;
+        const displayFields = fields.slice(0, maxFields);
+
+        return (
+          <>
+            <div className="mb-2">
+              <span className="text-sm font-medium">
+                Ordenanças{" "}
+                {isPersonalOrdinance
+                  ? "(máximo 1)"
+                  : "(máximo 3, opcional)"}
+              </span>
+            </div>
+
+            {displayFields.map(({ key, name, ...restField }) => (
+              <OrdinanceFormItem
+                key={key}
+                name={name}
+                restField={restField}
+                form={form}
+                selectedCaravanId={selectedCaravanId}
+                gender={gender}
+                ordinances={ordinances}
+                ageCategory={ageCategory}
+                isFirstTimeConvert={isFirstTimeConvert}
+                hasLessThanOneYearAsMember={hasLessThanOneYearAsMember}
+                selectedOrdinances={ordinancesList.filter(
+                  (o: OrdinanceFormValue, idx: number) =>
+                    idx !== name && o.ordinanceId && o.slot
+                )}
+                disabled={disabled}
+              />
+            ))}
+          </>
+        );
+      }}
+    </Form.List>
   );
 };
 
@@ -227,15 +458,20 @@ export const RegistrationForm = ({
   const { caravans: activeCaravans, loading: loadingCaravans } =
     useActiveCaravans();
   const { chapels, loading: loadingChapels } = useChapels();
-  const { buses, loading: loadingBuses } = useBuses();
-  const { busStops, loading: loadingBusStops } = useBusStops();
-  const { ordinances, loading: loadingOrdinances } = useOrdinances();
+  const { busStops } = useBusStops();
+  const { ordinances } = useOrdinances();
 
   const selectedCaravanId = Form.useWatch("caravanId", form);
   const selectedChapelId = Form.useWatch("chapelId", form);
   const ordinancesList = Form.useWatch("ordinances", form) || [];
-  const isMinor = Form.useWatch("isMinor", form);
+  const ageCategory = Form.useWatch("ageCategory", form);
   const gender = Form.useWatch("gender", form);
+  const isFirstTimeConvert = Form.useWatch("isFirstTimeConvert", form);
+  const hasLessThanOneYearAsMember = Form.useWatch(
+    "hasLessThanOneYearAsMember",
+    form
+  );
+  const isPersonalOrdinance = Form.useWatch("isPersonalOrdinance", form);
 
   const { caravan: selectedCaravan } = useCaravan(selectedCaravanId || "");
 
@@ -263,25 +499,6 @@ export const RegistrationForm = ({
     assignedBusId || ""
   );
 
-  const availableBuses = useMemo(() => {
-    if (!selectedCaravan) return buses;
-    return buses.filter((bus) => selectedCaravan.busIds.includes(bus.id));
-  }, [buses, selectedCaravan]);
-
-  useEffect(() => {
-    console.log("=== useEffect busId assignment ===");
-    console.log("mode:", mode);
-    console.log("assignedBusId:", assignedBusId);
-    console.log("selectedChapelId:", selectedChapelId);
-
-    if (mode === "create" && assignedBusId && selectedChapelId) {
-      console.log("Setting busId in form:", assignedBusId);
-      form.setFieldsValue({ busId: assignedBusId });
-    } else {
-      console.log("NOT setting busId - conditions not met");
-    }
-  }, [assignedBusId, selectedChapelId, form, mode]);
-
   const capacityInfo = useMemo(() => {
     if (!assignedBus || !selectedCaravanId || !assignedBusId) return null;
     const available = assignedBus.capacity - occupiedCount;
@@ -301,7 +518,8 @@ export const RegistrationForm = ({
     if (!assignedBusId) {
       return {
         type: "warning" as const,
-        message: "Nesta caravana não foi programada uma parada pela sua capela",
+        message: "Atenção: Nesta viagem não foi programada uma paragem na sua unidade, por favor selecione outra unidade.",
+        available: false,
       };
     }
 
@@ -309,20 +527,77 @@ export const RegistrationForm = ({
       return {
         type: "warning" as const,
         message:
-          "O autocarro que passará pela sua capela está cheio. No entanto, o seu nome entrará na lista de espera",
+          "O autocarro que passará pela sua unidade não tem mais vagas. No entanto, o seu nome entrará na lista de espera",
+        available: true,
       };
     }
 
     if (capacityInfo && assignedBus) {
       return {
         type: "info" as const,
-        message: `Autocarro atribuído: ${assignedBus.name} (${capacityInfo.available} lugares disponíveis)`,
+        message: `Importante: Ainda há ${capacityInfo.available} vagas disponíveis no autocarro.`,
+        available: true,
       };
     }
 
     return null;
   }, [selectedChapelId, assignedBusId, capacityInfo, assignedBus]);
 
+  const isBusAvailable = useMemo(() => {
+    // If no chapel is selected, form should be disabled
+    if (!selectedChapelId) return false;
+    
+    // Use busAssignmentMessage.available if it exists
+    if (busAssignmentMessage) {
+      return busAssignmentMessage.available ?? false;
+    }
+    
+    // If there's no assigned bus, bus is not available
+    if (!assignedBusId) return false;
+    
+    // If capacity info is not loaded yet but bus is assigned, assume available
+    if (!capacityInfo) return true;
+    
+    // Bus is available if there's capacity or if it's full but still allows waitlist
+    return true;
+  }, [selectedChapelId, assignedBusId, capacityInfo, busAssignmentMessage]);
+
+  const prevHasLessThanOneYearAsMember = useRef(hasLessThanOneYearAsMember);
+  useEffect(() => {
+    if (
+      prevHasLessThanOneYearAsMember.current === true &&
+      hasLessThanOneYearAsMember === false
+    ) {
+      form.setFieldsValue({ isFirstTimeConvert: false });
+    }
+    prevHasLessThanOneYearAsMember.current = hasLessThanOneYearAsMember;
+  }, [hasLessThanOneYearAsMember, form]);
+
+  const prevChapelIdRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      prevChapelIdRef.current !== undefined &&
+      selectedChapelId !== undefined &&
+      prevChapelIdRef.current !== selectedChapelId
+    ) {
+      const caravanId = form.getFieldValue("caravanId");
+      form.resetFields();
+      form.setFieldsValue({
+        caravanId,
+        chapelId: selectedChapelId,
+        ageCategory: undefined,
+        isOfficiator: false,
+        isFirstTimeConvert: false,
+        hasLessThanOneYearAsMember: false,
+        isPersonalOrdinance: false,
+        privacyPolicyAccepted: false,
+        ordinances: [],
+      });
+    }
+    prevChapelIdRef.current = selectedChapelId;
+  }, [selectedChapelId, form]);
+
+  // Initialize form values
   useEffect(() => {
     if (mode === "edit" && initialRegistrationData) {
       const existingOrdinances =
@@ -336,15 +611,13 @@ export const RegistrationForm = ({
         .map((ord) => ({
           ordinanceId: ord.ordinanceId!,
           slot: ord.slot!,
-          isPersonal: ord.isPersonal ?? false,
         }));
 
-      while (ordinancesData.length < 3) {
-        ordinancesData.push({
-          ordinanceId: undefined as any,
-          slot: undefined as any,
-          isPersonal: false,
-        });
+      // Migrate ageCategory if needed
+      let ageCategoryValue: AgeCategory = initialRegistrationData.ageCategory;
+      const registrationData = initialRegistrationData as RegistrationWithId & { isAdult?: boolean };
+      if (!ageCategoryValue && registrationData.isAdult !== undefined) {
+        ageCategoryValue = registrationData.isAdult ? "ADULT" : "YOUTH";
       }
 
       form.setFieldsValue({
@@ -353,7 +626,7 @@ export const RegistrationForm = ({
         busId: initialRegistrationData.busId,
         phone: initialRegistrationData.phone,
         fullName: initialRegistrationData.fullName,
-        isMinor: !initialRegistrationData.isAdult,
+        ageCategory: ageCategoryValue,
         gender: initialRegistrationData.gender,
         isOfficiator: initialRegistrationData.isOfficiator,
         legalGuardianName: initialRegistrationData.legalGuardianName,
@@ -361,22 +634,39 @@ export const RegistrationForm = ({
         legalGuardianPhone: initialRegistrationData.legalGuardianPhone,
         ordinances: ordinancesData,
         isFirstTimeConvert: initialRegistrationData.isFirstTimeConvert,
+        hasLessThanOneYearAsMember: false,
+        isPersonalOrdinance: false,
+        privacyPolicyAccepted: initialRegistrationData.privacyPolicyAccepted ?? false,
       });
     }
-  }, [mode, initialRegistrationData, propCaravanId, form]);
+  }, [mode, initialRegistrationData, form]);
 
   useEffect(() => {
     if (mode === "create" && propCaravanId) {
       form.setFieldsValue({
         caravanId: propCaravanId,
-        ordinances: [
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-        ],
+        ordinances: [],
+        isPersonalOrdinance: false,
       });
     }
-  }, [mode, initialRegistrationData, propCaravanId, form]);
+  }, [mode, propCaravanId, form]);
+
+  useEffect(() => {
+    if (mode === "create" && assignedBusId && selectedChapelId) {
+      form.setFieldsValue({ busId: assignedBusId });
+    }
+  }, [assignedBusId, selectedChapelId, form, mode]);
+
+  // Clear guardian fields when age category changes
+  useEffect(() => {
+    if (ageCategory === "ADULT" && mode === "create") {
+      form.setFieldsValue({
+        legalGuardianName: undefined,
+        legalGuardianEmail: undefined,
+        legalGuardianPhone: undefined,
+      });
+    }
+  }, [ageCategory, form, mode]);
 
   useEffect(() => {
     if (mode === "create" && created && !hasShownSuccessRef.current) {
@@ -387,20 +677,18 @@ export const RegistrationForm = ({
       });
       if (onSuccess) {
         onSuccess();
-      }
-      form.resetFields();
-      if (propCaravanId) {
-        form.setFieldsValue({
-          caravanId: propCaravanId,
-          ordinances: [
-            { type: undefined, slot: undefined, isPersonal: false },
-            { type: undefined, slot: undefined, isPersonal: false },
-            { type: undefined, slot: undefined, isPersonal: false },
-          ],
-        });
+      } else {
+        // Reset form only if onSuccess is not provided
+        form.resetFields();
+        if (propCaravanId) {
+          form.setFieldsValue({
+            caravanId: propCaravanId,
+            ordinances: [],
+            isPersonalOrdinance: false,
+          });
+        }
       }
     }
-    // Reset ref when mutation is no longer successful (e.g., new mutation started)
     if (!created && !isCreating) {
       hasShownSuccessRef.current = false;
     }
@@ -417,7 +705,6 @@ export const RegistrationForm = ({
         onSuccess();
       }
     }
-    // Reset ref when mutation is no longer successful
     if (!updated && !isUpdating) {
       hasShownSuccessRef.current = false;
     }
@@ -435,7 +722,6 @@ export const RegistrationForm = ({
         description: `Não foi possível criar a inscrição: ${errorMessage}`,
       });
     }
-    // Reset ref when error is cleared
     if (!createError && !isCreating) {
       hasShownErrorRef.current = false;
     }
@@ -453,53 +739,19 @@ export const RegistrationForm = ({
         description: `Não foi possível atualizar a inscrição: ${errorMessage}`,
       });
     }
-    // Reset ref when error is cleared
     if (!updateError && !isUpdating) {
       hasShownErrorRef.current = false;
     }
   }, [mode, updateError, isUpdating, notification]);
 
-  useEffect(() => {
-    if (!isMinor && mode === "create") {
-      form.setFieldsValue({
-        legalGuardianName: undefined,
-        legalGuardianEmail: undefined,
-        legalGuardianPhone: undefined,
-      });
-    }
-  }, [isMinor, form, mode]);
-
   const handleSubmit = async (values: FormValues) => {
-    console.log("=== handleSubmit DEBUG ===");
-    console.log("Mode:", mode);
-    console.log("values.busId (initial):", values.busId);
-    console.log("values.chapelId:", values.chapelId);
-    console.log("values.caravanId:", values.caravanId);
-
-    // Read current form values to ensure we have the latest data
-    const currentFormValues = form.getFieldsValue();
-    console.log("currentFormValues:", currentFormValues);
-
-    // Use values from form if not in values parameter
-    const chapelId = values.chapelId || currentFormValues.chapelId;
-    const caravanId =
-      values.caravanId || currentFormValues.caravanId || propCaravanId;
-
-    console.log("chapelId (final):", chapelId);
-    console.log("caravanId (final):", caravanId);
-    console.log("assignedBusId (from hook):", assignedBusId);
-    console.log("selectedChapelId (from hook):", selectedChapelId);
-    console.log("selectedCaravanId (from hook):", selectedCaravanId);
-
-    // If busId is not set, try to calculate it from chapelId
     let finalBusId = values.busId;
 
-    if (mode === "create" && !finalBusId && chapelId && caravanId) {
-      // Recalculate assignedBusId if we have chapelId and caravanId
-      const caravan = activeCaravans.find((c) => c.id === caravanId);
+    if (mode === "create" && !finalBusId && selectedChapelId && selectedCaravanId) {
+      const caravan = activeCaravans.find((c) => c.id === selectedCaravanId);
       if (caravan && busStops.length > 0) {
         const stopsForChapel = busStops.filter(
-          (stop) => stop.chapelId === chapelId
+          (stop) => stop.chapelId === selectedChapelId
         );
 
         if (stopsForChapel.length > 0) {
@@ -509,7 +761,6 @@ export const RegistrationForm = ({
 
           if (validStops.length > 0) {
             finalBusId = validStops[0].busId;
-            console.log("Calculated busId from chapelId:", finalBusId);
             values.busId = finalBusId;
             form.setFieldsValue({ busId: finalBusId });
           }
@@ -517,23 +768,13 @@ export const RegistrationForm = ({
       }
     }
 
-    // Fallback to assignedBusId from hook if still not set
     if (mode === "create" && !finalBusId && assignedBusId) {
-      console.log("Setting busId from assignedBusId hook:", assignedBusId);
       finalBusId = assignedBusId;
       values.busId = assignedBusId;
       form.setFieldsValue({ busId: assignedBusId });
     }
 
-    console.log("values.busId (after assignment):", values.busId);
-    console.log("finalBusId:", finalBusId);
-
-    // In create mode, busId is required (even if bus is full, we need it for waitlist)
     if (mode === "create" && !finalBusId) {
-      console.error("ERROR: busId is missing!");
-      console.error("chapelId:", chapelId);
-      console.error("caravanId:", caravanId);
-      console.error("busStops length:", busStops.length);
       notification.error({
         title: "Erro",
         description:
@@ -542,23 +783,18 @@ export const RegistrationForm = ({
       return;
     }
 
-    // Ensure values.busId is set
-    if (mode === "create" && finalBusId) {
-      values.busId = finalBusId;
-    }
-
     if (mode === "create") {
       const paymentStatus: "PENDING" | "FREE" = values.isFirstTimeConvert
         ? "FREE"
         : "PENDING";
 
       const input: CreateRegistrationInput = {
-        caravanId: values.caravanId || caravanId || propCaravanId || "",
-        chapelId: values.chapelId || chapelId || "",
+        caravanId: values.caravanId || selectedCaravanId || propCaravanId || "",
+        chapelId: values.chapelId || selectedChapelId || "",
         busId: finalBusId || values.busId || "",
-        phone: values.phone,
+        phone: values.phone || "",
         fullName: values.fullName,
-        isAdult: !values.isMinor,
+        ageCategory: values.ageCategory,
         gender: values.gender,
         isOfficiator: values.isOfficiator ?? false,
         ...(values.legalGuardianName && {
@@ -575,16 +811,12 @@ export const RegistrationForm = ({
           .map((ord) => ({
             ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
-            isPersonal: ord.isPersonal ?? false,
           })),
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
         paymentStatus,
-        participationStatus: "ACTIVE", // El repository lo cambiará a WAITLIST si el autocar está lleno
+        participationStatus: "ACTIVE",
+        privacyPolicyAccepted: values.privacyPolicyAccepted,
       };
-
-      console.log("=== PAYLOAD TO CREATE REGISTRATION ===");
-      console.log("Input payload:", JSON.stringify(input, null, 2));
-      console.log("=====================================");
 
       createRegistration(input);
     } else if (mode === "edit" && registrationId) {
@@ -592,9 +824,9 @@ export const RegistrationForm = ({
         caravanId: values.caravanId,
         chapelId: values.chapelId,
         busId: values.busId,
-        phone: values.phone,
+        phone: values.phone || "",
         fullName: values.fullName,
-        isAdult: !values.isMinor,
+        ageCategory: values.ageCategory,
         gender: values.gender,
         isOfficiator: values.isOfficiator ?? false,
         ...(values.legalGuardianName && {
@@ -611,15 +843,18 @@ export const RegistrationForm = ({
           .map((ord) => ({
             ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
-            isPersonal: ord.isPersonal ?? false,
           })),
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
+        privacyPolicyAccepted: values.privacyPolicyAccepted,
       };
       updateRegistration(registrationId, input);
     }
   };
 
   const isPending = mode === "create" ? isCreating : isUpdating;
+
+  // Determine which sections to show based on age category
+  const shouldShowOrdinancesStep = ageCategory !== "CHILD";
 
   return (
     <Form
@@ -628,88 +863,199 @@ export const RegistrationForm = ({
       onFinish={handleSubmit}
       style={{ width: "100%" }}
       initialValues={{
-        isMinor: false,
+        ageCategory: undefined,
         isOfficiator: false,
         isFirstTimeConvert: false,
-        ordinances: [
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-          { ordinanceId: undefined, slot: undefined, isPersonal: false },
-        ],
+        hasLessThanOneYearAsMember: false,
+        isPersonalOrdinance: false,
+        privacyPolicyAccepted: false,
+        ordinances: [],
       }}
     >
-      {mode === "create" && propCaravanId && (
-        <Form.Item
-          name="caravanId"
-          label="Caravana"
-          rules={[
-            {
-              required: true,
-              message: "Por favor, selecione uma caravana",
-            },
-          ]}
-          hidden
-        >
-          <Input />
-        </Form.Item>
-      )}
+      {/* Section 1: Initial Information */}
+      <motion.div
+        className="mb-8 bg-white p-4 rounded-2xl flex flex-col gap-4"
+        initial={sectionAnimation.initial}
+        animate={sectionAnimation.animate}
+        transition={sectionTransition(0)}
+      >
+        <Title level={4} className="mb-4">
+          Informações Iniciais
+        </Title>
+        {mode === "create" && propCaravanId && (
+          <Form.Item
+            name="caravanId"
+            label="Caravana"
+            rules={[
+              {
+                required: true,
+                message: "Por favor, selecione uma caravana",
+              },
+            ]}
+            hidden
+          >
+            <Input />
+          </Form.Item>
+        )}
 
-      {mode === "edit" && (
+        {mode === "edit" && (
+          <Form.Item
+            name="caravanId"
+            label="Caravana"
+            rules={[
+              {
+                required: true,
+                message: "Por favor, selecione uma caravana",
+              },
+            ]}
+          >
+            <Select
+              placeholder="Selecione uma caravana"
+              loading={loadingCaravans}
+              disabled={!isBusAvailable}
+              options={activeCaravans.map((caravan) => ({
+                label: caravan.name,
+                value: caravan.id,
+              }))}
+            />
+          </Form.Item>
+        )}
+
         <Form.Item
-          name="caravanId"
-          label="Caravana"
+          name="chapelId"
+          label="Qual é a unidade do participante?"
           rules={[
-            {
-              required: true,
-              message: "Por favor, selecione uma caravana",
-            },
+            { required: true, message: "Por favor, selecione uma capela" },
           ]}
         >
           <Select
-            placeholder="Selecione uma caravana"
-            loading={loadingCaravans}
-            options={activeCaravans.map((caravan) => ({
-              label: caravan.name,
-              value: caravan.id,
+            placeholder="Selecione uma capela"
+            loading={loadingChapels}
+            options={chapels.map((chapel) => ({
+              label: chapel.name,
+              value: chapel.id,
             }))}
           />
         </Form.Item>
-      )}
 
-      <Form.Item
-        name="chapelId"
-        label="Capela de Partida"
-        rules={[{ required: true, message: "Por favor, selecione uma capela" }]}
+        <AnimatePresence>
+          {busAssignmentMessage && (
+            <motion.div
+              key="bus-assignment-alert"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0)}
+            >
+              <Alert
+                title={busAssignmentMessage.message}
+                type={busAssignmentMessage.type}
+                showIcon
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div
+          className={
+            !isBusAvailable
+              ? "opacity-50 transition-all pointer-events-none flex flex-col gap-4"
+              : "flex flex-col gap-4"
+          }
+        >
+          {mode === "create" && (
+            <Form.Item name="busId" hidden>
+              <Input />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            name="ageCategory"
+            label="Qual é a idade do participante?"
+            rules={[
+              {
+                required: true,
+                message: "Por favor, selecione a categoria de idade",
+              },
+            ]}
+          >
+            <CardRadioGroup
+              options={[
+                { value: "CHILD", tag: "1-10 anos", primary: "Criança" },
+                { value: "YOUTH", tag: "11-17 anos", primary: "Jovem" },
+                { value: "ADULT", tag: "+18 anos", primary: "Adulto" },
+              ]}
+              disabled={!isBusAvailable}
+            />
+          </Form.Item>
+
+          <AnimatePresence>
+            {(ageCategory === "YOUTH" || ageCategory === "ADULT") && (
+              <motion.div
+                key="youth-adult-switches"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
+                className="flex flex-col gap-4"
+              >
+                <Form.Item
+                  name="hasLessThanOneYearAsMember"
+                  valuePropName="checked"
+                >
+                  <Checkbox disabled={!isBusAvailable}>O participante tem menos de 1 ano como membro</Checkbox>
+                </Form.Item>
+                {hasLessThanOneYearAsMember && (
+                  <motion.div
+                    key="is-first-time-convert"
+                    initial={sectionAnimation.initial}
+                    animate={sectionAnimation.animate}
+                    exit={sectionAnimation.exit}
+                    transition={sectionTransition(0)}
+                    className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row justify-between"
+                  >
+                   <div>
+                      <Title level={5}>É primeira vez que vai fazer uma ordenança no templo?</Title>
+                      <Paragraph>A estaca Porto Norte oferece uma viagem gratuita para <strong>membros recem conversos que fazem a sua primeira ordenança no templo.</strong> Por favor, marque a opção &quot;sim&quot; se esse for o caso.</Paragraph>
+                    </div>
+
+                    <Form.Item
+                      name="isFirstTimeConvert"
+                      valuePropName="checked"
+                    >
+                      <Switch
+                        disabled={!isBusAvailable}
+                        checkedChildren="Sim"
+                        unCheckedChildren="Não"
+                      />
+                    </Form.Item>
+
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* Section 2: Personal Information */}
+      <motion.div
+        className={`mb-8 p-4 bg-white rounded-2xl flex flex-col gap-4 transition-all
+          ${!isBusAvailable
+            ? "opacity-30 pointer-events-none"
+            : "opacity-100"
+        }`}
+        initial={sectionAnimation.initial}
+        animate={sectionAnimation.animate}
+        transition={sectionTransition(0.06)}
       >
-        <Select
-          placeholder="Selecione uma capela"
-          loading={loadingChapels}
-          options={chapels.map((chapel) => ({
-            label: chapel.name,
-            value: chapel.id,
-          }))}
-        />
-      </Form.Item>
-
-      {busAssignmentMessage && (
-        <Alert
-          title={busAssignmentMessage.message}
-          type={busAssignmentMessage.type}
-          showIcon
-          className="mb-4"
-        />
-      )}
-
-      {mode === "create" && (
-        <Form.Item name="busId" hidden>
-          <Input />
-        </Form.Item>
-      )}
-
-      <div className="flex gap-4">
+        <Title level={4} className="mb-4">
+          Dados Pessoais
+        </Title>
+        <div className="flex flex-col md:flex-row gap-4">
         <Form.Item
           name="fullName"
-          label="Nome Completo"
+          label="Nome Completo do participante"
           rules={[
             {
               required: true,
@@ -718,34 +1064,264 @@ export const RegistrationForm = ({
           ]}
           className="flex-1"
         >
-          <Input placeholder="Ex: João Silva" />
+          <Input placeholder="Ex: João Silva" disabled={!isBusAvailable} />
         </Form.Item>
 
+        <AnimatePresence>
+          {ageCategory === "ADULT" && (
+            <motion.div
+              key="adult-phone"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0)}
+              className="flex-1"
+            >
+              <Form.Item
+                name="phone"
+                label="Número de Telefone do participante"
+                rules={[
+                  {
+                    required: true,
+                    message: "Por favor, insira o número de telefone",
+                  },
+                  {
+                    pattern: /^\+?[1-9]\d{1,14}$/,
+                    message: "Por favor, insira um número de telefone válido",
+                  },
+                  {
+                    validator: async (_, value) => {
+                      if (!value || mode !== "create" || !selectedCaravanId) {
+                        return Promise.resolve();
+                      }
+                      const isUnique = await repository.checkPhoneUniqueness(
+                        value,
+                        selectedCaravanId
+                      );
+                      if (!isUnique) {
+                        return Promise.reject(
+                          new Error(
+                            "Este número de telefone já está registrado nesta caravana"
+                          )
+                        );
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Ex: +351912345678"
+                  disabled={!isBusAvailable}
+                />
+              </Form.Item>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        </div>
         <Form.Item
-          name="phone"
-          label="Número de Telefone"
+          name="gender"
+          label="Sexo"
+          rules={[{ required: true, message: "Por favor, selecione o sexo" }]}
+        >
+          <Radio.Group disabled={!isBusAvailable}>
+            <Radio value="M">Masculino</Radio>
+            <Radio value="F">Feminino</Radio>
+          </Radio.Group>
+        </Form.Item>
+
+        <AnimatePresence>
+          {(ageCategory === "CHILD" || ageCategory === "YOUTH") && (
+            <>
+            <motion.div
+              key="legal-guardian"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0)}
+              className="flex flex-col gap-4 border-t border-gray-200 pt-4"
+            >
+              <div className="flex flex-col ">
+              <Title level={5}>Responsável Legal do Participante</Title>
+              <Paragraph>Todos os participantes menores de 18 anos devem ter um responsável legal. Alem disso, o responsável legal deve assinar o formulário de autorização médica e permissão dos pais/responsáveis.</Paragraph>
+              </div>
+              <Form.Item
+                name="legalGuardianName"
+                label="Nome do completo do responsável legal"
+                rules={[
+                  {
+                    required: true,
+                    message: "Por favor, insira o nome do responsável legal",
+                  },
+                ]}
+              >
+                <Input
+                  placeholder="Ex: Maria Silva"
+                  disabled={!isBusAvailable}
+                />
+              </Form.Item>
+
+              <div className="flex flex-col md:flex-row gap-4">
+              <Form.Item
+                name="legalGuardianEmail"
+                label="Email do responsável legal"
+                rules={[
+                  {
+                    type: "email",
+                    message: "Por favor, insira um email válido",
+                  },
+                ]}
+                className="flex-1"
+              >
+                <Input
+                  placeholder="Ex: maria@exemplo.pt"
+                  disabled={!isBusAvailable}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="legalGuardianPhone"
+                label="Telefone do responsável legal"
+                rules={[
+                  {
+                    pattern: /^\+?[1-9]\d{1,14}$/,
+                    message: "Por favor, insira um número de telefone válido",
+                  },
+                ]}
+                className="flex-1"
+              >
+                <Input
+                  placeholder="Ex: +351912345678"
+                  disabled={!isBusAvailable}
+                />
+              </Form.Item>
+              </div>
+            </motion.div>
+
+            <motion.div
+              key="medical-release-form"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0)}
+            >
+            <Alert
+            title="Formulário de Autorização Médica"
+            description={
+              <div>
+                <Paragraph>
+                  Por favor, descarregue e complete o formulário de autorização
+                  médica e permissão dos pais/responsáveis. Este formulário
+                  deve ser entregue completo no dia da viagem.
+                </Paragraph>
+
+                <Button type="primary" href="/documents/2017_parental_or_guardian_permission_medical_release.pdf" target="_blank">Descarregar formulário PDF</Button>
+              </div>
+            }
+            type="info"
+            showIcon
+          />
+          </motion.div>
+          </>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {ageCategory === "ADULT" &&
+            !isFirstTimeConvert &&
+            !hasLessThanOneYearAsMember && (
+              <motion.div
+                key="is-officiator"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
+              >
+                <Form.Item
+                  name="isOfficiator"
+                  label="És oficiante?"
+                  valuePropName="checked"
+                >
+                  <Switch disabled={!isBusAvailable} />
+                </Form.Item>
+              </motion.div>
+            )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Section 3: Ordinances */}
+      <AnimatePresence>
+        {shouldShowOrdinancesStep && (
+          <motion.div
+            key="ordinances-section"
+            className={
+              !isBusAvailable
+                ? "mb-8 bg-white p-4 rounded-2xl opacity-50 transition-all pointer-events-none"
+                : "mb-8 bg-white p-4 rounded-2xl"
+            }
+            initial={sectionAnimation.initial}
+            animate={sectionAnimation.animate}
+            exit={sectionAnimation.exit}
+            transition={sectionTransition(0.12)}
+          >
+            <Title level={4} className="mb-4">
+              Ordenanças
+            </Title>
+            <Form.Item
+              name="isPersonalOrdinance"
+              label="É uma ordenança personal?"
+              valuePropName="checked"
+            >
+              <Checkbox disabled={!isBusAvailable}>
+                É uma ordenança personal?
+              </Checkbox>
+            </Form.Item>
+
+            <OrdinancesListField
+              form={form}
+              isPersonalOrdinance={isPersonalOrdinance}
+              selectedCaravanId={selectedCaravanId}
+              gender={gender}
+              ordinances={ordinances}
+              ageCategory={ageCategory || "ADULT"}
+              isFirstTimeConvert={isFirstTimeConvert}
+              hasLessThanOneYearAsMember={hasLessThanOneYearAsMember}
+              ordinancesList={ordinancesList}
+              disabled={!isBusAvailable}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Section 4: Privacy Policy */}
+      <motion.div
+        className={
+          !isBusAvailable ? "mb-8 opacity-50 transition-all pointer-events-none" : "mb-8"
+        }
+        initial={sectionAnimation.initial}
+        animate={sectionAnimation.animate}
+        transition={sectionTransition(0.18)}
+      >
+        <Title level={4} className="mb-4">
+          Políticas de Privacidade
+        </Title>
+        <Paragraph>
+          Ao aceitar esta política de privacidade, você concorda com o uso dos
+          dados registrados para fins de gestão da caravana ao templo. Este
+          sistema não é oficial da Igreja de Jesus Cristo dos Santos dos
+          Últimos Dias.
+        </Paragraph>
+
+        <Form.Item
+          name="privacyPolicyAccepted"
+          valuePropName="checked"
           rules={[
             {
-              required: true,
-              message: "Por favor, insira o número de telefone",
-            },
-            {
-              pattern: /^\+?[1-9]\d{1,14}$/,
-              message: "Por favor, insira um número de telefone válido",
-            },
-            {
-              validator: async (_, value) => {
-                if (!value || mode !== "create" || !selectedCaravanId) {
-                  return Promise.resolve();
-                }
-                const isUnique = await repository.checkPhoneUniqueness(
-                  value,
-                  selectedCaravanId
-                );
-                if (!isUnique) {
+              validator: (_, value) => {
+                if (!value) {
                   return Promise.reject(
                     new Error(
-                      "Este número de telefone já está registrado nesta caravana"
+                      "Deve aceitar a política de privacidade para continuar"
                     )
                   );
                 }
@@ -753,158 +1329,48 @@ export const RegistrationForm = ({
               },
             },
           ]}
-          className="flex-1"
         >
-          <Input placeholder="Ex: +351912345678" />
+          <Checkbox disabled={!isBusAvailable}>
+            Aceito a política de privacidade e autorizo o uso dos meus dados
+            para fins de gestão da caravana
+          </Checkbox>
         </Form.Item>
-      </div>
-
-      <Form.Item name="isMinor" valuePropName="checked">
-        <Checkbox>Esta inscrição é de um jovem menor de idade</Checkbox>
-      </Form.Item>
-
-      <Form.Item
-        name="gender"
-        label="Sexo"
-        rules={[{ required: true, message: "Por favor, selecione o sexo" }]}
-      >
-        <Radio.Group>
-          <Radio value="M">Masculino</Radio>
-          <Radio value="F">Feminino</Radio>
-        </Radio.Group>
-      </Form.Item>
-
-      {isMinor && (
-        <>
-          <Form.Item
-            name="legalGuardianName"
-            label="Nome do Responsável Legal"
-            rules={[
-              {
-                required: isMinor,
-                message: "Por favor, insira o nome do responsável legal",
-              },
-            ]}
-          >
-            <Input placeholder="Ex: Maria Silva" />
-          </Form.Item>
-
-          <Form.Item
-            name="legalGuardianEmail"
-            label="Email do Responsável Legal"
-            rules={[
-              {
-                type: "email",
-                message: "Por favor, insira um email válido",
-              },
-            ]}
-          >
-            <Input placeholder="Ex: maria@exemplo.pt" />
-          </Form.Item>
-
-          <Form.Item
-            name="legalGuardianPhone"
-            label="Telefone do Responsável Legal"
-            rules={[
-              {
-                pattern: /^\+?[1-9]\d{1,14}$/,
-                message: "Por favor, insira um número de telefone válido",
-              },
-            ]}
-          >
-            <Input placeholder="Ex: +351912345678" />
-          </Form.Item>
-        </>
-      )}
-
-      <Form.Item
-        name="isOfficiator"
-        label="És oficiante?"
-        valuePropName="checked"
-      >
-        <Switch />
-      </Form.Item>
-
-      <Form.List
-        name="ordinances"
-        rules={[
-          {
-            validator: async (_, ordinances) => {
-              if (ordinances && ordinances.length > 3) {
-                return Promise.reject(
-                  new Error("Máximo de 3 ordenanças permitidas")
-                );
-              }
-
-              const filledOrdinances = ordinances.filter(
-                (o: OrdinanceFormValue) => o.ordinanceId && o.slot
-              );
-              const unique = new Set(
-                filledOrdinances.map(
-                  (o: OrdinanceFormValue) => `${o.ordinanceId}-${o.slot}`
-                )
-              );
-              if (unique.size !== filledOrdinances.length) {
-                return Promise.reject(
-                  new Error(
-                    "Não é possível selecionar a mesma ordenança duas vezes"
-                  )
-                );
-              }
-            },
-          },
-        ]}
-      >
-        {(fields) => (
-          <>
-            <div className="mb-2">
-              <span className="text-sm font-medium">Ordenanças (opcional)</span>
-            </div>
-
-            {fields.map(({ key, name, ...restField }) => (
-              <OrdinanceFormItem
-                key={key}
-                name={name}
-                restField={restField}
-                form={form}
-                selectedCaravanId={selectedCaravanId}
-                gender={gender}
-                ordinances={ordinances}
-                isMinor={isMinor}
-              />
-            ))}
-          </>
-        )}
-      </Form.List>
-
-      <Form.Item
-        name="isFirstTimeConvert"
-        label="É a sua primeira vez no templo como recém-converso?"
-        valuePropName="checked"
-      >
-        <Switch />
-      </Form.Item>
+      </motion.div>
 
       <Form.Item>
-        <div className="flex gap-5">
-          <Button icon={<X size={16} />} onClick={() => router.back()}>
-            Cancelar
-          </Button>
+        <motion.div
+          className={
+            !isBusAvailable ? "flex flex-col gap-3 opacity-50 transition-all" : "flex flex-col gap-3"
+          }
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          transition={sectionTransition(0.24)}
+        >
           <Button
+            size="large"
             type="primary"
-            icon={<Check size={16} />}
             htmlType="submit"
             loading={isPending}
+            disabled={!isBusAvailable}
+            className="w-full"
           >
             {isPending
               ? mode === "create"
-                ? "A criar..."
+                ? "A inscrever..."
                 : "A atualizar..."
               : mode === "create"
-              ? "Criar"
-              : "Atualizar"}
+              ? "Me inscrever"
+              : "Atualizar inscrição"}
           </Button>
-        </div>
+
+          <Button
+            size="large"
+            onClick={() => router.back()}
+            className="w-full"
+          >
+            Cancelar
+          </Button>
+        </motion.div>
       </Form.Item>
     </Form>
   );

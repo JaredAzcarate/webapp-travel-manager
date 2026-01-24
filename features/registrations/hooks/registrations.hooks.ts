@@ -259,6 +259,17 @@ export const useCreateRegistration = () => {
       queryClient.invalidateQueries({
         queryKey: ["waitlist", data.caravanId],
       });
+      // Invalidate caravan query to refresh ordinanceCapacityCounts
+      queryClient.invalidateQueries({
+        queryKey: ["caravans", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["caravans"],
+      });
+      // Invalidate ordinance availability queries
+      queryClient.invalidateQueries({
+        queryKey: ["ordinance-availability"],
+      });
     },
   });
 
@@ -300,6 +311,17 @@ export const useUpdateRegistration = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ["registrations", "count", data.caravanId, data.busId],
+      });
+      // Invalidate caravan query to refresh ordinanceCapacityCounts
+      queryClient.invalidateQueries({
+        queryKey: ["caravans", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["caravans"],
+      });
+      // Invalidate ordinance availability queries
+      queryClient.invalidateQueries({
+        queryKey: ["ordinance-availability"],
       });
     },
   });
@@ -394,8 +416,34 @@ export const useCancelRegistration = () => {
     mutationFn: async (id: string) => {
       return await repository.cancelRegistration(id);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", data.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "byCaravan", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "byBus", data.busId, data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "count", "active", data.caravanId, data.busId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["waitlist", data.caravanId],
+      });
+      // Invalidate caravan query to refresh ordinanceCapacityCounts
+      queryClient.invalidateQueries({
+        queryKey: ["caravans", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["caravans"],
+      });
+      // Invalidate ordinance availability queries
+      queryClient.invalidateQueries({
+        queryKey: ["ordinance-availability"],
+      });
     },
   });
 
@@ -490,6 +538,17 @@ export const usePromoteFromWaitlist = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ["waitlist", data.caravanId],
+      });
+      // Invalidate caravan query to refresh ordinanceCapacityCounts
+      queryClient.invalidateQueries({
+        queryKey: ["caravans", data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["caravans"],
+      });
+      // Invalidate ordinance availability queries
+      queryClient.invalidateQueries({
+        queryKey: ["ordinance-availability"],
       });
     },
   });

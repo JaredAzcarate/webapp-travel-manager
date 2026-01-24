@@ -1,5 +1,5 @@
-import { AntdProvider } from "@/common/providers/antd-provider";
 import { PublicLayout } from "@/common/components/PublicLayout";
+import { AntdProvider } from "@/common/providers/antd-provider";
 import { QueryProvider } from "@/common/providers/query-provider";
 import { SessionProvider } from "@/providers/session-provider";
 import type { Metadata } from "next";
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt">
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-gray-100`}>
         <SessionProvider>
           <QueryProvider>
             <AntdProvider>

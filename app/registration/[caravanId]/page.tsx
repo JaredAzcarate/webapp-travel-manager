@@ -40,7 +40,7 @@ export default function PublicRegistrationPage() {
 
   if (!caravan) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <Card>
             <Alert
@@ -57,7 +57,7 @@ export default function PublicRegistrationPage() {
 
   if (!isFormOpen) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <Card>
             <Alert
@@ -73,18 +73,18 @@ export default function PublicRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <Title level={2} className="mb-6">
-            Inscrição para {caravan.name}
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto py-10">
+   
+          <Title level={3} className="mb-6">
+            {caravan.name}
           </Title>
           <RegistrationForm
             mode="create"
             caravanId={caravan.id}
             onSuccess={handleSuccess}
           />
-        </Card>
+      
       </div>
     </div>
   );

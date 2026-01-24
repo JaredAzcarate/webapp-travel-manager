@@ -3,7 +3,6 @@
 import { Button, Layout } from "antd";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo } from "react";
 
 const { Header } = Layout;
 
@@ -19,8 +18,8 @@ export function PublicHeader() {
   };
 
   return (
-    <Header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto h-full flex items-center justify-between px-4">
+    <header className="bg-white sticky top-0 z-50 border-b border-gray-200" >
+      <div className="max-w-7xl mx-auto h-full flex items-center justify-between p-4">
         {/* Logo/Title */}
         <Link href="/" className="text-xl font-bold text-gray-900 no-underline">
           Agendamentos do Templo
@@ -32,8 +31,8 @@ export function PublicHeader() {
             href="/"
             className={`no-underline transition-colors ${
               isActive("/")
-                ? "text-[#007da5] font-medium"
-                : "text-gray-700 hover:text-[#007da5]"
+                ? "text-primary font-medium"
+                : "text-gray-700 hover:text-primary"
             }`}
           >
             Caravanas
@@ -42,8 +41,8 @@ export function PublicHeader() {
             href="/confirm-payment"
             className={`no-underline transition-colors ${
               isActive("/confirm-payment")
-                ? "text-[#007da5] font-medium"
-                : "text-gray-700 hover:text-[#007da5]"
+                ? "text-primary font-medium"
+                : "text-gray-700 hover:text-primary"
             }`}
           >
             Informar pago
@@ -54,12 +53,12 @@ export function PublicHeader() {
         <Button
           type="primary"
           onClick={() => router.push("/auth/login")}
-          className="bg-[#007da5] hover:bg-[#006a8a] border-none"
+          className="bg-primary hover:bg-primary-dark border-none"
         >
           Login
         </Button>
       </div>
-    </Header>
+    </header>
   );
 }
 

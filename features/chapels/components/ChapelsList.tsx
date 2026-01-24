@@ -7,7 +7,6 @@ import {
 import { ChapelWithId } from "@/features/chapels/models/chapels.model";
 import { App, Button, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash } from "phosphor-react";
 
@@ -61,15 +60,10 @@ export const ChapelsList = () => {
       render: (address: string | undefined) => address || "-",
     },
     {
-      title: "Data de Criação",
-      key: "createdAt",
-      render: (_, record) => {
-        const timestamp = record.createdAt;
-        if (timestamp && "toDate" in timestamp) {
-          return dayjs(timestamp.toDate()).format("DD/MM/YYYY HH:mm");
-        }
-        return "-";
-      },
+      title: "Lugar de saida do autocarro",
+      dataIndex: "busDepartureLocation",
+      key: "busDepartureLocation",
+      render: (location: string | undefined) => location || "-",
     },
     {
       title: "Ações",

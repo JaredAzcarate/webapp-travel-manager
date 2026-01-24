@@ -37,7 +37,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <Title level={1} className="text-2xl sm:text-3xl md:text-4xl">

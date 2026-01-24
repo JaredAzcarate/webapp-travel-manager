@@ -1,5 +1,6 @@
 import { db } from "@/common/lib/firebase";
 import { BusRepository } from "@/features/buses/repositories/buses.repository";
+import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { CaravanRepository } from "@/features/caravans/repositories/caravans.repository";
 import {
   decrementCountByGender,
@@ -33,12 +34,31 @@ export class RegistrationRepository {
   private caravanRepository = new CaravanRepository();
   private busRepository = new BusRepository();
 
+  private migrateRegistration(data: unknown): RegistrationWithId {
+    const registration = data as Partial<RegistrationWithId> & { id: string };
+    
+    // Migrate isAdult to ageCategory if needed
+    const registrationWithLegacy = registration as Partial<RegistrationWithId> & { id: string; isAdult?: boolean };
+    if (registrationWithLegacy.isAdult !== undefined && !registrationWithLegacy.ageCategory) {
+      registrationWithLegacy.ageCategory = registrationWithLegacy.isAdult ? "ADULT" : "YOUTH";
+    }
+    
+    // Ensure privacyPolicyAccepted exists (default to false for old records)
+    if (registration.privacyPolicyAccepted === undefined) {
+      registration.privacyPolicyAccepted = false;
+    }
+    
+    return registration as RegistrationWithId;
+  }
+
   async getAll(): Promise<RegistrationWithId[]> {
     const snap = await getDocs(collection(db, this.collectionName));
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getById(id: string): Promise<RegistrationWithId> {
@@ -49,10 +69,10 @@ export class RegistrationRepository {
       throw new Error(`Registration with id ${id} not found`);
     }
 
-    return {
+    return this.migrateRegistration({
       id: docSnap.id,
       ...docSnap.data(),
-    } as RegistrationWithId;
+    });
   }
 
   async create(input: CreateRegistrationInput): Promise<RegistrationWithId> {
@@ -94,7 +114,7 @@ export class RegistrationRepository {
         throw new Error(`Caravan with id ${input.caravanId} not found`);
       }
 
-      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as any;
+      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as CaravanWithId;
 
       // If bus is full, skip ordinance validation and capacity updates
       // If bus has space, validate ordinances as usual
@@ -170,10 +190,10 @@ export class RegistrationRepository {
       }
 
       const createdDoc = await getDoc(registrationRef);
-      return {
+      return this.migrateRegistration({
         id: createdDoc.id,
         ...createdDoc.data(),
-      } as RegistrationWithId;
+      });
     });
   }
 
@@ -206,7 +226,7 @@ export class RegistrationRepository {
         );
       }
 
-      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as any;
+      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as CaravanWithId;
 
       const userGender = existingRegistration.gender;
 
@@ -308,10 +328,10 @@ export class RegistrationRepository {
       });
 
       const updatedDoc = await getDoc(registrationRef);
-      return {
+      return this.migrateRegistration({
         id: updatedDoc.id,
         ...updatedDoc.data(),
-      } as RegistrationWithId;
+      });
     });
   }
 
@@ -330,10 +350,12 @@ export class RegistrationRepository {
     }
     const q = query(collection(db, this.collectionName), ...constraints);
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getByCaravanId(caravanId: string): Promise<RegistrationWithId[]> {
@@ -342,10 +364,12 @@ export class RegistrationRepository {
       where("caravanId", "==", caravanId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getByChapelId(
@@ -358,10 +382,12 @@ export class RegistrationRepository {
     }
     const q = query(collection(db, this.collectionName), ...constraints);
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getByBusId(
@@ -374,10 +400,12 @@ export class RegistrationRepository {
       where("caravanId", "==", caravanId)
     );
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getActiveByBusId(
@@ -391,10 +419,12 @@ export class RegistrationRepository {
       where("participationStatus", "==", "ACTIVE")
     );
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async getWaitlistByCaravanId(
@@ -406,10 +436,12 @@ export class RegistrationRepository {
       where("participationStatus", "==", "WAITLIST")
     );
     const snap = await getDocs(q);
-    const registrations = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    const registrations = snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
 
     // Sort by createdAt (first come, first served)
     return registrations.sort((a, b) => {
@@ -430,10 +462,12 @@ export class RegistrationRepository {
       where("participationStatus", "==", "CANCELLED")
     );
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async countActiveByBus(caravanId: string, busId: string): Promise<number> {
@@ -485,10 +519,12 @@ export class RegistrationRepository {
 
     const q = query(collection(db, this.collectionName), ...constraints);
     const snap = await getDocs(q);
-    return snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as RegistrationWithId[];
+    return snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
   }
 
   async markPaymentAsPaid(id: string): Promise<RegistrationWithId> {
@@ -541,7 +577,7 @@ export class RegistrationRepository {
       });
 
       if (caravanSnap && caravanSnap.exists() && caravanRef) {
-        const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as any;
+        const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as CaravanWithId;
         const userGender = existingRegistration.gender;
         const updatedCounts = { ...(caravan.ordinanceCapacityCounts || {}) };
 
@@ -611,7 +647,7 @@ export class RegistrationRepository {
         );
       }
 
-      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as any;
+      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as CaravanWithId;
       const now = Timestamp.now();
 
       // Update registration to ACTIVE

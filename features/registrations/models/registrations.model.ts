@@ -5,6 +5,8 @@ export type PaymentStatus = "PENDING" | "PAID" | "FREE" | "CANCELLED";
 
 export type ParticipationStatus = "ACTIVE" | "CANCELLED" | "WAITLIST";
 
+export type AgeCategory = "CHILD" | "YOUTH" | "ADULT";
+
 export interface Registration {
   caravanId: string; // references caravans.id
   chapelId: string; // chapel of departure
@@ -12,7 +14,7 @@ export interface Registration {
 
   phone: string; // main identifier for this caravan (unique per caravanId)
   fullName: string;
-  isAdult: boolean; // true = adult, false = youth
+  ageCategory: AgeCategory; // CHILD (1-10), YOUTH (11-17), ADULT (+18)
   gender: "M" | "F";
   isOfficiator: boolean;
 
@@ -34,6 +36,8 @@ export interface Registration {
   participationStatus: ParticipationStatus;
   cancellationReason?: string;
   cancelledAt?: Timestamp;
+
+  privacyPolicyAccepted: boolean;
 
   createdAt: Timestamp;
   updatedAt: Timestamp;

@@ -7,6 +7,7 @@ export interface Chapel {
   whatsappPhone?: string;
   email?: string;
   address?: string;
+  busDepartureLocation?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

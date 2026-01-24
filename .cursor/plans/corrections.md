@@ -1,5 +1,5 @@
 Gestão de Capelas
-- Agregar el campo "Lugar de saida" (este campo sera el luagar de donde saldra el bus) y cada unidad (capela) tendra una direccion de donde saldra el bus
+- Agregar el campo "Lugar de saida do autocarro" (este campo sera el luagar de donde saldra el bus) y cada unidad (capela) tendra una direccion de donde saldra el bus
 - Data de Criação no es necesario en la tabla
 
 Distribuição de Passageiros
