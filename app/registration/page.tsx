@@ -1,5 +1,6 @@
 "use client";
 
+import { PublicContent } from "@/common/components/PublicContent";
 import { useActiveCaravans } from "@/features/caravans/hooks/caravans.hooks";
 import { Alert, Card, Spin } from "antd";
 import { useRouter } from "next/navigation";
@@ -26,17 +27,15 @@ export default function PublicRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <Alert
-            message="Redirecionando..."
-            description="A redirecionar para a página de inscrição."
-            type="info"
-            showIcon
-          />
-        </Card>
-      </div>
-    </div>
+    <PublicContent>
+      <Card>
+        <Alert
+          message="Redirecionando..."
+          description="A redirecionar para a página de inscrição."
+          type="info"
+          showIcon
+        />
+      </Card>
+    </PublicContent>
   );
 }

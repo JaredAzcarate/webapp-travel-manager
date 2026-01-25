@@ -40,3 +40,9 @@ Firestore
 Paginas de politicas de privacidad
 - Verificar que cumplimos con la ley de politicas de privacidad de europa
 - Verificar que las politicas de privacidad esten a favor del desarrollador que cualquier incumplimiento no se responsabiliza ni a la iglesia ni al desarrollador.
+
+Pagina de confirmacao de inscricao
+- Ajustar el diseño para quedar similar al resto de la app
+
+Pagina para crear un usuario admin
+- Eliminar (change-admin-password) de lo publico

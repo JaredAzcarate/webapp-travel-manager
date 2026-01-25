@@ -420,7 +420,7 @@ const BusDistributionCard = ({
         const tags = [];
 
         // Tag "Jovem" si es menor de edad
-        if (!record.isAdult) {
+        if (record.ageCategory === "YOUTH" || record.ageCategory === "CHILD") {
           tags.push(
             <Tag key="jovem" color="blue">
               Jovem

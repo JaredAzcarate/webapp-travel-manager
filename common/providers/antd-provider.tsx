@@ -16,12 +16,17 @@ export function AntdProvider({ children }: AntdProviderProps) {
     <ConfigProvider
       theme={{
         token: {
+          colorLink: "rgba(0,0,0,0.88)",
+          colorLinkHover: "#007da5",
           colorPrimary: "#007da5",
           colorInfoBg: "oklch(96.7% 0.003 264.542)",
           colorInfoBorder: "none",
           colorWarningBorder: "none",
         },
         components: {
+          Typography: {
+            titleMarginBottom: 0,
+          },
           Form: {
             itemMarginBottom: 0,
           },

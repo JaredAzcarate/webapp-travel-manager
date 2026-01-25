@@ -1,6 +1,8 @@
 "use client";
 
 import { CardRadioGroup } from "@/common/components/CardRadioGroup";
+import { OrdinancesListField } from "@/common/components/OrdinancesListField";
+import { OrdinanceFormValue } from "@/common/utils/ordinances.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import {
@@ -9,11 +11,9 @@ import {
 } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
-import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
 import {
   useCountActiveByBus,
   useCreateRegistration,
-  useOrdinanceAvailabilityFromCaravan,
   useUpdateRegistration,
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
@@ -22,25 +22,22 @@ import {
   RegistrationWithId,
   UpdateRegistrationInput,
 } from "@/features/registrations/models/registrations.model";
-import { RegistrationRepository } from "@/features/registrations/repositories/registrations.repository";
 import {
   Alert,
   App,
   Button,
   Checkbox,
   Form,
+  FormInstance,
   Input,
   Radio,
   Select,
-  Space,
   Switch,
-  Tag,
-  Typography,
-  type FormListFieldData
+  Typography
 } from "antd";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 const { Paragraph, Title } = Typography;
 
@@ -54,11 +51,6 @@ function sectionTransition(delay = 0) {
   return { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const, delay };
 }
 
-interface OrdinanceFormValue {
-  ordinanceId?: string;
-  slot?: string;
-}
-
 interface FormValues {
   caravanId: string;
   chapelId: string;
@@ -66,7 +58,7 @@ interface FormValues {
   phone?: string;
   fullName: string;
   ageCategory: AgeCategory;
-  gender: "M" | "F";
+  gender?: "M" | "F";
   isOfficiator?: boolean;
   legalGuardianName?: string;
   legalGuardianEmail?: string;
@@ -74,349 +66,8 @@ interface FormValues {
   ordinances: OrdinanceFormValue[];
   isFirstTimeConvert: boolean;
   hasLessThanOneYearAsMember: boolean;
-  isPersonalOrdinance: boolean;
   privacyPolicyAccepted: boolean;
 }
-
-interface OrdinanceFormItemProps {
-  name: number;
-  restField: Omit<FormListFieldData, "name" | "key">;
-  form: ReturnType<typeof Form.useForm<FormValues>>[0];
-  selectedCaravanId: string | null;
-  gender: "M" | "F" | null;
-  ordinances: OrdinanceWithId[];
-  ageCategory: AgeCategory;
-  isFirstTimeConvert: boolean;
-  hasLessThanOneYearAsMember: boolean;
-  selectedOrdinances: OrdinanceFormValue[];
-  disabled?: boolean;
-}
-
-// Utility function to parse time slot (e.g., "9:30-10:00" -> { start: "9:30", end: "10:00" })
-const parseTimeSlot = (slot: string): { start: string; end: string } | null => {
-  const match = slot.match(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/);
-  if (!match) return null;
-  return { start: match[1], end: match[2] };
-};
-
-// Utility function to convert time to minutes for comparison
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-};
-
-// Check if two time slots overlap
-const doTimeSlotsOverlap = (
-  slot1: string,
-  slot2: string
-): boolean => {
-  const parsed1 = parseTimeSlot(slot1);
-  const parsed2 = parseTimeSlot(slot2);
-  if (!parsed1 || !parsed2) return false;
-
-  const start1 = timeToMinutes(parsed1.start);
-  const end1 = timeToMinutes(parsed1.end);
-  const start2 = timeToMinutes(parsed2.start);
-  const end2 = timeToMinutes(parsed2.end);
-
-  return !(end1 <= start2 || end2 <= start1);
-};
-
-const OrdinanceFormItem: React.FC<OrdinanceFormItemProps> = ({
-  name,
-  restField,
-  form,
-  selectedCaravanId,
-  gender,
-  ordinances,
-  ageCategory,
-  isFirstTimeConvert,
-  hasLessThanOneYearAsMember,
-  selectedOrdinances,
-  disabled = false,
-}) => {
-  const ordinanceId = Form.useWatch(
-    ["ordinances", name, "ordinanceId"],
-    form
-  ) as string | null;
-  const ordinanceSlot = Form.useWatch(["ordinances", name, "slot"], form);
-
-  const {
-    available,
-    maxCapacity,
-    loading: loadingAvailability,
-  } = useOrdinanceAvailabilityFromCaravan(
-    selectedCaravanId ?? null,
-    ordinanceId ?? null,
-    ordinanceSlot ?? null,
-    gender
-  );
-
-  // Filter ordinances based on age category and restrictions
-  const availableOrdinances = useMemo(() => {
-    const isRestricted =
-      ageCategory === "YOUTH" || isFirstTimeConvert || hasLessThanOneYearAsMember;
-
-    return ordinances.filter((o) => {
-      // If restricted, only show BAPTISTRY ordinances
-      if (isRestricted) {
-        return o.name.toLowerCase().includes("batistério");
-      }
-
-      // Filter by gender: don't show ordinances that only have sessions for the opposite gender
-      if (gender) {
-        const hasAvailableSessions = o.sessions.some((session) => {
-          if (!session.gender) return true; // null = both genders
-          return session.gender === gender;
-        });
-        if (!hasAvailableSessions) return false;
-
-        // Don't show "Iniciatória - Irmãs" for men
-        if (gender === "M" && o.name.toLowerCase().includes("iniciatória") && o.name.toLowerCase().includes("irmãs")) {
-          return false;
-        }
-        // Don't show "Iniciatória - Irmãos" for women
-        if (gender === "F" && o.name.toLowerCase().includes("iniciatória") && o.name.toLowerCase().includes("irmãos")) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [ordinances, gender, ageCategory, isFirstTimeConvert, hasLessThanOneYearAsMember]);
-
-  // Get available slots filtered by gender and non-overlapping with other selected ordinances
-  const availableSlots = useMemo(() => {
-    if (!ordinanceId) return [];
-
-    const ordinance = ordinances.find((o) => o.id === ordinanceId);
-    if (!ordinance) {
-      return [];
-    }
-
-    // Filter sessions by gender
-    const filteredSessions = ordinance.sessions.filter((session) => {
-      if (!session.gender) return true; // null = both genders
-      if (gender === null) return true; // user gender not selected yet
-      return session.gender === gender;
-    });
-
-    // Extract unique slots
-    const slotSet = new Set<string>();
-    filteredSessions.forEach((session) => {
-      if (session.slot) {
-        slotSet.add(session.slot);
-      }
-    });
-
-    let availableSlotsList = Array.from(slotSet);
-
-    // Filter out slots that overlap with already selected ordinances
-    if (selectedOrdinances.length > 0) {
-      availableSlotsList = availableSlotsList.filter((slot) => {
-        return !selectedOrdinances.some((selected) => {
-          if (!selected.slot || selected.ordinanceId === ordinanceId) return false;
-          return doTimeSlotsOverlap(slot, selected.slot);
-        });
-      });
-    }
-
-    return availableSlotsList;
-  }, [ordinanceId, gender, ordinances, selectedOrdinances]);
-
-  return (
-    <div className="mb-4">
-      <div className="mb-2 text-sm font-medium">Ordenança {name + 1}</div>
-      <Space
-        style={{ display: "flex", marginBottom: 8 }}
-        align="baseline"
-        className="w-full"
-      >
-        <Form.Item {...restField} name={[name, "ordinanceId"]} className="flex-1">
-          <Select
-            placeholder="Selecione a ordenança"
-            allowClear
-            disabled={disabled}
-            options={availableOrdinances.map((ordinance) => ({
-              label: ordinance.name,
-              value: ordinance.id,
-            }))}
-          />
-        </Form.Item>
-
-        <Form.Item {...restField} name={[name, "slot"]} className="flex-1">
-          <Select
-            placeholder="Selecione o horário"
-            allowClear
-            disabled={disabled || !ordinanceId}
-            options={availableSlots.map((slot) => ({
-              label: slot,
-              value: slot,
-            }))}
-          />
-        </Form.Item>
-
-        {ordinanceId && ordinanceSlot && (
-          <div className="w-32">
-            {loadingAvailability ? (
-              <Tag>Carregando...</Tag>
-            ) : (
-              <Tag color={available > 0 ? "green" : "red"}>
-                {available}/{maxCapacity} disponíveis
-              </Tag>
-            )}
-          </div>
-        )}
-      </Space>
-    </div>
-  );
-};
-
-// Component to handle ordinances list with proper hook usage
-interface OrdinancesListFieldProps {
-  form: ReturnType<typeof Form.useForm<FormValues>>[0];
-  isPersonalOrdinance: boolean;
-  selectedCaravanId: string | null;
-  gender: "M" | "F" | null;
-  ordinances: OrdinanceWithId[];
-  ageCategory: AgeCategory;
-  isFirstTimeConvert: boolean;
-  hasLessThanOneYearAsMember: boolean;
-  ordinancesList: OrdinanceFormValue[];
-  disabled?: boolean;
-}
-
-const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
-  form,
-  isPersonalOrdinance,
-  selectedCaravanId,
-  gender,
-  ordinances,
-  ageCategory,
-  isFirstTimeConvert,
-  hasLessThanOneYearAsMember,
-  ordinancesList,
-  disabled = false,
-}) => {
-  // Adjust fields when isPersonalOrdinance changes
-  useEffect(() => {
-    try {
-      const currentOrdinances = form.getFieldValue("ordinances") || [];
-      
-      // Initialize if empty
-      if (currentOrdinances.length === 0) {
-        const initialCount = isPersonalOrdinance ? 1 : 3;
-        const initialOrdinances = Array.from({ length: initialCount }, () => ({
-          ordinanceId: undefined,
-          slot: undefined,
-        }));
-        form.setFieldsValue({
-          ordinances: initialOrdinances,
-        });
-        return;
-      }
-      
-      if (isPersonalOrdinance && currentOrdinances.length > 1) {
-        // Keep only the first ordinance
-        form.setFieldsValue({
-          ordinances: [currentOrdinances[0] || { ordinanceId: undefined, slot: undefined }],
-        });
-      } else if (!isPersonalOrdinance) {
-        if (currentOrdinances.length < 3) {
-          // Add empty fields up to 3
-          const newOrdinances = [...currentOrdinances];
-          while (newOrdinances.length < 3) {
-            newOrdinances.push({ ordinanceId: undefined, slot: undefined });
-          }
-          form.setFieldsValue({
-            ordinances: newOrdinances,
-          });
-        } else if (currentOrdinances.length > 3) {
-          // Keep only first 3
-          form.setFieldsValue({
-            ordinances: currentOrdinances.slice(0, 3),
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error adjusting ordinances fields:", error);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPersonalOrdinance]);
-
-  return (
-    <Form.List
-      name="ordinances"
-      rules={[
-        {
-          validator: async (_, ordinancesList) => {
-            const filledOrdinances = ordinancesList.filter(
-              (o: OrdinanceFormValue) => o.ordinanceId && o.slot
-            );
-
-            // Check for overlapping time slots
-            for (let i = 0; i < filledOrdinances.length; i++) {
-              for (let j = i + 1; j < filledOrdinances.length; j++) {
-                if (
-                  filledOrdinances[i].slot &&
-                  filledOrdinances[j].slot &&
-                  doTimeSlotsOverlap(
-                    filledOrdinances[i].slot!,
-                    filledOrdinances[j].slot!
-                  )
-                ) {
-                  return Promise.reject(
-                    new Error(
-                      "Os horários das ordenanças não podem se sobrepor"
-                    )
-                  );
-                }
-              }
-            }
-          },
-        },
-      ]}
-    >
-      {(fields) => {
-        const maxFields = isPersonalOrdinance ? 1 : 3;
-        const displayFields = fields.slice(0, maxFields);
-
-        return (
-          <>
-            <div className="mb-2">
-              <span className="text-sm font-medium">
-                Ordenanças{" "}
-                {isPersonalOrdinance
-                  ? "(máximo 1)"
-                  : "(máximo 3, opcional)"}
-              </span>
-            </div>
-
-            {displayFields.map(({ key, name, ...restField }) => (
-              <OrdinanceFormItem
-                key={key}
-                name={name}
-                restField={restField}
-                form={form}
-                selectedCaravanId={selectedCaravanId}
-                gender={gender}
-                ordinances={ordinances}
-                ageCategory={ageCategory}
-                isFirstTimeConvert={isFirstTimeConvert}
-                hasLessThanOneYearAsMember={hasLessThanOneYearAsMember}
-                selectedOrdinances={ordinancesList.filter(
-                  (o: OrdinanceFormValue, idx: number) =>
-                    idx !== name && o.ordinanceId && o.slot
-                )}
-                disabled={disabled}
-              />
-            ))}
-          </>
-        );
-      }}
-    </Form.List>
-  );
-};
 
 interface RegistrationFormProps {
   mode: "create" | "edit";
@@ -425,8 +76,6 @@ interface RegistrationFormProps {
   caravanId?: string;
   onSuccess?: () => void;
 }
-
-const repository = new RegistrationRepository();
 
 export const RegistrationForm = ({
   mode,
@@ -440,6 +89,7 @@ export const RegistrationForm = ({
   const [form] = Form.useForm<FormValues>();
   const hasShownSuccessRef = useRef(false);
   const hasShownErrorRef = useRef(false);
+  const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
 
   const {
     createRegistration,
@@ -471,7 +121,6 @@ export const RegistrationForm = ({
     "hasLessThanOneYearAsMember",
     form
   );
-  const isPersonalOrdinance = Form.useWatch("isPersonalOrdinance", form);
 
   const { caravan: selectedCaravan } = useCaravan(selectedCaravanId || "");
 
@@ -581,17 +230,25 @@ export const RegistrationForm = ({
       prevChapelIdRef.current !== selectedChapelId
     ) {
       const caravanId = form.getFieldValue("caravanId");
-      form.resetFields();
+      // Set chapelId first to avoid temporary undefined state
       form.setFieldsValue({
         caravanId,
         chapelId: selectedChapelId,
+      });
+      // Then reset other fields
+      form.setFieldsValue({
         ageCategory: undefined,
         isOfficiator: false,
         isFirstTimeConvert: false,
         hasLessThanOneYearAsMember: false,
-        isPersonalOrdinance: false,
         privacyPolicyAccepted: false,
         ordinances: [],
+        fullName: undefined,
+        phone: undefined,
+        gender: undefined,
+        legalGuardianName: undefined,
+        legalGuardianEmail: undefined,
+        legalGuardianPhone: undefined,
       });
     }
     prevChapelIdRef.current = selectedChapelId;
@@ -611,6 +268,7 @@ export const RegistrationForm = ({
         .map((ord) => ({
           ordinanceId: ord.ordinanceId!,
           slot: ord.slot!,
+          isPersonal: ord.isPersonal ?? false,
         }));
 
       // Migrate ageCategory if needed
@@ -635,7 +293,6 @@ export const RegistrationForm = ({
         ordinances: ordinancesData,
         isFirstTimeConvert: initialRegistrationData.isFirstTimeConvert,
         hasLessThanOneYearAsMember: false,
-        isPersonalOrdinance: false,
         privacyPolicyAccepted: initialRegistrationData.privacyPolicyAccepted ?? false,
       });
     }
@@ -646,7 +303,6 @@ export const RegistrationForm = ({
       form.setFieldsValue({
         caravanId: propCaravanId,
         ordinances: [],
-        isPersonalOrdinance: false,
       });
     }
   }, [mode, propCaravanId, form]);
@@ -657,16 +313,25 @@ export const RegistrationForm = ({
     }
   }, [assignedBusId, selectedChapelId, form, mode]);
 
-  // Clear guardian fields when age category changes
+  // Clear all fields after ageCategory when it changes
   useEffect(() => {
-    if (ageCategory === "ADULT" && mode === "create") {
+    if (prevAgeCategoryRef.current !== undefined && ageCategory !== undefined && prevAgeCategoryRef.current !== ageCategory) {
       form.setFieldsValue({
+        hasLessThanOneYearAsMember: false,
+        isFirstTimeConvert: false,
+        fullName: undefined,
+        phone: undefined,
+        gender: undefined,
         legalGuardianName: undefined,
         legalGuardianEmail: undefined,
         legalGuardianPhone: undefined,
+        isOfficiator: false,
+        ordinances: [],
+        privacyPolicyAccepted: false,
       });
     }
-  }, [ageCategory, form, mode]);
+    prevAgeCategoryRef.current = ageCategory;
+  }, [ageCategory, form]);
 
   useEffect(() => {
     if (mode === "create" && created && !hasShownSuccessRef.current) {
@@ -684,7 +349,6 @@ export const RegistrationForm = ({
           form.setFieldsValue({
             caravanId: propCaravanId,
             ordinances: [],
-            isPersonalOrdinance: false,
           });
         }
       }
@@ -788,14 +452,20 @@ export const RegistrationForm = ({
         ? "FREE"
         : "PENDING";
 
+      // For CHILD and YOUTH, use legalGuardianPhone as the phone identifier
+      // For ADULT, use phone
+      const phoneValue = (values.ageCategory === "CHILD" || values.ageCategory === "YOUTH")
+        ? values.legalGuardianPhone || ""
+        : values.phone || "";
+
       const input: CreateRegistrationInput = {
         caravanId: values.caravanId || selectedCaravanId || propCaravanId || "",
         chapelId: values.chapelId || selectedChapelId || "",
         busId: finalBusId || values.busId || "",
-        phone: values.phone || "",
+        phone: phoneValue,
         fullName: values.fullName,
         ageCategory: values.ageCategory,
-        gender: values.gender,
+        gender: values.gender || "M", // Default to "M" for CHILD if not provided
         isOfficiator: values.isOfficiator ?? false,
         ...(values.legalGuardianName && {
           legalGuardianName: values.legalGuardianName,
@@ -811,6 +481,7 @@ export const RegistrationForm = ({
           .map((ord) => ({
             ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
+            isPersonal: ord.isPersonal ?? false,
           })),
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
         paymentStatus,
@@ -820,14 +491,20 @@ export const RegistrationForm = ({
 
       createRegistration(input);
     } else if (mode === "edit" && registrationId) {
+      // For CHILD and YOUTH, use legalGuardianPhone as the phone identifier
+      // For ADULT, use phone
+      const phoneValue = (values.ageCategory === "CHILD" || values.ageCategory === "YOUTH")
+        ? values.legalGuardianPhone || ""
+        : values.phone || "";
+
       const input: UpdateRegistrationInput = {
         caravanId: values.caravanId,
         chapelId: values.chapelId,
         busId: values.busId,
-        phone: values.phone || "",
+        phone: phoneValue,
         fullName: values.fullName,
         ageCategory: values.ageCategory,
-        gender: values.gender,
+        gender: values.gender || "M", // Default to "M" for CHILD if not provided
         isOfficiator: values.isOfficiator ?? false,
         ...(values.legalGuardianName && {
           legalGuardianName: values.legalGuardianName,
@@ -843,6 +520,7 @@ export const RegistrationForm = ({
           .map((ord) => ({
             ordinanceId: ord.ordinanceId!,
             slot: ord.slot!,
+            isPersonal: ord.isPersonal ?? false,
           })),
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
         privacyPolicyAccepted: values.privacyPolicyAccepted,
@@ -861,20 +539,19 @@ export const RegistrationForm = ({
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
-      style={{ width: "100%" }}
       initialValues={{
         ageCategory: undefined,
         isOfficiator: false,
         isFirstTimeConvert: false,
         hasLessThanOneYearAsMember: false,
-        isPersonalOrdinance: false,
         privacyPolicyAccepted: false,
         ordinances: [],
       }}
+      className="flex flex-col gap-8 p-10"
     >
       {/* Section 1: Initial Information */}
       <motion.div
-        className="mb-8 bg-white p-4 rounded-2xl flex flex-col gap-4"
+        className="bg-white p-4 rounded-2xl flex flex-col gap-4"
         initial={sectionAnimation.initial}
         animate={sectionAnimation.animate}
         transition={sectionTransition(0)}
@@ -941,7 +618,7 @@ export const RegistrationForm = ({
         <AnimatePresence>
           {busAssignmentMessage && (
             <motion.div
-              key="bus-assignment-alert"
+              key={`bus-assignment-alert-${selectedChapelId}-${assignedBusId || 'no-bus'}`}
               initial={sectionAnimation.initial}
               animate={sectionAnimation.animate}
               exit={sectionAnimation.exit}
@@ -1014,7 +691,7 @@ export const RegistrationForm = ({
                     transition={sectionTransition(0)}
                     className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row justify-between"
                   >
-                   <div>
+                   <div className="flex flex-col gap-2">
                       <Title level={5}>É primeira vez que vai fazer uma ordenança no templo?</Title>
                       <Paragraph>A estaca Porto Norte oferece uma viagem gratuita para <strong>membros recem conversos que fazem a sua primeira ordenança no templo.</strong> Por favor, marque a opção &quot;sim&quot; se esse for o caso.</Paragraph>
                     </div>
@@ -1040,7 +717,7 @@ export const RegistrationForm = ({
 
       {/* Section 2: Personal Information */}
       <motion.div
-        className={`mb-8 p-4 bg-white rounded-2xl flex flex-col gap-4 transition-all
+        className={`p-4 bg-white rounded-2xl flex flex-col gap-4 transition-all
           ${!isBusAvailable
             ? "opacity-30 pointer-events-none"
             : "opacity-100"
@@ -1089,25 +766,6 @@ export const RegistrationForm = ({
                     pattern: /^\+?[1-9]\d{1,14}$/,
                     message: "Por favor, insira um número de telefone válido",
                   },
-                  {
-                    validator: async (_, value) => {
-                      if (!value || mode !== "create" || !selectedCaravanId) {
-                        return Promise.resolve();
-                      }
-                      const isUnique = await repository.checkPhoneUniqueness(
-                        value,
-                        selectedCaravanId
-                      );
-                      if (!isUnique) {
-                        return Promise.reject(
-                          new Error(
-                            "Este número de telefone já está registrado nesta caravana"
-                          )
-                        );
-                      }
-                      return Promise.resolve();
-                    },
-                  },
                 ]}
               >
                 <Input
@@ -1119,16 +777,28 @@ export const RegistrationForm = ({
           )}
         </AnimatePresence>
         </div>
-        <Form.Item
-          name="gender"
-          label="Sexo"
-          rules={[{ required: true, message: "Por favor, selecione o sexo" }]}
-        >
-          <Radio.Group disabled={!isBusAvailable}>
-            <Radio value="M">Masculino</Radio>
-            <Radio value="F">Feminino</Radio>
-          </Radio.Group>
-        </Form.Item>
+        <AnimatePresence>
+          {ageCategory !== "CHILD" && (
+            <motion.div
+              key="gender-field"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0)}
+            >
+              <Form.Item
+                name="gender"
+                label="Sexo"
+                rules={[{ required: true, message: "Por favor, selecione o sexo" }]}
+              >
+                <Radio.Group disabled={!isBusAvailable}>
+                  <Radio value="M">Masculino</Radio>
+                  <Radio value="F">Feminino</Radio>
+                </Radio.Group>
+              </Form.Item>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {(ageCategory === "CHILD" || ageCategory === "YOUTH") && (
@@ -1184,6 +854,10 @@ export const RegistrationForm = ({
                 label="Telefone do responsável legal"
                 rules={[
                   {
+                    required: true,
+                    message: "Por favor, insira o número de telefone do responsável legal",
+                  },
+                  {
                     pattern: /^\+?[1-9]\d{1,14}$/,
                     message: "Por favor, insira um número de telefone válido",
                   },
@@ -1236,13 +910,22 @@ export const RegistrationForm = ({
                 animate={sectionAnimation.animate}
                 exit={sectionAnimation.exit}
                 transition={sectionTransition(0)}
+                className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row justify-between"
               >
+                <div className="flex flex-col gap-2">
+                  <Title level={5}>És oficiante do templo?</Title>
+                  <Paragraph>Se és um oficiante, marca esta opção.</Paragraph>
+                </div>
+
                 <Form.Item
                   name="isOfficiator"
-                  label="És oficiante?"
                   valuePropName="checked"
                 >
-                  <Switch disabled={!isBusAvailable} />
+                  <Switch
+                    disabled={!isBusAvailable}
+                    checkedChildren="Sim"
+                    unCheckedChildren="Não"
+                  />
                 </Form.Item>
               </motion.div>
             )}
@@ -1251,13 +934,13 @@ export const RegistrationForm = ({
 
       {/* Section 3: Ordinances */}
       <AnimatePresence>
-        {shouldShowOrdinancesStep && (
+        {shouldShowOrdinancesStep && (gender === "M" || gender === "F") && (
           <motion.div
             key="ordinances-section"
             className={
               !isBusAvailable
-                ? "mb-8 bg-white p-4 rounded-2xl opacity-50 transition-all pointer-events-none"
-                : "mb-8 bg-white p-4 rounded-2xl"
+                ? "bg-white p-4 rounded-2xl opacity-50 transition-all pointer-events-none"
+                : "bg-white p-4 rounded-2xl"
             }
             initial={sectionAnimation.initial}
             animate={sectionAnimation.animate}
@@ -1267,19 +950,10 @@ export const RegistrationForm = ({
             <Title level={4} className="mb-4">
               Ordenanças
             </Title>
-            <Form.Item
-              name="isPersonalOrdinance"
-              label="É uma ordenança personal?"
-              valuePropName="checked"
-            >
-              <Checkbox disabled={!isBusAvailable}>
-                É uma ordenança personal?
-              </Checkbox>
-            </Form.Item>
 
+      
             <OrdinancesListField
-              form={form}
-              isPersonalOrdinance={isPersonalOrdinance}
+              form={form as unknown as FormInstance<{ ordinances: OrdinanceFormValue[] }>}
               selectedCaravanId={selectedCaravanId}
               gender={gender}
               ordinances={ordinances}
@@ -1296,7 +970,7 @@ export const RegistrationForm = ({
       {/* Section 4: Privacy Policy */}
       <motion.div
         className={
-          !isBusAvailable ? "mb-8 opacity-50 transition-all pointer-events-none" : "mb-8"
+          !isBusAvailable ? "opacity-50 transition-all pointer-events-none" : ""
         }
         initial={sectionAnimation.initial}
         animate={sectionAnimation.animate}
@@ -1337,6 +1011,7 @@ export const RegistrationForm = ({
         </Form.Item>
       </motion.div>
 
+      {/* Section 5: Submit Button */}
       <Form.Item>
         <motion.div
           className={

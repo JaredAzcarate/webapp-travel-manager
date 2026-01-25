@@ -1,5 +1,6 @@
 "use client";
 
+import { PublicContent } from "@/common/components/PublicContent";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
 import { Alert, Card, Spin, Typography } from "antd";
@@ -40,52 +41,45 @@ export default function PublicRegistrationPage() {
 
   if (!caravan) {
     return (
-      <div className="min-h-screen py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <Alert
-              message="Caravana não encontrada"
-              description="A caravana solicitada não existe ou não está disponível."
-              type="error"
-              showIcon
-            />
-          </Card>
-        </div>
-      </div>
+      <PublicContent>
+        <Card>
+          <Alert
+            message="Caravana não encontrada"
+            description="A caravana solicitada não existe ou não está disponível."
+            type="error"
+            showIcon
+          />
+        </Card>
+      </PublicContent>
     );
   }
 
   if (!isFormOpen) {
     return (
-      <div className="min-h-screen py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <Alert
-              message="Formulário fechado"
-              description="O formulário de inscrição não está aberto no momento."
-              type="warning"
-              showIcon
-            />
-          </Card>
-        </div>
-      </div>
+      <PublicContent>
+        <Card>
+          <Alert
+            description="O formulário de inscrição não está aberto no momento."
+            type="warning"
+            showIcon
+          />
+        </Card>
+      </PublicContent>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto py-10">
-   
-          <Title level={3} className="mb-6">
-            {caravan.name}
-          </Title>
-          <RegistrationForm
-            mode="create"
-            caravanId={caravan.id}
-            onSuccess={handleSuccess}
-          />
-      
-      </div>
-    </div>
+    <PublicContent>
+
+        <Title level={3}>
+          {caravan.name}
+        </Title>
+
+      <RegistrationForm
+        mode="create"
+        caravanId={caravan.id}
+        onSuccess={handleSuccess}
+      />
+    </PublicContent>
   );
 }

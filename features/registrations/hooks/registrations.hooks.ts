@@ -501,6 +501,56 @@ export const useOrdinanceAvailabilityFromCaravan = (
   };
 };
 
+export const useOrdinanceSlotsAvailabilityFromCaravan = (
+  caravanId: string | null,
+  ordinanceId: string | null,
+  slots: string[],
+  gender: "M" | "F" | null
+) => {
+  const { caravan, loading } = useCaravan(caravanId || "");
+
+  const availabilityMap = useQuery({
+    queryKey: ["ordinance-slots-availability", caravanId, ordinanceId, slots.join(","), gender],
+    queryFn: () => {
+      if (!caravan || !ordinanceId || slots.length === 0) {
+        return {};
+      }
+
+      const map: Record<string, { available: number; maxCapacity: number }> = {};
+
+      slots.forEach((slot) => {
+        const limitValue: CapacityValue | undefined =
+          caravan.ordinanceCapacityLimits?.[ordinanceId]?.[slot];
+        const countValue: CapacityValue | undefined =
+          caravan.ordinanceCapacityCounts?.[ordinanceId]?.[slot];
+
+        if (limitValue !== undefined && countValue !== undefined) {
+          const limit: number = getLimitForGender(limitValue, gender);
+          const count: number = getCountForGender(countValue, gender);
+
+          map[slot] = {
+            available: Math.max(0, limit - count),
+            maxCapacity: limit,
+          };
+        } else {
+          map[slot] = {
+            available: 0,
+            maxCapacity: 0,
+          };
+        }
+      });
+
+      return map;
+    },
+    enabled: !!caravanId && !!ordinanceId && slots.length > 0 && !!caravan,
+  });
+
+  return {
+    availabilityMap: availabilityMap.data ?? {},
+    loading: loading || availabilityMap.isLoading,
+  };
+};
+
 export const useWaitlistByCaravanId = (caravanId: string) => {
   const query = useQuery({
     queryKey: ["waitlist", caravanId],

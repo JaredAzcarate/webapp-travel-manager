@@ -1,8 +1,7 @@
 "use client";
 
+import { PublicContent } from "@/common/components/PublicContent";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
-import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
-import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import {
   useCancelRegistration,
   useMarkPaymentAsPaid,
@@ -11,12 +10,12 @@ import {
 import { RegistrationWithId } from "@/features/registrations/models/registrations.model";
 import { notifyChapelOnPayment } from "@/features/registrations/utils/notifications";
 import {
+  Alert,
   App,
   Button,
   Card,
   Form,
   Input,
-  Space,
   Spin,
   Table,
   Tag,
@@ -24,10 +23,26 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle, XCircle } from "phosphor-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
-const { Title } = Typography;
+
+const { Title, Paragraph } = Typography;
+
+const sectionAnimation = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+function sectionTransition(delay = 0) {
+  return {
+    duration: 0.3,
+    delay,
+    ease: [0.4, 0, 0.2, 1] as const,
+  };
+}
 
 interface FormValues {
   phone: string;
@@ -39,28 +54,10 @@ export default function ConfirmPaymentPage() {
   const [phone, setPhone] = useState<string>("");
 
   const { registrations, loading } = useRegistrationsByPhone(phone);
-  const { chapels } = useChapels();
-  const { ordinances } = useOrdinances();
   const { markPaymentAsPaid, isPending: isMarkingPaid } =
     useMarkPaymentAsPaid();
   const { cancelRegistration, isPending: isCancelling } =
     useCancelRegistration();
-
-  const chapelMap = useMemo(() => {
-    const map = new Map<string, string>();
-    chapels.forEach((chapel) => {
-      map.set(chapel.id, chapel.name);
-    });
-    return map;
-  }, [chapels]);
-
-  const ordinanceIdToNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    ordinances.forEach((o) => {
-      map.set(o.id, o.name);
-    });
-    return map;
-  }, [ordinances]);
 
   const handleSubmit = (values: FormValues) => {
     setPhone(values.phone);
@@ -122,12 +119,9 @@ export default function ConfirmPaymentPage() {
       },
     },
     {
-      title: "Capela",
-      key: "chapelId",
-      render: (_, record) => {
-        const chapelName = chapelMap.get(record.chapelId);
-        return chapelName || record.chapelId;
-      },
+      title: "Nome do participante",
+      key: "fullName",
+      dataIndex: "fullName",
     },
     {
       title: "Estado de Pagamento",
@@ -153,6 +147,16 @@ export default function ConfirmPaymentPage() {
       },
     },
     {
+      title: "Data de Registro",
+      key: "createdAt",
+      render: (_, record) => {
+        if (record.createdAt && "toDate" in record.createdAt) {
+          return dayjs(record.createdAt.toDate()).format("DD/MM/YYYY");
+        }
+        return "-";
+      },
+    },
+    {
       title: "Estado de Participação",
       key: "participationStatus",
       render: (_, record) => {
@@ -163,36 +167,6 @@ export default function ConfirmPaymentPage() {
             {record.participationStatus === "ACTIVE" ? "Ativa" : "Cancelada"}
           </Tag>
         );
-      },
-    },
-    {
-      title: "Ordenança",
-      key: "ordinance",
-      render: (_, record) => {
-        if (
-          record.ordinances &&
-          Array.isArray(record.ordinances) &&
-          record.ordinances.length > 0
-        ) {
-          return record.ordinances
-            .map((ord) => {
-              const name =
-                ordinanceIdToNameMap.get(ord.ordinanceId) || ord.ordinanceId;
-              return `${name} - ${ord.slot}`;
-            })
-            .join(", ");
-        }
-        return "-";
-      },
-    },
-    {
-      title: "Data de Registro",
-      key: "createdAt",
-      render: (_, record) => {
-        if (record.createdAt && "toDate" in record.createdAt) {
-          return dayjs(record.createdAt.toDate()).format("DD/MM/YYYY");
-        }
-        return "-";
       },
     },
     {
@@ -207,7 +181,7 @@ export default function ConfirmPaymentPage() {
         const canCancel = record.participationStatus === "ACTIVE";
 
         return (
-          <Space>
+          <div className="flex flex-col gap-2">
             {canMarkAsPaid && (
               <Button
                 type="primary"
@@ -215,12 +189,13 @@ export default function ConfirmPaymentPage() {
                 icon={<CheckCircle size={16} />}
                 onClick={() => handleMarkAsPaid(record)}
                 loading={isMarkingPaid}
+                block
               >
                 Já paguei
               </Button>
             )}
             {record.paymentStatus === "PAID" && (
-              <Tag color="green">Já pago</Tag>
+              <Tag color="green" className="w-full text-center">Já pago</Tag>
             )}
             {canCancel && (
               <Button
@@ -229,24 +204,57 @@ export default function ConfirmPaymentPage() {
                 icon={<XCircle size={16} />}
                 onClick={() => handleCancelParticipation(record)}
                 loading={isCancelling}
+                block
               >
                 Não vou assistir
               </Button>
             )}
-          </Space>
+          </div>
         );
       },
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <Card>
-          <Title level={2} className="mb-6">
-            Confirmar Pagamento ou Verificar Inscrições
+    <PublicContent>
+      <AnimatePresence>
+        <motion.div
+          key="header-section"
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0)}
+        >
+          <Title level={3} className="mb-6">
+            Verificar inscrição
           </Title>
+        </motion.div>
+      </AnimatePresence>
 
+      <AnimatePresence>
+        <motion.div
+          key="form-section"
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0.1)}
+          className="bg-white p-4 rounded-2xl flex flex-col gap-4"
+        >
+{!phone && (
+              <motion.div
+                key="alert-section"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0.2)}
+              >
+            <Alert
+              showIcon={true}
+              type="info"
+              description="Por favor, introduza o número de telefone do participante ou do responsável legal (se a inscrição foi feita para um menor de 18 anos) para verificar a sua inscrição."
+            />
+          </motion.div>
+          )}
           <Form
             form={form}
             layout="vertical"
@@ -263,9 +271,21 @@ export default function ConfirmPaymentPage() {
                     required: true,
                     message: "Por favor, insira o número de telefone",
                   },
+                  {
+                    pattern: /^\d{1,9}$/,
+                    message: "O número deve conter apenas dígitos (máximo 9)",
+                  },
                 ]}
               >
-                <Input placeholder="Ex: +351912345678" size="large" />
+                <Input
+                  placeholder="Ex: 912345678"
+                  size="large"
+                  maxLength={9}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    form.setFieldsValue({ phone: value });
+                  }}
+                />
               </Form.Item>
               <Form.Item label=" " className="sm:pt-8">
                 <Button type="primary" htmlType="submit" size="large" block>
@@ -275,37 +295,46 @@ export default function ConfirmPaymentPage() {
             </div>
           </Form>
 
-          {phone && (
-            <>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Spin size="large" />
-                </div>
-              ) : registrations.length === 0 ? (
-                <Card>
-                  <p className="text-gray-500 text-center">
-                    Nenhuma inscrição encontrada para este número de telefone.
-                  </p>
-                </Card>
-              ) : (
-                <Table
-                  columns={columns}
-                  dataSource={registrations}
-                  rowKey="id"
-                  scroll={{ x: true }}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showTotal: (total) => `Total: ${total} inscrições`,
-                    responsive: true,
-                  }}
-                />
-              )}
-            </>
-          )}
-        </Card>
-      </div>
-    </div>
+
+          <AnimatePresence mode="wait">
+            {phone && (
+              <motion.div
+                key={`results-${phone}`}
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0.2)}
+              >
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : registrations.length === 0 ? (
+                  <Card>
+                    <p className="text-gray-500 text-center">
+                      Nenhuma inscrição encontrada para este número de telefone.
+                    </p>
+                  </Card>
+                ) : (
+                  <Table
+                    columns={columns}
+                    dataSource={registrations}
+                    rowKey="id"
+                    scroll={{ x: true }}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showTotal: (total) => `Total: ${total} inscrições`,
+                      responsive: true,
+                    }}
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+    </PublicContent>
   );
 }
 

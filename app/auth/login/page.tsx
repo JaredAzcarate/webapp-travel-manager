@@ -1,6 +1,10 @@
 "use client";
 
 import { Button, Form, Input } from "antd";
+import { Content } from "antd/es/layout/layout";
+import Paragraph from "antd/es/typography/Paragraph";
+import Title from "antd/es/typography/Title";
+import { AnimatePresence, motion } from "motion/react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +12,20 @@ import { useState } from "react";
 interface LoginFormValues {
   username: string;
   password: string;
+}
+
+const sectionAnimation = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+function sectionTransition(delay = 0) {
+  return {
+    duration: 0.3,
+    delay,
+    ease: [0.4, 0, 0.2, 1] as const,
+  };
 }
 
 export default function LoginPage() {
@@ -48,73 +66,73 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-6 sm:p-8 shadow-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Login Admin</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Entre com suas credenciais para acessar o painel administrativo
-          </p>
-        </div>
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          className="mt-8"
+    <Content className="h-screen flex items-center justify-center">
+      <AnimatePresence>
+        <motion.div
+          key="login-form"
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0)}
+          className="max-w-md rounded-2xl bg-white p-8 mx-auto space-y-4"
         >
-          <Form.Item
-            name="username"
-            label="Nome de Usuário"
-            rules={[
-              {
-                required: true,
-                message: "Por favor, insira o nome de usuário",
-              },
-            ]}
-          >
-            <Input
-              placeholder="Nome de usuário"
-              size="large"
-              autoComplete="username"
-            />
-          </Form.Item>
+          <div className="flex flex-col gap-2">
+            <Title level={3}>Login Admin</Title>
+            <Paragraph>
+              Entre com suas credenciais para acessar o painel administrativo
+            </Paragraph>
+          </div>
 
-          <Form.Item
-            name="password"
-            label="Senha"
-            rules={[{ required: true, message: "Por favor, insira a senha" }]}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            className="flex flex-col gap-4"
           >
-            <Input.Password
-              placeholder="Senha"
-              size="large"
-              autoComplete="current-password"
-            />
-          </Form.Item>
-
-          <Form.Item className="mt-6">
-            <Button
-              type="primary"
-              htmlType="submit"
-              size="large"
-              loading={loading}
-              block
+            <Form.Item
+              name="username"
+              label="Nome de Usuário"
+              rules={[
+                {
+                  required: true,
+                  message: "Por favor, insira o nome de usuário",
+                },
+              ]}
             >
-              Entrar
-            </Button>
-          </Form.Item>
-        </Form>
+              <Input
+                placeholder="Nome de usuário"
+                size="large"
+                autoComplete="username"
+              />
+            </Form.Item>
 
-        <div className="text-center text-sm text-gray-600">
-          <p>
-            Precisa criar uma conta?{" "}
-            <a href="/admin/managers" className="text-blue-600 hover:text-blue-500">
-              Criar admin
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
+            <Form.Item
+              name="password"
+              label="Senha"
+              rules={[{ required: true, message: "Por favor, insira a senha" }]}
+            >
+              <Input.Password
+                placeholder="Senha"
+                size="large"
+                autoComplete="current-password"
+              />
+            </Form.Item>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={loading}
+                block
+              >
+                Entrar
+              </Button>
+            </Form.Item>
+          </Form>
+        </motion.div>
+      </AnimatePresence>
+    </Content>
   );
 }
 

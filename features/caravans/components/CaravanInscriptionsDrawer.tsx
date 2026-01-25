@@ -92,6 +92,7 @@ export const CaravanInscriptionsDrawer = ({
               busId={busId}
               caravanId={caravan.id}
               chapelMap={chapelMap}
+              ordinanceIdToNameMap={ordinanceIdToNameMap}
             />
           ))
         ) : (
@@ -110,12 +111,14 @@ interface BusInscriptionsCardProps {
   busId: string;
   caravanId: string;
   chapelMap: Map<string, string>;
+  ordinanceIdToNameMap: Map<string, string>;
 }
 
 const BusInscriptionsCard = ({
   busId,
   caravanId,
   chapelMap,
+  ordinanceIdToNameMap,
 }: BusInscriptionsCardProps) => {
   const { bus, loading: loadingBus } = useBus(busId);
   const { registrations, loading: loadingRegistrations } =

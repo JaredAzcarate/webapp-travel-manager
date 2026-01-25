@@ -17,7 +17,9 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <>
       {shouldShowHeader && <PublicHeader />}
-      {children}
+      <div className="p-4 md:p-0">
+        {children}
+      </div>
     </>
   );
 }
