@@ -3,7 +3,9 @@ import { comparePassword, hashPassword } from "@/lib/auth/password.utils";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   query,
   Timestamp,
@@ -67,6 +69,40 @@ export class AdminRepository {
       password: hashedPassword,
       updatedAt: Timestamp.now(),
     });
+  }
+
+  async getAll(): Promise<AdminWithId[]> {
+    const snap = await getDocs(collection(db, this.collectionName));
+    return snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as AdminWithId[];
+  }
+
+  async delete(id: string): Promise<void> {
+    // Get admin to check username before deleting
+    const admin = await this.getById(id);
+    
+    if (admin.username === "admin") {
+      throw new Error("Não é possível eliminar o usuário 'admin'");
+    }
+
+    const docRef = doc(db, this.collectionName, id);
+    await deleteDoc(docRef);
+  }
+
+  async getById(id: string): Promise<AdminWithId> {
+    const docRef = doc(db, this.collectionName, id);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      throw new Error(`Admin with id ${id} not found`);
+    }
+
+    return {
+      id: docSnap.id,
+      ...docSnap.data(),
+    } as AdminWithId;
   }
 }
 

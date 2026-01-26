@@ -37,12 +37,12 @@ export const BusStopsModal = ({ busId, open, onClose }: BusStopsModalProps) => {
       render: (order: number) => <Tag color="blue">{order}</Tag>,
     },
     {
-      title: "Capela",
+      title: "Unidade",
       key: "chapel",
       render: (_, record) => chapelMap[record.chapelId] || record.chapelId,
     },
     {
-      title: "Hora de Recogida",
+      title: "Hora de saída",
       key: "pickupTime",
       render: (_, record) => {
         if (record.pickupTime && "toDate" in record.pickupTime) {
@@ -55,7 +55,7 @@ export const BusStopsModal = ({ busId, open, onClose }: BusStopsModalProps) => {
 
   return (
     <Drawer
-      title="Paradas do Autocarro"
+      title="Paragens do Autocarro"
       placement="right"
       onClose={onClose}
       open={open}
@@ -64,7 +64,7 @@ export const BusStopsModal = ({ busId, open, onClose }: BusStopsModalProps) => {
     >
       {error && (
         <div className="text-red-500 mb-4">
-          Erro ao carregar paradas: {error}
+          Erro ao carregar paragens: {error}
         </div>
       )}
       <Table
@@ -74,7 +74,7 @@ export const BusStopsModal = ({ busId, open, onClose }: BusStopsModalProps) => {
         loading={loading}
         pagination={false}
         locale={{
-          emptyText: "Nenhuma parada configurada para este autocarro",
+          emptyText: "Nenhuma paragem configurada para este autocarro",
         }}
       />
     </Drawer>

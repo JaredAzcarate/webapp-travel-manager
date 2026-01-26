@@ -24,6 +24,10 @@ export function AntdProvider({ children }: AntdProviderProps) {
           colorWarningBorder: "none",
         },
         components: {
+          Menu: {
+            itemSelectedBg: "rgba(0,0,0,0.04)",
+            activeBarBorderWidth: 0,
+          },
           Typography: {
             titleMarginBottom: 0,
           },
@@ -32,6 +36,18 @@ export function AntdProvider({ children }: AntdProviderProps) {
           },
           Alert: {
             colorInfo: "#007da5",
+          },
+          Tag: {
+            colorPrimaryBg: "#007da5",
+            colorPrimary: "#007da5",
+          },
+          Button: {
+            colorLink: "#007da5",
+            colorLinkHover: "#007da5",
+          },
+          Card: {
+            colorBgElevated: "#f0f0f0",
+            borderRadiusLG: 24,
           },
         },
       }}

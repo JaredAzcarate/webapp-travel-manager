@@ -26,7 +26,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Check, X } from "phosphor-react";
+import { Trash } from "phosphor-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 interface BusStopFormValue {
@@ -383,6 +383,7 @@ export const BusForm = ({
       initialValues={{
         busStops: [],
       }}
+      className="flex flex-col gap-4"
     >
       <Form.Item
         name="name"
@@ -410,9 +411,9 @@ export const BusForm = ({
       </Form.Item>
 
       <Form.Item
-        label="Paradas do Recorrido"
+        label="Paragens do autocarro"
         required
-        tooltip="Adicione pelo menos uma parada com capela e hora de recogida"
+        tooltip="Adicione pelo menos uma paragem com uma unidade e hora de saída"
       >
         <Form.List name="busStops">
           {(fields, { add, remove }) => (
@@ -427,23 +428,23 @@ export const BusForm = ({
                 return (
                   <div
                     key={key}
-                    className="mb-4 p-4 border border-gray-200 rounded-lg"
+                    className="mb-4 p-4 border bg-white border-white rounded-lg"
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex-1">
                         <Form.Item
                           {...restField}
                           name={[name, "chapelId"]}
-                          label="Capela"
+                          label="Unidade"
                           rules={[
                             {
                               required: true,
-                              message: "Por favor, selecione uma capela",
+                              message: "Por favor, selecione uma unidade",
                             },
                           ]}
                         >
                           <Select
-                            placeholder="Selecione uma capela"
+                            placeholder="Selecione uma unidade"
                             loading={loadingChapels}
                             options={chapels.map((chapel) => ({
                               label: chapel.name,
@@ -457,7 +458,7 @@ export const BusForm = ({
                         <Form.Item
                           {...restField}
                           name={[name, "pickupTime"]}
-                          label="Hora de Recogida"
+                          label="Hora de saída"
                           rules={[
                             {
                               required: true,
@@ -477,10 +478,11 @@ export const BusForm = ({
                         <Button
                           type="text"
                           danger
+                          icon={<Trash size={16} />}
                           onClick={() => remove(name)}
                           disabled={isPending}
                         >
-                          Remover
+
                         </Button>
                       </div>
                     </div>
@@ -501,7 +503,7 @@ export const BusForm = ({
                   block
                   disabled={isPending}
                 >
-                  + Adicionar Parada
+                  + Adicionar paragem
                 </Button>
               </Form.Item>
             </>
@@ -511,12 +513,11 @@ export const BusForm = ({
 
       <Form.Item>
         <div className="flex gap-2">
-          <Button icon={<X size={16} />} onClick={() => router.back()}>
+          <Button onClick={() => router.back()}>
             Cancelar
           </Button>
           <Button
             type="primary"
-            icon={<Check size={16} />}
             htmlType="submit"
             loading={isPending}
           >

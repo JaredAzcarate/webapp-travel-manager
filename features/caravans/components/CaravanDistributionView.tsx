@@ -26,7 +26,7 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useSearchParams } from "next/navigation";
-import { FilePdf, List, Pencil, Plus, XCircle } from "phosphor-react";
+import { FilePdf, List, Plus } from "phosphor-react";
 import { useMemo, useState } from "react";
 import { WaitlistDrawer } from "./WaitlistDrawer";
 
@@ -35,8 +35,10 @@ const { Title } = Typography;
 export const CaravanDistributionView = () => {
   const searchParams = useSearchParams();
   const caravanId = searchParams.get("caravanId");
-  const { chapels, loading: loadingChapels } = useChapels();
+  const { chapels } = useChapels();
   const { ordinances } = useOrdinances();
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [waitlistDrawerOpen, setWaitlistDrawerOpen] = useState(false);
 
   const ordinanceIdToNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -71,9 +73,6 @@ export const CaravanDistributionView = () => {
       </div>
     );
   }
-
-  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
-  const [waitlistDrawerOpen, setWaitlistDrawerOpen] = useState(false);
 
   const handleCreateRegistration = () => {
     setCreateDrawerOpen(true);
@@ -129,7 +128,6 @@ export const CaravanDistributionView = () => {
                 caravanId={selectedCaravan.id}
                 caravanName={selectedCaravan.name}
                 chapelMap={chapelMap}
-                loadingChapels={loadingChapels}
                 ordinanceIdToNameMap={ordinanceIdToNameMap}
               />
             ))
@@ -182,7 +180,6 @@ interface BusDistributionCardProps {
   caravanId: string;
   caravanName: string;
   chapelMap: Map<string, string>;
-  loadingChapels: boolean;
   ordinanceIdToNameMap: Map<string, string>;
 }
 
@@ -191,7 +188,6 @@ const BusDistributionCard = ({
   caravanId,
   caravanName,
   chapelMap,
-  loadingChapels,
   ordinanceIdToNameMap,
 }: BusDistributionCardProps) => {
   const { notification, modal } = App.useApp();
@@ -451,9 +447,9 @@ const BusDistributionCard = ({
         }
 
         return (
-          <div className="flex items-center gap-2">
-            <span>{record.fullName}</span>
-            {tags.length > 0 && <Space size={4}>{tags}</Space>}
+          <div className="flex flex-col gap-1 w-40">
+            <span className="text-sm font-semibold">{record.fullName}</span>
+            {tags.length > 0 && <Space size={"middle"}>{tags}</Space>}
           </div>
         );
       },
@@ -466,7 +462,7 @@ const BusDistributionCard = ({
         return chapelName || record.chapelId;
       },
     },
-    {
+    /* {
       title: "Status de Pagamento",
       key: "paymentStatus",
       render: (_, record) => {
@@ -488,7 +484,7 @@ const BusDistributionCard = ({
           </Tag>
         );
       },
-    },
+    }, */
     {
       title: "Ordenança",
       key: "ordinance",
@@ -515,21 +511,19 @@ const BusDistributionCard = ({
       render: (_, record) => (
         <Space>
           <Button
-            type="link"
-            icon={<Pencil size={16} />}
+            type="default"
             onClick={() => handleEdit(record)}
           >
             Editar
           </Button>
           {record.participationStatus === "ACTIVE" && (
             <Button
-              type="link"
+              type="default"
               danger
-              icon={<XCircle size={16} />}
               onClick={() => handleCancelParticipation(record)}
               loading={isCancelling}
             >
-              Cancelar Participação
+              Cancelar
             </Button>
           )}
         </Space>

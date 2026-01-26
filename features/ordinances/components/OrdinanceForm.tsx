@@ -12,7 +12,6 @@ import {
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { App, Button, Form, Input, InputNumber, Select, Space } from "antd";
 import { useRouter } from "next/navigation";
-import { Check, X } from "phosphor-react";
 import { useEffect } from "react";
 
 interface SessionFormValue {
@@ -160,6 +159,7 @@ export const OrdinanceForm = ({
       initialValues={{
         sessions: [],
       }}
+      className="flex flex-col gap-4"
     >
       <Form.Item
         name="name"
@@ -194,14 +194,14 @@ export const OrdinanceForm = ({
         {(fields, { add, remove }) => (
           <>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium">Sesiones</span>
+              <span className="text-sm font-medium">Sessões</span>
               <Button
                 type="dashed"
                 onClick={() => add()}
                 icon={<PlusOutlined />}
                 size="small"
               >
-                Adicionar Sesión
+                Adicionar sessão
               </Button>
             </div>
 
@@ -280,13 +280,12 @@ export const OrdinanceForm = ({
       </Form.List>
 
       <Form.Item>
-        <div className="flex gap-5">
-          <Button icon={<X size={16} />} onClick={() => router.back()}>
+        <div className="flex gap-2">
+          <Button onClick={() => router.back()}>
             Cancelar
           </Button>
           <Button
             type="primary"
-            icon={<Check size={16} />}
             htmlType="submit"
             loading={isPending}
           >

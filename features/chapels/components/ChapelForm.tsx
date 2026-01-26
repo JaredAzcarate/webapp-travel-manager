@@ -1,17 +1,16 @@
 "use client";
 
 import {
-    useCreateChapel,
-    useUpdateChapel,
+  useCreateChapel,
+  useUpdateChapel,
 } from "@/features/chapels/hooks/chapels.hooks";
 import {
-    ChapelWithId,
-    CreateChapelInput,
-    UpdateChapelInput,
+  ChapelWithId,
+  CreateChapelInput,
+  UpdateChapelInput,
 } from "@/features/chapels/models/chapels.model";
 import { App, Button, Form, Input } from "antd";
 import { useRouter } from "next/navigation";
-import { Check, X } from "phosphor-react";
 import { useEffect } from "react";
 
 interface FormValues {
@@ -150,6 +149,7 @@ export const ChapelForm = ({
       layout="vertical"
       onFinish={handleSubmit}
       style={{ width: "100%" }}
+      className="flex flex-col gap-4"
     >
       <Form.Item
         name="name"
@@ -188,12 +188,11 @@ export const ChapelForm = ({
 
       <Form.Item>
         <div className="flex gap-2">
-          <Button icon={<X size={16} />} onClick={() => router.back()}>
+          <Button onClick={() => router.back()}>
             Cancelar
           </Button>
           <Button
             type="primary"
-            icon={<Check size={16} />}
             htmlType="submit"
             loading={isPending}
           >

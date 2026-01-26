@@ -5,7 +5,7 @@ import {
   useOrdinances,
 } from "@/features/ordinances/hooks/ordinances.hooks";
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
-import { App, Button, Space, Table, Typography } from "antd";
+import { App, Button, Space, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash } from "phosphor-react";
@@ -49,24 +49,23 @@ export const OrdinancesList = () => {
       key: "name",
     },
     {
-      title: "Sesiones",
+      title: "Sessões",
       key: "sessions",
       render: (_, record) => {
         const sessionCount = record.sessions?.length || 0;
-        return `${sessionCount} sesión${sessionCount !== 1 ? "es" : ""}`;
+        return <Tag color={"default"}>{sessionCount} {sessionCount === 1 ? "sessão" : "sessões"}</Tag>;
       },
     },
     {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Space>
+        <Space size={"large"} className="w-20">
           <Button
             type="link"
             icon={<Pencil size={16} />}
             onClick={() => router.push(`/admin/ordinances/edit/${record.id}`)}
           >
-            Editar
           </Button>
           <Button
             type="link"
@@ -75,7 +74,6 @@ export const OrdinancesList = () => {
             onClick={() => handleDelete(record)}
             loading={isDeleting}
           >
-            Eliminar
           </Button>
         </Space>
       ),

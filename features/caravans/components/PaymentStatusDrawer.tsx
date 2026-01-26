@@ -23,7 +23,7 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Timestamp } from "firebase/firestore";
-import { CheckCircle, FilePdf, Receipt } from "phosphor-react";
+import { FilePdf, Receipt } from "phosphor-react";
 import { useMemo, useState } from "react";
 
 const { Title } = Typography;
@@ -236,7 +236,6 @@ export const PaymentStatusDrawer = ({
             <Button
               type="primary"
               size="small"
-              icon={<CheckCircle size={16} />}
               onClick={() => handleMarkAsPaid(record)}
               loading={isUpdating}
             >

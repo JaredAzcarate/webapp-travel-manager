@@ -3,6 +3,7 @@
 import { AdminSidebar } from "@/common/components/AdminSidebar";
 import { useSession } from "@/features/auth/hooks/auth.hooks";
 import { Layout } from "antd";
+import { Content } from "antd/es/layout/layout";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -33,15 +34,11 @@ export default function AdminLayout({
   }
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <AdminSidebar />
-      <Layout style={{ marginLeft: 200 }}>
-        <Layout.Content
-          style={{ margin: "24px 16px", padding: 24, minHeight: 280 }}
-        >
+      <Layout>
+        <AdminSidebar />
+        <Content>
           {children}
-        </Layout.Content>
+        </Content>
       </Layout>
-    </Layout>
   );
 }

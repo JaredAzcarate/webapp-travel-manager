@@ -2,6 +2,7 @@
 
 import { CardRadioGroup } from "@/common/components/CardRadioGroup";
 import { OrdinancesListField } from "@/common/components/OrdinancesListField";
+import { PrivacyPolicyModal } from "@/common/components/PrivacyPolicyModal";
 import { OrdinanceFormValue } from "@/common/utils/ordinances.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
@@ -37,7 +38,7 @@ import {
 } from "antd";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const { Paragraph, Title } = Typography;
 
@@ -87,6 +88,7 @@ export const RegistrationForm = ({
   const { notification } = App.useApp();
   const router = useRouter();
   const [form] = Form.useForm<FormValues>();
+  const [privacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
   const hasShownSuccessRef = useRef(false);
   const hasShownErrorRef = useRef(false);
   const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
@@ -980,7 +982,7 @@ export const RegistrationForm = ({
           Políticas de Privacidade
         </Title>
         <Paragraph>
-          Ao aceitar esta política de privacidade, você concorda com o uso dos
+          Ao se inscrever na viagem, você concorda com o uso dos
           dados registrados para fins de gestão da caravana ao templo. Este
           sistema não é oficial da Igreja de Jesus Cristo dos Santos dos
           Últimos Dias.
@@ -1005,10 +1007,23 @@ export const RegistrationForm = ({
           ]}
         >
           <Checkbox disabled={!isBusAvailable}>
-            Aceito a política de privacidade e autorizo o uso dos meus dados
-            para fins de gestão da caravana
+            Aceito a{" "}
+            <Button
+              type="link"
+              onClick={() => setPrivacyPolicyModalOpen(true)}
+              className="p-0 h-auto font-normal"
+              style={{ padding: 0, height: "auto" }}
+            >
+              política de privacidade
+            </Button>{" "}
+            e autorizo o uso dos meus dados para fins de gestão da caravana
           </Checkbox>
         </Form.Item>
+
+        <PrivacyPolicyModal
+          open={privacyPolicyModalOpen}
+          onClose={() => setPrivacyPolicyModalOpen(false)}
+        />
       </motion.div>
 
       {/* Section 5: Submit Button */}

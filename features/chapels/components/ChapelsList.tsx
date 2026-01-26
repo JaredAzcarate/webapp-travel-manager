@@ -69,13 +69,12 @@ export const ChapelsList = () => {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Space>
+        <Space size={"large"} className="w-20">
           <Button
             type="link"
             icon={<Pencil size={16} />}
             onClick={() => router.push(`/admin/chapels/edit/${record.id}`)}
           >
-            Editar
           </Button>
           <Button
             type="link"
@@ -84,7 +83,6 @@ export const ChapelsList = () => {
             onClick={() => handleDelete(record)}
             loading={isDeleting}
           >
-            Eliminar
           </Button>
         </Space>
       ),

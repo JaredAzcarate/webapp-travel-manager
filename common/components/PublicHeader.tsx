@@ -34,9 +34,9 @@ export function PublicHeader() {
 
         {/* Logo/Title */}
         <div className="flex items-center gap-3">
-        <div className="bg-primary/10 p-1.5 rounded-md">
+        <div className="bg-primary p-1.5 rounded-md">
           <svg
-                className="w-7 h-7"
+                className="w-7 h-7 fill-white"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >

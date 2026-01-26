@@ -8,7 +8,7 @@ import { App, Button, Space, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
-import { MapPin, Pencil, Plus, Trash } from "phosphor-react";
+import { Pencil, Plus, Trash } from "phosphor-react";
 import { useMemo, useState } from "react";
 
 const { Title } = Typography;
@@ -76,11 +76,11 @@ export const BusesList = () => {
       render: (capacity: number) => `${capacity} lugares`,
     },
     {
-      title: "Número de Paradas",
+      title: "Paragens",
       key: "stopsCount",
       render: (_, record) => (
-        <Tag color={record.stopsCount > 0 ? "blue" : "default"}>
-          {record.stopsCount} {record.stopsCount === 1 ? "parada" : "paradas"}
+        <Tag color={"default"}>
+          {record.stopsCount} {record.stopsCount === 1 ? "paragem" : "paragens"}
         </Tag>
       ),
     },
@@ -99,21 +99,19 @@ export const BusesList = () => {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Space>
+        <Space size={"large"} className="w-20">
           <Button
-            type="link"
-            icon={<MapPin size={16} />}
+            type="primary"
             onClick={() => handleViewStops(record.id)}
             disabled={record.stopsCount === 0}
           >
-            Ver Paradas
+            Ver paragens
           </Button>
           <Button
             type="link"
             icon={<Pencil size={16} />}
             onClick={() => router.push(`/admin/buses/edit/${record.id}`)}
           >
-            Editar
           </Button>
           <Button
             type="link"
@@ -122,7 +120,6 @@ export const BusesList = () => {
             onClick={() => handleDelete(record)}
             loading={isDeleting}
           >
-            Eliminar
           </Button>
         </Space>
       ),

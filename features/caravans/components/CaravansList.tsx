@@ -150,7 +150,7 @@ export const CaravansList = () => {
       },
     },
     {
-      title: "Nome",
+      title: "Nome da Caravana",
       dataIndex: "name",
       key: "name",
     },
@@ -177,7 +177,7 @@ export const CaravansList = () => {
       },
     },
     {
-      title: "Ocupação",
+      title: "Vagas disponíveis",
       key: "occupation",
       render: (_, record) => {
         return <CaravanOccupation caravan={record} />;
@@ -187,20 +187,20 @@ export const CaravansList = () => {
       title: "Ações",
       key: "actions",
       render: (_, record) => (
-        <Space>
+        <Space size={"large"} className="w-82">
           <Button
-            type="link"
+            type="primary"
             onClick={() =>
               router.push(`/admin/caravans/distribution?caravanId=${record.id}`)
             }
           >
-            Inscrições
+            Ver inscrições
           </Button>
           <Button
-            type="link"
+            type="primary"
             onClick={() => handleViewPaymentStatus(record.id)}
           >
-            Pagos
+            Ver pagamentos
           </Button>
           <Button
             type="link"
