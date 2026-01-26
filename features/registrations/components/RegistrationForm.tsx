@@ -36,6 +36,7 @@ import {
   Switch,
   Typography
 } from "antd";
+import { Timestamp } from "firebase/firestore";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -339,21 +340,28 @@ export const RegistrationForm = ({
     if (mode === "create" && created && !hasShownSuccessRef.current) {
       hasShownSuccessRef.current = true;
       notification.success({
-        title: "Sucesso",
-        description: "A inscrição foi criada com sucesso",
+        title: "Inscrição realizada com sucesso!",
+        description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
+        duration: 3,
       });
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        // Reset form only if onSuccess is not provided
-        form.resetFields();
-        if (propCaravanId) {
-          form.setFieldsValue({
-            caravanId: propCaravanId,
-            ordinances: [],
-          });
+      
+      // Add a small delay before redirecting to allow the notification to be visible
+      const redirectTimer = setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          // Reset form only if onSuccess is not provided
+          form.resetFields();
+          if (propCaravanId) {
+            form.setFieldsValue({
+              caravanId: propCaravanId,
+              ordinances: [],
+            });
+          }
         }
-      }
+      }, 500);
+
+      return () => clearTimeout(redirectTimer);
     }
     if (!created && !isCreating) {
       hasShownSuccessRef.current = false;
@@ -489,9 +497,18 @@ export const RegistrationForm = ({
         paymentStatus,
         participationStatus: "ACTIVE",
         privacyPolicyAccepted: values.privacyPolicyAccepted,
+        privacyPolicyAcceptedAt: values.privacyPolicyAccepted
+          ? Timestamp.now()
+          : undefined,
       };
 
       createRegistration(input);
+      
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(`/registration/success`);
+      }
     } else if (mode === "edit" && registrationId) {
       // For CHILD and YOUTH, use legalGuardianPhone as the phone identifier
       // For ADULT, use phone
@@ -773,6 +790,8 @@ export const RegistrationForm = ({
                 <Input
                   placeholder="Ex: +351912345678"
                   disabled={!isBusAvailable}
+                  maxLength={9}
+                  type="tel"
                 />
               </Form.Item>
             </motion.div>
@@ -867,8 +886,10 @@ export const RegistrationForm = ({
                 className="flex-1"
               >
                 <Input
-                  placeholder="Ex: +351912345678"
+                  placeholder="Ex: 912345678"
                   disabled={!isBusAvailable}
+                  maxLength={9}
+                  type="tel"
                 />
               </Form.Item>
               </div>

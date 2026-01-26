@@ -1,4 +1,5 @@
 import { db } from "@/common/lib/firebase";
+import { generateGdprUuid } from "@/common/utils/uuid.utils";
 import { BusRepository } from "@/features/buses/repositories/buses.repository";
 import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { CaravanRepository } from "@/features/caravans/repositories/caravans.repository";
@@ -145,8 +146,19 @@ export class RegistrationRepository {
 
       const now = Timestamp.now();
       const registrationRef = doc(collection(db, this.collectionName));
+      
+      // Generate UUID if not provided
+      const gdprUuid = input.gdprUuid || generateGdprUuid();
+      
+      // Set privacyPolicyAcceptedAt if privacy policy is accepted
+      const privacyPolicyAcceptedAt = input.privacyPolicyAccepted
+        ? input.privacyPolicyAcceptedAt || now
+        : undefined;
+      
       transaction.set(registrationRef, {
         ...input,
+        gdprUuid,
+        privacyPolicyAcceptedAt,
         participationStatus,
         createdAt: now,
         updatedAt: now,
@@ -356,6 +368,45 @@ export class RegistrationRepository {
         ...doc.data(),
       })
     );
+  }
+
+  async getByPhoneAndName(
+    phone: string,
+    fullName: string
+  ): Promise<RegistrationWithId[]> {
+    const q = query(
+      collection(db, this.collectionName),
+      where("phone", "==", phone)
+    );
+    const snap = await getDocs(q);
+    const allRegistrations = snap.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
+    
+    // Filter by fullName (case-insensitive)
+    return allRegistrations.filter(
+      (reg) => reg.fullName.toLowerCase() === fullName.toLowerCase()
+    );
+  }
+
+  async getByUuid(uuid: string): Promise<RegistrationWithId | null> {
+    const q = query(
+      collection(db, this.collectionName),
+      where("gdprUuid", "==", uuid)
+    );
+    const snap = await getDocs(q);
+    
+    if (snap.empty) {
+      return null;
+    }
+    
+    return this.migrateRegistration({
+      id: snap.docs[0].id,
+      ...snap.docs[0].data(),
+    });
   }
 
   async getByCaravanId(caravanId: string): Promise<RegistrationWithId[]> {
@@ -704,3 +755,5 @@ export class RegistrationRepository {
     });
   }
 }
+
+export const registrationRepository = new RegistrationRepository();

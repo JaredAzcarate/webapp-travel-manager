@@ -49,6 +49,15 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
     );
   }, [ordinances, gender, ageCategory, isFirstTimeConvert, hasLessThanOneYearAsMember]);
 
+  // Check if user can select multiple sessions of the same ordinance (only Batistério for YOUTH or members with less than 1 year)
+  const canSelectMultipleSessions = useMemo(() => {
+    return (
+      (ageCategory === "YOUTH" || hasLessThanOneYearAsMember) &&
+      availableOrdinances.length === 1 &&
+      availableOrdinances[0]?.name.toLowerCase().includes("batistério")
+    );
+  }, [ageCategory, hasLessThanOneYearAsMember, availableOrdinances]);
+
   // Get selected ordinance IDs
   const selectedOrdinanceIds = useMemo(() => {
     return ordinancesList
@@ -56,11 +65,49 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
       .map((ord) => ord.ordinanceId!);
   }, [ordinancesList]);
 
+  // Get count of selected sessions for a specific ordinance
+  const getSelectedSessionsCount = (ordinanceId: string) => {
+    return ordinancesList.filter(
+      (ord) => ord && ord.ordinanceId === ordinanceId && ord.slot
+    ).length;
+  };
+
   // Handle ordinance selection
   const handleSelectOrdinance = (ordinanceId: string) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
     
-    // Check if already selected
+    // If can select multiple sessions, initialize 3 sessions at once
+    if (canSelectMultipleSessions) {
+      const sessionsCount = getSelectedSessionsCount(ordinanceId);
+      if (sessionsCount >= 3) {
+        return;
+      }
+      // If not selected yet, add 3 sessions at once
+      if (sessionsCount === 0) {
+        const newOrdinances = [
+          ...currentOrdinances,
+          {
+            ordinanceId,
+            slot: undefined,
+            isPersonal: false,
+          },
+          {
+            ordinanceId,
+            slot: undefined,
+            isPersonal: false,
+          },
+          {
+            ordinanceId,
+            slot: undefined,
+            isPersonal: false,
+          },
+        ];
+        form.setFieldsValue({ ordinances: newOrdinances });
+        return;
+      }
+    }
+
+    // Original logic: Check if already selected
     if (selectedOrdinanceIds.includes(ordinanceId)) {
       return;
     }
@@ -83,8 +130,27 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   };
 
   // Handle ordinance deselection
-  const handleDeselectOrdinance = (ordinanceId: string) => {
+  const handleDeselectOrdinance = (ordinanceId: string, index?: number) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
+    
+    // If can select multiple sessions and index is provided, remove specific session
+    if (canSelectMultipleSessions && index !== undefined) {
+      const ordinanceIndices = currentOrdinances
+        .map((ord: OrdinanceFormValue, idx: number) => 
+          ord && ord.ordinanceId === ordinanceId ? idx : -1
+        )
+        .filter((idx: number) => idx >= 0);
+      
+      if (ordinanceIndices[index] !== undefined) {
+        const newOrdinances = currentOrdinances.filter(
+          (_: OrdinanceFormValue, idx: number) => idx !== ordinanceIndices[index]
+        );
+        form.setFieldsValue({ ordinances: newOrdinances });
+        return;
+      }
+    }
+    
+    // Original logic: remove all sessions of this ordinance
     const newOrdinances = currentOrdinances.filter(
       (ord: OrdinanceFormValue) => ord && ord.ordinanceId !== ordinanceId
     );
@@ -92,8 +158,29 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   };
 
   // Handle slot change
-  const handleSlotChange = (ordinanceId: string, slot: string | undefined) => {
+  const handleSlotChange = (ordinanceId: string, slot: string | undefined, index?: number) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
+    
+    // If can select multiple sessions and index is provided, update specific session
+    if (canSelectMultipleSessions && index !== undefined) {
+      const ordinanceIndices = currentOrdinances
+        .map((ord: OrdinanceFormValue, idx: number) => 
+          ord && ord.ordinanceId === ordinanceId ? idx : -1
+        )
+        .filter((idx: number) => idx >= 0);
+      
+      if (ordinanceIndices[index] !== undefined) {
+        const newOrdinances = [...currentOrdinances];
+        newOrdinances[ordinanceIndices[index]] = {
+          ...newOrdinances[ordinanceIndices[index]],
+          slot,
+        };
+        form.setFieldsValue({ ordinances: newOrdinances });
+        return;
+      }
+    }
+    
+    // Original logic: update first matching ordinance
     const newOrdinances = currentOrdinances.map((ord: OrdinanceFormValue) => {
       if (ord && ord.ordinanceId === ordinanceId) {
         return { ...ord, slot };
@@ -204,54 +291,66 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         return (
             <div className="grid grid-cols-1 gap-4">
               {availableOrdinances.map((ordinance) => {
-                const fieldIndex = fields.findIndex(
-                  (field) => {
-                    const fieldValue = form.getFieldValue(["ordinances", field.name, "ordinanceId"]);
-                    return fieldValue === ordinance.id;
-                  }
+                // Get all selected sessions for this ordinance
+                const selectedSessions = ordinancesList.filter(
+                  (ord) => ord && ord.ordinanceId === ordinance.id
                 );
-                const selectedOrdinance = fieldIndex >= 0 
-                  ? form.getFieldValue(["ordinances", fieldIndex])
-                  : undefined;
+                const sessionsCount = selectedSessions.length;
+                const isSelected = sessionsCount > 0;
+
+                // Get all field indices for this ordinance
+                const fieldIndices = fields
+                  .map((field, idx) => {
+                    const fieldValue = form.getFieldValue(["ordinances", field.name, "ordinanceId"]);
+                    return fieldValue === ordinance.id ? idx : -1;
+                  })
+                  .filter((idx) => idx >= 0);
 
                 return (
                   <div key={ordinance.id}>
-                    {fieldIndex >= 0 && (
-                      <>
+                    {fieldIndices.map((fieldIdx, sessionIdx) => (
+                      <React.Fragment key={`${ordinance.id}-${fieldIdx}`}>
                         <Form.Item
-                          name={[fields[fieldIndex].name, "ordinanceId"]}
+                          name={[fields[fieldIdx].name, "ordinanceId"]}
                           hidden
                         >
                           <Input />
                         </Form.Item>
                         <Form.Item
-                          name={[fields[fieldIndex].name, "slot"]}
+                          name={[fields[fieldIdx].name, "slot"]}
                           hidden
                         >
                           <Input />
                         </Form.Item>
                         <Form.Item
-                          name={[fields[fieldIndex].name, "isPersonal"]}
+                          name={[fields[fieldIdx].name, "isPersonal"]}
                           hidden
                         >
                           <Input />
                         </Form.Item>
-                      </>
-                    )}
+                      </React.Fragment>
+                    ))}
                     <OrdinanceCardWrapper
                       ordinance={ordinance}
-                      selected={selectedOrdinanceIds.includes(ordinance.id)}
-                      selectedOrdinance={selectedOrdinance}
+                      selected={isSelected}
+                      selectedOrdinance={selectedSessions[0]}
+                      selectedSessions={canSelectMultipleSessions ? selectedSessions : undefined}
                       ordinancesList={ordinancesList}
                       selectedCaravanId={selectedCaravanId}
                       gender={gender}
-                      disabled={disabled || (!selectedOrdinanceIds.includes(ordinance.id) && selectedOrdinanceIds.length >= 3)}
+                      disabled={
+                        disabled ||
+                        (!isSelected &&
+                          !canSelectMultipleSessions &&
+                          selectedOrdinanceIds.length >= 3)
+                      }
                       onSelect={() => handleSelectOrdinance(ordinance.id)}
-                      onDeselect={() => handleDeselectOrdinance(ordinance.id)}
-                      onSlotChange={(slot) => handleSlotChange(ordinance.id, slot)}
+                      onDeselect={(index) => handleDeselectOrdinance(ordinance.id, index)}
+                      onSlotChange={(slot, index) => handleSlotChange(ordinance.id, slot, index)}
                       onPersonalChange={(isPersonal) =>
                         handlePersonalChange(ordinance.id, isPersonal)
                       }
+                      canSelectMultipleSessions={canSelectMultipleSessions}
                     />
                   </div>
                 );

@@ -13,20 +13,23 @@ export interface OrdinanceCardWrapperProps {
   ordinance: OrdinanceWithId;
   selected: boolean;
   selectedOrdinance?: OrdinanceFormValue;
+  selectedSessions?: OrdinanceFormValue[];
   ordinancesList: OrdinanceFormValue[];
   selectedCaravanId: string | null;
   gender: "M" | "F" | null;
   disabled?: boolean;
   onSelect: () => void;
-  onDeselect: () => void;
-  onSlotChange: (slot: string | undefined) => void;
+  onDeselect: (index?: number) => void;
+  onSlotChange: (slot: string | undefined, index?: number) => void;
   onPersonalChange: (isPersonal: boolean) => void;
+  canSelectMultipleSessions?: boolean;
 }
 
 export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
   ordinance,
   selected,
   selectedOrdinance,
+  selectedSessions,
   ordinancesList,
   selectedCaravanId,
   gender,
@@ -35,9 +38,11 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
   onDeselect,
   onSlotChange,
   onPersonalChange,
+  canSelectMultipleSessions = false,
 }) => {
   const selectedSlot = selectedOrdinance?.slot;
   const isPersonal = selectedOrdinance?.isPersonal ?? false;
+  const sessions = canSelectMultipleSessions && selectedSessions ? selectedSessions : selectedOrdinance ? [selectedOrdinance] : [];
 
   // Get available slots for this ordinance
   const availableSlots = useMemo(() => {
@@ -91,6 +96,7 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
       ordinance={ordinance}
       selected={selected}
       selectedSlot={selectedSlot}
+      selectedSessions={canSelectMultipleSessions ? sessions : undefined}
       isPersonal={isPersonal}
       availableSlots={availableSlots}
       availability={
@@ -108,6 +114,7 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
       onDeselect={onDeselect}
       onSlotChange={onSlotChange}
       onPersonalChange={onPersonalChange}
+      canSelectMultipleSessions={canSelectMultipleSessions}
     />
   );
 };

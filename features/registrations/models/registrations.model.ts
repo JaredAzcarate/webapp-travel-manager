@@ -38,6 +38,9 @@ export interface Registration {
   cancelledAt?: Timestamp;
 
   privacyPolicyAccepted: boolean;
+  privacyPolicyAcceptedAt?: Timestamp;
+  gdprUuid?: string;
+  consentWithdrawnAt?: Timestamp;
 
   createdAt: Timestamp;
   updatedAt: Timestamp;

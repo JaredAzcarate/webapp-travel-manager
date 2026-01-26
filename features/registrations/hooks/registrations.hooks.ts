@@ -277,11 +277,17 @@ export const useCreateRegistration = () => {
     mutation.mutate(input);
   };
 
+  const createRegistrationAsync = async (input: CreateRegistrationInput) => {
+    return mutation.mutateAsync(input);
+  };
+
   return {
     createRegistration,
+    createRegistrationAsync,
     isPending: mutation.isPending,
     isSuccess: mutation.isSuccess,
     error: mutation.error,
+    data: mutation.data,
   };
 };
 

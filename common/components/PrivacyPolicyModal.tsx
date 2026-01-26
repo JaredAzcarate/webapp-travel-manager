@@ -207,6 +207,38 @@ export const PrivacyPolicyModal = ({
           </Paragraph>
         </div>
 
+        <div>
+          <Title level={4}>13. Transferências Internacionais de Dados</Title>
+          <Paragraph>
+            Os seus dados pessoais podem ser transferidos e armazenados em servidores
+            localizados fora da União Europeia, nomeadamente nos Estados Unidos da América,
+            através dos serviços da Google (Firebase), que fornece a infraestrutura de
+            armazenamento de dados para este sistema.
+          </Paragraph>
+          <Paragraph>
+            Estas transferências são realizadas com base em salvaguardas adequadas,
+            incluindo:
+          </Paragraph>
+          <ul className="list-disc pl-6 space-y-2 mt-2">
+            <li>
+              <strong>Cláusulas Contratuais Padrão (SCC):</strong> A Google utiliza
+              Cláusulas Contratuais Padrão aprovadas pela Comissão Europeia para garantir
+              que os seus dados pessoais recebem um nível adequado de proteção quando
+              transferidos para fora da UE.
+            </li>
+            <li>
+              <strong>Certificações de Adequação:</strong> A Google mantém certificações
+              e compromissos de conformidade com padrões de proteção de dados reconhecidos
+              internacionalmente.
+            </li>
+          </ul>
+          <Paragraph className="mt-2">
+            Ao utilizar este sistema, você consente com estas transferências internacionais
+            de dados, reconhecendo que os seus dados podem ser processados em servidores
+            localizados fora da UE, mas sempre com as salvaguardas adequadas em vigor.
+          </Paragraph>
+        </div>
+
         <div className="border-t pt-4 mt-6">
           <Paragraph className="text-sm text-gray-500">
             Última atualização: {new Date().toLocaleDateString("pt-PT")}

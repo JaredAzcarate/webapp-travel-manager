@@ -1,11 +1,25 @@
 "use client";
 
 import { PublicContent } from "@/common/components/PublicContent";
-import { Button, Card, Steps, Typography } from "antd";
+import { Alert, Button, Card, Steps, Typography } from "antd";
+import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { CheckCircle } from "phosphor-react";
 
 const { Title, Paragraph } = Typography;
+
+const sectionAnimation = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
+function sectionTransition(delay = 0) {
+  return {
+    duration: 0.4,
+    delay,
+    ease: [0.4, 0, 0.2, 1] as const,
+  };
+}
 
 export default function RegistrationSuccessPage() {
   const router = useRouter();
@@ -14,7 +28,7 @@ export default function RegistrationSuccessPage() {
     {
       title: "Inscrição realizada",
       status: "finish" as const,
-      description: (
+      content: (
         <span>
           A sua inscrição foi registrada com sucesso.
         </span>
@@ -23,7 +37,7 @@ export default function RegistrationSuccessPage() {
     {
       title: "Realizar pagamento",
       status: "process" as const,
-      description: (
+      content: (
         <span>
           Para realizar o pagamento da viagem é necessário fazer uma doação através da papeleta de doações na coluna
           &quot;outros&quot; na sua unidade.
@@ -33,7 +47,7 @@ export default function RegistrationSuccessPage() {
     {
       title: "Confirmar pagamento",
       status: "process" as const,
-      description: (
+      content: (
         <div className="flex flex-col gap-2">
 
         <span>
@@ -53,47 +67,88 @@ export default function RegistrationSuccessPage() {
         </div>
       ),
     },
+    {
+      title: "Preparar-se para a viagem",
+      status: "process" as const,
+      content: (
+        <div className="flex flex-col gap-2">
+
+        <span>
+          Preparamos um instrutivo para a viagem que pode ser descarregado abaixo.
+        </span>
+        <div>
+
+        <Button
+          type="default"
+          size="middle"
+          href="/documents/Instruções.pdf"
+          target="_blank"
+        >
+          Baixar instrutivo
+        </Button>
+
+        </div>
+        </div>
+      ),
+    },
   ];
 
   return (
     <PublicContent>
-      <div className="max-w-3xl mx-auto">
-        <Card className="text-center">
-          <div className="mb-6">
-            <CheckCircle size={64} className="text-green-500 mx-auto" />
-          </div>
-          <Title level={2}>Inscrição realizada com sucesso!</Title>
-          <Paragraph className="text-lg mt-4 mb-8">
-            A sua inscrição foi registrada com sucesso. Receberá mais
-            informações em breve.
-          </Paragraph>
-        </Card>
-
-        <Card className="mt-6">
-          <Title level={4} className="mb-6">
-            Próximos passos:
-          </Title>
-          <Steps
-            direction="vertical"
-            items={steps}
+      <AnimatePresence>
+        <motion.div
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0)}
+        >
+          <Alert
+            title="A sua inscrição foi registrada com sucesso."
+            description="Por favor, siga os passos abaixo para desfrutar da viagem."
+            type="success"
+            showIcon
             className="mb-8"
-            size="default"
           />
+        </motion.div>
+      </AnimatePresence>
 
-          <div className="flex gap-4 justify-center mt-8">
-            <Button
-              type="primary"
-              size="large"
-              onClick={() => router.push("/confirm-payment")}
-            >
-              Confirmar pagamento
-            </Button>
-            <Button size="large" onClick={() => router.push("/")}>
-              Voltar ao início
-            </Button>
-          </div>
-        </Card>
-      </div>
+      <AnimatePresence>
+        <motion.div
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0.15)}
+        >
+          <Card>
+            <div className="flex flex-col gap-4">
+              <Title level={4}>Próximos passos:</Title>
+              <Steps
+                orientation="vertical"
+                items={steps}
+                size="default"
+              />
+            </div>
+          </Card>
+        </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        <motion.div
+          initial={sectionAnimation.initial}
+          animate={sectionAnimation.animate}
+          exit={sectionAnimation.exit}
+          transition={sectionTransition(0.3)}
+          className="mt-6"
+        >
+          <Button
+            type="link"
+            size="large"
+            onClick={() => router.push("/")}
+          >
+            Voltar ao início
+          </Button>
+        </motion.div>
+      </AnimatePresence>
     </PublicContent>
   );
 }
