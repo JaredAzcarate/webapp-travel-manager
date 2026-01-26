@@ -49,7 +49,21 @@ export const useChapel = (id: string) => {
 export const useCreateChapel = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: CreateChapelInput) => repository.create(input),
+    mutationFn: async (input: CreateChapelInput) => {
+      const response = await fetch("/api/chapels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao criar capela");
+      }
+
+      const result = await response.json();
+      return result.chapel;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chapels"] });
     },
@@ -70,8 +84,21 @@ export const useCreateChapel = () => {
 export const useUpdateChapel = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateChapelInput }) =>
-      repository.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateChapelInput }) => {
+      const response = await fetch(`/api/chapels/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar capela");
+      }
+
+      const result = await response.json();
+      return result.chapel;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["chapels"] });
       queryClient.invalidateQueries({ queryKey: ["chapels", variables.id] });
@@ -93,7 +120,16 @@ export const useUpdateChapel = () => {
 export const useDeleteChapel = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/chapels/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar capela");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chapels"] });
     },

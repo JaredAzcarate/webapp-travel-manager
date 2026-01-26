@@ -8,7 +8,12 @@ export interface DataAccessLog {
   accessedAt: Timestamp;
   ipAddress?: string;
   userAgent?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
-export type CreateDataAccessLogInput = CreateInput<DataAccessLog>;
+export type CreateDataAccessLogInput = Omit<DataAccessLog, "createdAt" | "updatedAt" | "id" | "accessedAt"> & {
+  accessedAt?: Timestamp;
+};
+
 export type DataAccessLogWithId = WithId<DataAccessLog>;

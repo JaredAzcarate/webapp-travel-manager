@@ -1,12 +1,8 @@
-import { dataAccessLogsRepository } from "@/common/lib/repositories/dataAccessLogs.repository";
-import { registrationRepository } from "@/features/registrations/repositories/registrations.repository";
-import { CaravanRepository } from "@/features/caravans/repositories/caravans.repository";
-import { ChapelRepository } from "@/features/chapels/repositories/chapels.repository";
-import { ordinanceRepository } from "@/features/ordinances/repositories/ordinances.repository";
-
-const caravanRepository = new CaravanRepository();
-const chapelRepository = new ChapelRepository();
-import { Timestamp } from "firebase/firestore";
+import { dataAccessLogsRepositoryServer } from "@/common/lib/repositories/dataAccessLogs.repository.server";
+import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
+import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
+import { chapelRepositoryServer } from "@/features/chapels/repositories/chapels.repository.server";
+import { ordinanceRepositoryServer } from "@/features/ordinances/repositories/ordinances.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
@@ -22,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const registration = await registrationRepository.getByUuid(uuid);
+    const registration = await registrationRepositoryServer.getByUuid(uuid);
 
     if (!registration) {
       return NextResponse.json(
@@ -33,14 +29,14 @@ export async function GET(request: NextRequest) {
 
     // Get related data
     const [caravan, chapel] = await Promise.all([
-      caravanRepository.getById(registration.caravanId).catch(() => null),
-      chapelRepository.getById(registration.chapelId).catch(() => null),
+      caravanRepositoryServer.getById(registration.caravanId).catch(() => null),
+      chapelRepositoryServer.getById(registration.chapelId).catch(() => null),
     ]);
 
     // Get ordinance details
     const ordinancesWithDetails = await Promise.all(
       registration.ordinances.map(async (ord) => {
-        const ordinance = await ordinanceRepository.getById(ord.ordinanceId);
+        const ordinance = await ordinanceRepositoryServer.getById(ord.ordinanceId);
         return {
           ...ord,
           ordinanceName: ordinance?.name || "Desconhecida",
@@ -49,7 +45,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Get access logs
-    const accessLogs = await dataAccessLogsRepository.getByRegistrationId(
+    const accessLogs = await dataAccessLogsRepositoryServer.getByRegistrationId(
       registration.id
     );
 
@@ -108,11 +104,10 @@ export async function GET(request: NextRequest) {
                      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
-    await dataAccessLogsRepository.create({
+    await dataAccessLogsRepositoryServer.create({
       registrationId: registration.id,
       action: "EXPORT",
       accessedBy: "USER",
-      accessedAt: Timestamp.now(),
       ipAddress,
       userAgent,
     });

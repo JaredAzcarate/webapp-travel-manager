@@ -49,7 +49,21 @@ export const useCaravan = (id: string) => {
 export const useCreateCaravan = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: CreateCaravanInput) => repository.create(input),
+    mutationFn: async (input: CreateCaravanInput) => {
+      const response = await fetch("/api/caravans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao criar caravana");
+      }
+
+      const result = await response.json();
+      return result.caravan;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["caravans"] });
     },
@@ -70,8 +84,21 @@ export const useCreateCaravan = () => {
 export const useUpdateCaravan = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateCaravanInput }) =>
-      repository.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateCaravanInput }) => {
+      const response = await fetch(`/api/caravans/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar caravana");
+      }
+
+      const result = await response.json();
+      return result.caravan;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["caravans"] });
       queryClient.invalidateQueries({ queryKey: ["caravans", variables.id] });
@@ -93,7 +120,16 @@ export const useUpdateCaravan = () => {
 export const useDeleteCaravan = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/caravans/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar caravana");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["caravans"] });
     },

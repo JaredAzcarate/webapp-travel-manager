@@ -1,6 +1,5 @@
-import { dataAccessLogsRepository } from "@/common/lib/repositories/dataAccessLogs.repository";
-import { registrationRepository } from "@/features/registrations/repositories/registrations.repository";
-import { Timestamp } from "firebase/firestore";
+import { dataAccessLogsRepositoryServer } from "@/common/lib/repositories/dataAccessLogs.repository.server";
+import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const registration = await registrationRepository.getByUuid(uuid);
+    const registration = await registrationRepositoryServer.getByUuid(uuid);
 
     if (!registration) {
       return NextResponse.json(
@@ -32,11 +31,10 @@ export async function GET(request: NextRequest) {
                      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
-    await dataAccessLogsRepository.create({
+    await dataAccessLogsRepositoryServer.create({
       registrationId: registration.id,
       action: "VIEW",
       accessedBy: "USER",
-      accessedAt: Timestamp.now(),
       ipAddress,
       userAgent,
     });

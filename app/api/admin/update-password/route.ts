@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update password
-    await adminRepository.updatePassword(adminId, newPassword);
+    await adminRepositoryServer.updatePassword(adminId, newPassword);
 
     return NextResponse.json(
       {

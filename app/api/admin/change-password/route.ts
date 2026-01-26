@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find admin by username
-    const admin = await adminRepository.getByUsername(username);
+    const admin = await adminRepositoryServer.getByUsername(username);
     if (!admin) {
       return NextResponse.json(
         { message: "Admin não encontrado" },
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update password
-    await adminRepository.updatePassword(admin.id, newPassword);
+    await adminRepositoryServer.updatePassword(admin.id, newPassword);
 
     return NextResponse.json(
       {

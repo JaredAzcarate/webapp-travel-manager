@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to check if user is ADMIN
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'ADMIN';
+    }
+    
+    // Helper function to check if user is CHAPEL
+    function isChapel() {
+      return isAuthenticated() && getUserRole() == 'CHAPEL';
+    }
+    
+    // Helper function to get user's chapelId
+    function getUserChapelId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.chapelId;
+    }
+    
+    // admin collection
+    match /admin/{adminId} {
+      // Read: Only ADMIN authenticated users
+      allow read: if isAdmin();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // users collection
+    match /users/{userId} {
+      // Read: Authenticated users can read users
+      allow read: if isAuthenticated();
+      
+      // Create: Only ADMIN
+      allow create: if isAdmin();
+      
+      // Update: ADMIN can update any user, or user can update themselves
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      
+      // Delete: Only ADMIN
+      allow delete: if isAdmin();
+    }
+    
+    // chapels collection
+    match /chapels/{chapelId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // caravans collection
+    match /caravans/{caravanId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // buses collection
+    match /buses/{busId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // busStops collection
+    match /busStops/{busStopId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // ordinances collection
+    match /ordinances/{ordinanceId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+    
+    // roles collection
+    match /roles/{roleId} {
+      // Read: Authenticated users (ADMIN and CHAPEL)
+      allow read: if isAuthenticated();
+      
+      // Write: Only ADMIN (if needed in the future)
+      allow write: if isAdmin();
+    }
+    
+    // registrations collection
+    match /registrations/{registrationId} {
+      // Create: Public (no authentication required) - for public registration form
+      allow create: if true;
+      
+      // Read: 
+      // - ADMIN: All registrations
+      // - CHAPEL: Only registrations from their chapel
+      allow read: if isAuthenticated() && (
+        isAdmin() || 
+        (isChapel() && resource.data.chapelId == getUserChapelId())
+      );
+      
+      // Update: Blocked from client (only Admin SDK can write)
+      // Updates must go through API routes
+      allow update: if false;
+      
+      // Delete: Blocked from client (only Admin SDK can write)
+      // Deletes must go through API routes
+      allow delete: if false;
+    }
+    
+    // dataAccessLogs collection
+    match /dataAccessLogs/{logId} {
+      // Read: Only ADMIN (for audit purposes)
+      allow read: if isAdmin();
+      
+      // Write: Blocked from client (only Admin SDK can write)
+      allow write: if false;
+    }
+  }
+}

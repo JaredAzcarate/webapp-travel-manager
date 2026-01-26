@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 
 async function changePassword() {
   const username = process.argv[2];
@@ -16,14 +16,14 @@ async function changePassword() {
 
   try {
     // Find admin by username
-    const admin = await adminRepository.getByUsername(username);
+    const admin = await adminRepositoryServer.getByUsername(username);
     if (!admin) {
       console.error(`Admin with username "${username}" not found`);
       process.exit(1);
     }
 
     // Update password
-    await adminRepository.updatePassword(admin.id, newPassword);
+    await adminRepositoryServer.updatePassword(admin.id, newPassword);
 
     console.log(`Password updated successfully for admin: ${admin.username}`);
     console.log(`New password: ${newPassword}`);

@@ -1,6 +1,6 @@
-import { dataAccessLogsRepository } from "@/common/lib/repositories/dataAccessLogs.repository";
-import { registrationRepository } from "@/features/registrations/repositories/registrations.repository";
-import { Timestamp } from "firebase/firestore";
+import { dataAccessLogsRepositoryServer } from "@/common/lib/repositories/dataAccessLogs.repository.server";
+import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
+import { Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const registration = await registrationRepository.getByUuid(uuid);
+    const registration = await registrationRepositoryServer.getByUuid(uuid);
 
     if (!registration) {
       return NextResponse.json(
@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Update registration
-    await registrationRepository.update(registration.id, {
+    await registrationRepositoryServer.update(registration.id, {
       privacyPolicyAccepted: false,
-      consentWithdrawnAt: Timestamp.now(),
+      consentWithdrawnAt: Timestamp.now() as any,
     });
 
     // Log the action
@@ -37,11 +37,10 @@ export async function POST(request: NextRequest) {
                      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
-    await dataAccessLogsRepository.create({
+    await dataAccessLogsRepositoryServer.create({
       registrationId: registration.id,
       action: "WITHDRAW_CONSENT",
       accessedBy: "USER",
-      accessedAt: Timestamp.now(),
       ipAddress,
       userAgent,
     });

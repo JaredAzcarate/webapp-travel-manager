@@ -294,13 +294,27 @@ export const useCreateRegistration = () => {
 export const useUpdateRegistration = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       input,
     }: {
       id: string;
       input: UpdateRegistrationInput;
-    }) => repository.update(id, input),
+    }) => {
+      const response = await fetch(`/api/registrations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar inscrição");
+      }
+
+      const result = await response.json();
+      return result.registration;
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] });
       queryClient.invalidateQueries({
@@ -347,7 +361,16 @@ export const useUpdateRegistration = () => {
 export const useDeleteRegistration = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/registrations/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar inscrição");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] });
     },

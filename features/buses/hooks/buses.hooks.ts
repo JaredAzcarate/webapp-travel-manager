@@ -49,7 +49,21 @@ export const useBus = (id: string) => {
 export const useCreateBus = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: CreateBusInput) => repository.create(input),
+    mutationFn: async (input: CreateBusInput) => {
+      const response = await fetch("/api/buses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao criar autocarro");
+      }
+
+      const result = await response.json();
+      return result.bus;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["buses"] });
     },
@@ -71,8 +85,21 @@ export const useCreateBus = () => {
 export const useUpdateBus = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateBusInput }) =>
-      repository.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateBusInput }) => {
+      const response = await fetch(`/api/buses/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar autocarro");
+      }
+
+      const result = await response.json();
+      return result.bus;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["buses"] });
       queryClient.invalidateQueries({ queryKey: ["buses", variables.id] });
@@ -95,7 +122,16 @@ export const useUpdateBus = () => {
 export const useDeleteBus = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/buses/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar autocarro");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["buses"] });
       queryClient.invalidateQueries({ queryKey: ["busStops"] });

@@ -71,7 +71,21 @@ export const useBusStopsByBusId = (busId: string) => {
 export const useCreateBusStop = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: CreateBusStopInput) => repository.create(input),
+    mutationFn: async (input: CreateBusStopInput) => {
+      const response = await fetch("/api/bus-stops", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao criar parada");
+      }
+
+      const result = await response.json();
+      return result.busStop;
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["busStops"] });
       queryClient.invalidateQueries({
@@ -95,8 +109,21 @@ export const useCreateBusStop = () => {
 export const useUpdateBusStop = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateBusStopInput }) =>
-      repository.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateBusStopInput }) => {
+      const response = await fetch(`/api/bus-stops/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar parada");
+      }
+
+      const result = await response.json();
+      return result.busStop;
+    },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["busStops"] });
       queryClient.invalidateQueries({
@@ -125,7 +152,16 @@ export const useUpdateBusStop = () => {
 export const useDeleteBusStop = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/bus-stops/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar parada");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["busStops"] });
     },

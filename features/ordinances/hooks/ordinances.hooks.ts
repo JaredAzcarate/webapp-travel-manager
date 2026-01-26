@@ -50,8 +50,21 @@ export const useOrdinance = (id: string) => {
 export const useCreateOrdinance = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: CreateOrdinanceInput) =>
-      ordinanceRepository.create(input),
+    mutationFn: async (input: CreateOrdinanceInput) => {
+      const response = await fetch("/api/ordinances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao criar ordenança");
+      }
+
+      const result = await response.json();
+      return result.ordinance;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ordinances"] });
     },
@@ -72,8 +85,21 @@ export const useCreateOrdinance = () => {
 export const useUpdateOrdinance = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateOrdinanceInput }) =>
-      ordinanceRepository.update(id, input),
+    mutationFn: async ({ id, input }: { id: string; input: UpdateOrdinanceInput }) => {
+      const response = await fetch(`/api/ordinances/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao atualizar ordenança");
+      }
+
+      const result = await response.json();
+      return result.ordinance;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["ordinances"] });
       queryClient.invalidateQueries({ queryKey: ["ordinances", variables.id] });
@@ -95,7 +121,16 @@ export const useUpdateOrdinance = () => {
 export const useDeleteOrdinance = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => ordinanceRepository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/ordinances/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar ordenança");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ordinances"] });
     },

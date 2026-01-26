@@ -1,7 +1,7 @@
 "use client";
 
 import { useCreateBus, useUpdateBus } from "@/features/buses/hooks/buses.hooks";
-import { useBusStopsByBusId } from "@/features/buses/hooks/busStops.hooks";
+import { useBusStopsByBusId, useCreateBusStop, useDeleteBusStop } from "@/features/buses/hooks/busStops.hooks";
 import {
   BusWithId,
   CreateBusInput,
@@ -11,7 +11,6 @@ import {
   BusStopWithId,
   CreateBusStopInput,
 } from "@/features/buses/models/busStops.model";
-import { BusStopRepository } from "@/features/buses/repositories/busStops.repository";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -79,7 +78,8 @@ export const BusForm = ({
     mode === "edit" && busId ? busId : ""
   );
 
-  const busStopRepository = new BusStopRepository();
+  const { createBusStop } = useCreateBusStop();
+  const { deleteBusStop } = useDeleteBusStop();
 
   const { chapels, loading: loadingChapels } = useChapels();
   const [isProcessingStops, setIsProcessingStops] = useState(false);
@@ -239,7 +239,7 @@ export const BusForm = ({
           pickupTime,
         };
 
-        await busStopRepository.create(busStopInput);
+        await createBusStop(busStopInput);
       }
 
       queryClient.invalidateQueries({ queryKey: ["busStops"] });
@@ -280,7 +280,7 @@ export const BusForm = ({
       const existingStops = stopsToUse;
 
       for (const stop of existingStops) {
-        await busStopRepository.delete(stop.id);
+        await deleteBusStop(stop.id);
       }
 
       const today = dayjs().startOf("day");
@@ -300,7 +300,7 @@ export const BusForm = ({
           pickupTime,
         };
 
-        await busStopRepository.create(busStopInput);
+        await createBusStop(busStopInput);
       }
 
       queryClient.invalidateQueries({ queryKey: ["busStops"] });

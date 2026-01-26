@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if admin already exists
-    const existing = await adminRepository.getByUsername(username);
+    const existing = await adminRepositoryServer.getByUsername(username);
     if (existing) {
       return NextResponse.json(
         { message: "Usuário já existe" },
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create admin
-    const admin = await adminRepository.create({ username, password });
+    const admin = await adminRepositoryServer.create({ username, password });
 
     return NextResponse.json(
       {

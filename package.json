@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:rules": "firebase deploy --only firestore:rules"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.11",
@@ -28,6 +29,7 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "firebase-tools": "^13.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pdfkit": "^0.17.3",

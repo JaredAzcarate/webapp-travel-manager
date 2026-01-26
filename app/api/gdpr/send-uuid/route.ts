@@ -1,8 +1,7 @@
-import { dataAccessLogsRepository } from "@/common/lib/repositories/dataAccessLogs.repository";
-import { registrationRepository } from "@/features/registrations/repositories/registrations.repository";
+import { dataAccessLogsRepositoryServer } from "@/common/lib/repositories/dataAccessLogs.repository.server";
+import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
 import { sendWhatsAppMessage } from "@/features/registrations/utils/whatsapp.utils";
 import { generateGdprUuid } from "@/common/utils/uuid.utils";
-import { Timestamp } from "firebase/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Search for registrations matching phone and fullName
-    const registrations = await registrationRepository.getByPhoneAndName(
+    const registrations = await registrationRepositoryServer.getByPhoneAndName(
       phone,
       fullName
     );
@@ -41,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!uuid) {
       // Generate UUID if it doesn't exist (for old registrations)
       uuid = generateGdprUuid();
-      await registrationRepository.update(registration.id, {
+      await registrationRepositoryServer.update(registration.id, {
         gdprUuid: uuid,
       });
     }
@@ -63,11 +62,10 @@ export async function POST(request: NextRequest) {
                      "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
 
-    await dataAccessLogsRepository.create({
+    await dataAccessLogsRepositoryServer.create({
       registrationId: registration.id,
       action: "VIEW",
       accessedBy: "USER",
-      accessedAt: Timestamp.now(),
       ipAddress,
       userAgent,
     });

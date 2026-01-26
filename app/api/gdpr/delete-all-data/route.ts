@@ -1,6 +1,5 @@
-import { dataAccessLogsRepository } from "@/common/lib/repositories/dataAccessLogs.repository";
-import { registrationRepository } from "@/features/registrations/repositories/registrations.repository";
-import { Timestamp } from "firebase/firestore";
+import { dataAccessLogsRepositoryServer } from "@/common/lib/repositories/dataAccessLogs.repository.server";
+import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const registration = await registrationRepository.getByUuid(uuid);
+    const registration = await registrationRepositoryServer.getByUuid(uuid);
 
     if (!registration) {
       return NextResponse.json(
@@ -31,17 +30,16 @@ export async function POST(request: NextRequest) {
                      "unknown";
     const userAgent = headersList.get("user-agent") || "unknown";
 
-    await dataAccessLogsRepository.create({
+    await dataAccessLogsRepositoryServer.create({
       registrationId: registration.id,
       action: "DELETE",
       accessedBy: "USER",
-      accessedAt: Timestamp.now(),
       ipAddress,
       userAgent,
     });
 
     // Delete the registration
-    await registrationRepository.delete(registration.id);
+    await registrationRepositoryServer.delete(registration.id);
 
     return NextResponse.json(
       { message: "Todos os dados foram eliminados com sucesso" },

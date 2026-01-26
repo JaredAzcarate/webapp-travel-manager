@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 import { comparePassword } from "@/lib/auth/password.utils";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -16,7 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        const admin = await adminRepository.getByUsername(
+        const admin = await adminRepositoryServer.getByUsername(
           credentials.username as string
         );
 

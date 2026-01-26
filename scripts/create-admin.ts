@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
 
 async function createAdmin() {
   const username = process.argv[2];
@@ -13,13 +13,13 @@ async function createAdmin() {
 
   try {
     // Check if admin already exists
-    const existing = await adminRepository.getByUsername(username);
+    const existing = await adminRepositoryServer.getByUsername(username);
     if (existing) {
       console.error(`Admin with username "${username}" already exists`);
       process.exit(1);
     }
 
-    const admin = await adminRepository.create({
+    const admin = await adminRepositoryServer.create({
       username,
       password,
     });
