@@ -356,18 +356,20 @@ export class RegistrationRepository {
     phone: string,
     caravanId?: string
   ): Promise<RegistrationWithId[]> {
-    const constraints = [where("phone", "==", phone)];
+    const params = new URLSearchParams({ phone });
     if (caravanId) {
-      constraints.push(where("caravanId", "==", caravanId));
+      params.append("caravanId", caravanId);
     }
-    const q = query(collection(db, this.collectionName), ...constraints);
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
-    );
+
+    const response = await fetch(`/api/registrations/by-phone?${params.toString()}`);
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar inscrições");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async getByPhoneAndName(
@@ -522,14 +524,17 @@ export class RegistrationRepository {
   }
 
   async countActiveByBus(caravanId: string, busId: string): Promise<number> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("caravanId", "==", caravanId),
-      where("busId", "==", busId),
-      where("participationStatus", "==", "ACTIVE")
+    const response = await fetch(
+      `/api/registrations/count/active?caravanId=${encodeURIComponent(caravanId)}&busId=${encodeURIComponent(busId)}`
     );
-    const snap = await getDocs(q);
-    return snap.size;
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao contar inscrições ativas");
+    }
+
+    const result = await response.json();
+    return result.count;
   }
 
   async countCancelledByBus(caravanId: string, busId: string): Promise<number> {

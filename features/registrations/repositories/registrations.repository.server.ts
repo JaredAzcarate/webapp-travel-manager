@@ -64,6 +64,28 @@ export class RegistrationRepositoryServer {
     });
   }
 
+  async getByPhone(
+    phone: string,
+    caravanId?: string
+  ): Promise<RegistrationWithId[]> {
+    let query = adminDb
+      .collection(this.collectionName)
+      .where('phone', '==', phone);
+
+    if (caravanId) {
+      query = query.where('caravanId', '==', caravanId);
+    }
+
+    const snapshot = await query.get();
+
+    return snapshot.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
+  }
+
   async getByPhoneAndName(
     phone: string,
     fullName: string
