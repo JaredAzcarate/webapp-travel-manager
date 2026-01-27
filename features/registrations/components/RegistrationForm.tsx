@@ -95,7 +95,7 @@ export const RegistrationForm = ({
   const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
 
   const {
-    createRegistration,
+    createRegistrationAsync,
     isPending: isCreating,
     isSuccess: created,
     error: createError,
@@ -502,12 +502,16 @@ export const RegistrationForm = ({
           : undefined,
       };
 
-      createRegistration(input);
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push(`/registration/success`);
+      try {
+        await createRegistrationAsync(input);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      } catch (error) {
+        // Error is already handled by the useEffect that watches createError
+        // No need to show notification here as it will be shown by the useEffect
+        console.error("Error creating registration:", error);
       }
     } else if (mode === "edit" && registrationId) {
       // For CHILD and YOUTH, use legalGuardianPhone as the phone identifier

@@ -420,7 +420,17 @@ export const useMarkPaymentAsPaid = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: async (id: string) => {
-      return await repository.markPaymentAsPaid(id);
+      const response = await fetch(`/api/registrations/${id}/mark-payment`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao marcar pagamento");
+      }
+
+      const result = await response.json();
+      return result.registration;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] });
@@ -443,7 +453,17 @@ export const useCancelRegistration = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: async (id: string) => {
-      return await repository.cancelRegistration(id);
+      const response = await fetch(`/api/registrations/${id}/cancel`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao cancelar participação");
+      }
+
+      const result = await response.json();
+      return result.registration;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["registrations"] });

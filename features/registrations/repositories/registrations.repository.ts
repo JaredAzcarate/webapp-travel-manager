@@ -77,136 +77,19 @@ export class RegistrationRepository {
   }
 
   async create(input: CreateRegistrationInput): Promise<RegistrationWithId> {
-    // Check bus capacity before transaction (optimistic check)
-    let isBusFull = false;
-    if (input.busId) {
-      try {
-        const bus = await this.busRepository.getById(input.busId);
-        const activeCount = await this.countActiveByBus(
-          input.caravanId,
-          input.busId
-        );
-        isBusFull = activeCount >= bus.capacity;
-      } catch (error) {
-        throw new Error(`Error checking bus capacity: ${error}`);
-      }
+    const response = await fetch("/api/registrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao criar inscrição");
     }
 
-    // Determine participation status
-    const participationStatus: ParticipationStatus = isBusFull
-      ? "WAITLIST"
-      : input.participationStatus || "ACTIVE";
-
-    return runTransaction(db, async (transaction) => {
-      // Verify bus exists
-      if (input.busId) {
-        const busRef = doc(db, "buses", input.busId);
-        const busSnap = await transaction.get(busRef);
-
-        if (!busSnap.exists()) {
-          throw new Error(`Bus with id ${input.busId} not found`);
-        }
-      }
-
-      const caravanRef = doc(db, "caravans", input.caravanId);
-      const caravanSnap = await transaction.get(caravanRef);
-
-      if (!caravanSnap.exists()) {
-        throw new Error(`Caravan with id ${input.caravanId} not found`);
-      }
-
-      const caravan = { id: caravanSnap.id, ...caravanSnap.data() } as CaravanWithId;
-
-      // If bus is full, skip ordinance validation and capacity updates
-      // If bus has space, validate ordinances as usual
-      if (!isBusFull && input.ordinances && input.ordinances.length > 0) {
-        const userGender = input.gender;
-        for (const ordinance of input.ordinances) {
-          const limitValue: CapacityValue | undefined =
-            caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[ordinance.slot];
-          const countValue: CapacityValue | undefined =
-            caravan.ordinanceCapacityCounts?.[ordinance.ordinanceId]?.[ordinance.slot];
-
-          if (limitValue === undefined || countValue === undefined) {
-            throw new Error(
-              `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta caravana`
-            );
-          }
-
-          const limit = getLimitForGender(limitValue, userGender);
-          const count = getCountForGender(countValue, userGender);
-
-          if (count >= limit) {
-            throw new Error(
-              `Não há cupos disponíveis para ${ordinance.ordinanceId} - ${ordinance.slot}`
-            );
-          }
-        }
-      }
-
-      const now = Timestamp.now();
-      const registrationRef = doc(collection(db, this.collectionName));
-      
-      // Generate UUID if not provided
-      const gdprUuid = input.gdprUuid || generateGdprUuid();
-      
-      // Set privacyPolicyAcceptedAt if privacy policy is accepted
-      const privacyPolicyAcceptedAt = input.privacyPolicyAccepted
-        ? input.privacyPolicyAcceptedAt || now
-        : undefined;
-      
-      transaction.set(registrationRef, {
-        ...input,
-        gdprUuid,
-        privacyPolicyAcceptedAt,
-        participationStatus,
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      // Only increment ordinance capacity counts if bus is not full
-      if (!isBusFull && input.ordinances && input.ordinances.length > 0) {
-        const userGender = input.gender;
-        const updatedCounts = { ...(caravan.ordinanceCapacityCounts || {}) };
-
-        for (const ordinance of input.ordinances) {
-          if (!updatedCounts[ordinance.ordinanceId]) {
-            updatedCounts[ordinance.ordinanceId] = {};
-          }
-
-          const currentCount = updatedCounts[ordinance.ordinanceId][ordinance.slot];
-          const currentLimit =
-            caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[ordinance.slot];
-
-          // Initialize if doesn't exist
-          if (currentCount === undefined) {
-            if (isGenderSpecificLimit(currentLimit as CapacityValue)) {
-              updatedCounts[ordinance.ordinanceId][ordinance.slot] = { M: 0, F: 0 };
-            } else {
-              updatedCounts[ordinance.ordinanceId][ordinance.slot] = 0;
-            }
-          }
-
-          // Increment based on structure
-          const slotCounts = updatedCounts[ordinance.ordinanceId] as Record<
-            string,
-            CapacityValue
-          >;
-          incrementCountByGender(slotCounts, ordinance.slot, userGender);
-        }
-
-        transaction.update(caravanRef, {
-          ordinanceCapacityCounts: updatedCounts,
-          updatedAt: now,
-        });
-      }
-
-      const createdDoc = await getDoc(registrationRef);
-      return this.migrateRegistration({
-        id: createdDoc.id,
-        ...createdDoc.data(),
-      });
-    });
+    const result = await response.json();
+    return result.registration;
   }
 
   async update(
@@ -447,80 +330,86 @@ export class RegistrationRepository {
     busId: string,
     caravanId: string
   ): Promise<RegistrationWithId[]> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("busId", "==", busId),
-      where("caravanId", "==", caravanId)
+    const params = new URLSearchParams({
+      busId,
+      caravanId,
+    });
+
+    const response = await fetch(
+      `/api/registrations/by-bus?${params.toString()}`
     );
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
-    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar inscrições");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async getActiveByBusId(
     busId: string,
     caravanId: string
   ): Promise<RegistrationWithId[]> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("busId", "==", busId),
-      where("caravanId", "==", caravanId),
-      where("participationStatus", "==", "ACTIVE")
+    const params = new URLSearchParams({
+      busId,
+      caravanId,
+    });
+
+    const response = await fetch(
+      `/api/registrations/active/by-bus?${params.toString()}`
     );
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
-    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar inscrições ativas");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async getWaitlistByCaravanId(
     caravanId: string
   ): Promise<RegistrationWithId[]> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("caravanId", "==", caravanId),
-      where("participationStatus", "==", "WAITLIST")
-    );
-    const snap = await getDocs(q);
-    const registrations = snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
+    const params = new URLSearchParams({
+      caravanId,
+    });
+
+    const response = await fetch(
+      `/api/registrations/waitlist/by-caravan?${params.toString()}`
     );
 
-    // Sort by createdAt (first come, first served)
-    return registrations.sort((a, b) => {
-      const aTime = a.createdAt?.toMillis() || 0;
-      const bTime = b.createdAt?.toMillis() || 0;
-      return aTime - bTime;
-    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar lista de espera");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async getCancelledByBusId(
     busId: string,
     caravanId: string
   ): Promise<RegistrationWithId[]> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("busId", "==", busId),
-      where("caravanId", "==", caravanId),
-      where("participationStatus", "==", "CANCELLED")
+    const params = new URLSearchParams({
+      busId,
+      caravanId,
+    });
+
+    const response = await fetch(
+      `/api/registrations/cancelled/by-bus?${params.toString()}`
     );
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
-    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar inscrições canceladas");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async countActiveByBus(caravanId: string, busId: string): Promise<number> {

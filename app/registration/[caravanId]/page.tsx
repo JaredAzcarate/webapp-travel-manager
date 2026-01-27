@@ -3,7 +3,7 @@
 import { PublicContent } from "@/common/components/PublicContent";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
-import { Alert, Card, Spin, Typography } from "antd";
+import { Alert, App, Card, Spin, Typography } from "antd";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
 
@@ -12,6 +12,7 @@ const { Title } = Typography;
 export default function PublicRegistrationPage() {
   const router = useRouter();
   const params = useParams();
+  const { notification } = App.useApp();
   const caravanId = params.caravanId as string;
 
   const { caravan, loading } = useCaravan(caravanId || "");
@@ -28,6 +29,10 @@ export default function PublicRegistrationPage() {
   }, [caravan]);
 
   const handleSuccess = () => {
+    notification.success({
+      title: "Sucesso",
+      description: "A inscrição foi criada com sucesso",
+    });
     router.push("/registration/success");
   };
 
