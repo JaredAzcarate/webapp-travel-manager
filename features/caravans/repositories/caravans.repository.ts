@@ -176,7 +176,6 @@ export class CaravanRepository {
   }
 
   async getActive(): Promise<CaravanWithId[]> {
-    // Fetch all caravans from API (server has full access)
     const response = await fetch("/api/caravans");
     if (!response.ok) {
       const data = await response.json();
@@ -188,7 +187,6 @@ export class CaravanRepository {
 
     const now = Date.now();
 
-    // Helper to get milliseconds from timestamp (handles serialized format)
     const toMillis = (ts: unknown): number => {
       if (!ts) return 0;
       if (typeof ts === "object" && "toMillis" in (ts as object)) {
@@ -199,17 +197,26 @@ export class CaravanRepository {
       return sec * 1000;
     };
 
-    // Filter: form open now (active)
-    const activeCaravans = allCaravans.filter((c) => {
+    // Only show active + future (exclude past caravans)
+    const relevantCaravans = allCaravans.filter((c) => toMillis(c.departureAt) > now);
+    if (relevantCaravans.length === 0) return [];
+
+    // Active first (form open now), then future (sorted by departure)
+    const activeCaravans = relevantCaravans.filter((c) => {
       const open = toMillis(c.formOpenAt);
       const close = toMillis(c.formCloseAt);
       return open > 0 && close > 0 && now >= open && now <= close;
     });
-    if (activeCaravans.length > 0) return activeCaravans;
+    const futureCaravans = relevantCaravans.filter((c) => {
+      const open = toMillis(c.formOpenAt);
+      const close = toMillis(c.formCloseAt);
+      return !(open > 0 && close > 0 && now >= open && now <= close);
+    });
 
-    // Otherwise: upcoming (departure in future)
-    const upcoming = allCaravans.filter((c) => toMillis(c.departureAt) > now);
-    return upcoming.sort((a, b) => toMillis(a.departureAt) - toMillis(b.departureAt));
+    return [
+      ...activeCaravans.sort((a, b) => toMillis(a.departureAt) - toMillis(b.departureAt)),
+      ...futureCaravans.sort((a, b) => toMillis(a.departureAt) - toMillis(b.departureAt)),
+    ];
   }
 
   async updateCapacityCounts(

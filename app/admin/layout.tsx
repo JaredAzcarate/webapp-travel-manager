@@ -34,11 +34,11 @@ export default function AdminLayout({
   }
 
   return (
-      <Layout>
-        <AdminSidebar />
-        <Content>
-          {children}
-        </Content>
-      </Layout>
+    <Layout>
+      <AdminSidebar />
+      <Content>
+        {children}
+      </Content>
+    </Layout>
   );
 }
