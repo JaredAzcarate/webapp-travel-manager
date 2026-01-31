@@ -2,6 +2,19 @@ import { caravanRepositoryServer } from "@/features/caravans/repositories/carava
 import { CreateCaravanInput } from "@/features/caravans/models/caravans.model";
 import { NextRequest, NextResponse } from "next/server";
 
+export async function GET() {
+  try {
+    const caravans = await caravanRepositoryServer.getAll();
+    return NextResponse.json({ caravans }, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching caravans:", error);
+    return NextResponse.json(
+      { message: "Erro ao buscar caravanas" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const input: CreateCaravanInput = await request.json();

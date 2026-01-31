@@ -14,6 +14,24 @@ export class BusStopRepositoryServer {
     return adminTimestamp;
   }
 
+  /** Converts serialized pickupTime (from JSON) to Firestore Timestamp */
+  private parsePickupTime(value: unknown): Timestamp | undefined {
+    if (!value) return undefined;
+    if (value instanceof Timestamp) return value;
+    if (typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+      const sec = (obj.seconds ?? obj._seconds) as number | undefined;
+      const nano = (obj.nanoseconds ?? obj._nanoseconds) as number | undefined;
+      if (typeof sec === "number") {
+        return new Timestamp(sec, typeof nano === "number" ? nano : 0);
+      }
+    }
+    if (typeof value === "string") {
+      return Timestamp.fromDate(new Date(value));
+    }
+    return undefined;
+  }
+
   async getAll(): Promise<BusStopWithId[]> {
     const snapshot = await adminDb.collection(this.collectionName).get();
     return snapshot.docs.map((doc) => {
@@ -46,11 +64,16 @@ export class BusStopRepositoryServer {
 
   async create(input: CreateBusStopInput): Promise<BusStopWithId> {
     const now = Timestamp.now();
-    const docRef = await adminDb.collection(this.collectionName).add({
-      ...input,
+    const pickupTime = this.parsePickupTime(input.pickupTime);
+    const dataToSave = {
+      busId: input.busId,
+      chapelId: input.chapelId,
+      order: input.order ?? 0,
+      ...(pickupTime && { pickupTime }),
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    const docRef = await adminDb.collection(this.collectionName).add(dataToSave);
 
     const docSnap = await docRef.get();
     const data = docSnap.data()!;

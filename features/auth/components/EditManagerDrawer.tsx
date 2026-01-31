@@ -1,11 +1,11 @@
 "use client";
 
+import { toDate } from "@/common/utils/timestamp.utils";
 import { AdminWithId } from "@/features/auth/models/admin.model";
 import { useQueryClient } from "@tanstack/react-query";
 import { App, Button, Drawer, Form, Input } from "antd";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Timestamp } from "firebase/firestore";
 import { useState } from "react";
 
 interface EditManagerDrawerProps {
@@ -71,14 +71,9 @@ export const EditManagerDrawer = ({
     }
   };
 
-  const formatDate = (timestamp: Timestamp | undefined | null) => {
-    if (!timestamp) return "-";
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date();
-      return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch {
-      return "-";
-    }
+  const formatDate = (timestamp: unknown) => {
+    const date = toDate(timestamp as Parameters<typeof toDate>[0]);
+    return date ? format(date, "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-";
   };
 
   return (

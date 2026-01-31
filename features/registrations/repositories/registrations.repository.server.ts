@@ -202,6 +202,30 @@ export class RegistrationRepositoryServer {
     });
   }
 
+  async getFiltered(
+    caravanId: string,
+    filters?: { chapelId?: string; paymentStatus?: string }
+  ): Promise<RegistrationWithId[]> {
+    let query = adminDb
+      .collection(this.collectionName)
+      .where('caravanId', '==', caravanId);
+
+    if (filters?.chapelId) {
+      query = query.where('chapelId', '==', filters.chapelId) as any;
+    }
+    if (filters?.paymentStatus) {
+      query = query.where('paymentStatus', '==', filters.paymentStatus) as any;
+    }
+
+    const snapshot = await query.get();
+    return snapshot.docs.map((doc) =>
+      this.migrateRegistration({
+        id: doc.id,
+        ...doc.data(),
+      })
+    );
+  }
+
   async countActiveByBus(
     caravanId: string,
     busId: string

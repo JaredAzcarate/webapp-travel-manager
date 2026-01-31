@@ -1,6 +1,7 @@
 "use client";
 
 import { PublicContent } from "@/common/components/PublicContent";
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { RegistrationForm } from "@/features/registrations/components/RegistrationForm";
 import { Alert, App, Card, Spin, Typography } from "antd";
@@ -20,8 +21,8 @@ export default function PublicRegistrationPage() {
   const isFormOpen = useMemo(() => {
     if (!caravan) return false;
     const now = new Date();
-    const formOpenAt = caravan.formOpenAt?.toDate();
-    const formCloseAt = caravan.formCloseAt?.toDate();
+    const formOpenAt = toDate(caravan.formOpenAt);
+    const formCloseAt = toDate(caravan.formCloseAt);
 
     if (!formOpenAt || !formCloseAt) return false;
 

@@ -321,6 +321,9 @@ export const useUpdateRegistration = () => {
         queryKey: ["registrations", variables.id],
       });
       queryClient.invalidateQueries({
+        queryKey: ["registrations", "filtered", data.caravanId],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["registrations", "byCaravan", data.caravanId],
       });
       queryClient.invalidateQueries({
@@ -478,6 +481,12 @@ export const useCancelRegistration = () => {
       });
       queryClient.invalidateQueries({
         queryKey: ["registrations", "count", "active", data.caravanId, data.busId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "cancelled", data.busId, data.caravanId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["registrations", "count", "cancelled", data.caravanId, data.busId],
       });
       queryClient.invalidateQueries({
         queryKey: ["waitlist", data.caravanId],

@@ -427,14 +427,17 @@ export class RegistrationRepository {
   }
 
   async countCancelledByBus(caravanId: string, busId: string): Promise<number> {
-    const q = query(
-      collection(db, this.collectionName),
-      where("caravanId", "==", caravanId),
-      where("busId", "==", busId),
-      where("participationStatus", "==", "CANCELLED")
+    const response = await fetch(
+      `/api/registrations/count/cancelled?caravanId=${encodeURIComponent(caravanId)}&busId=${encodeURIComponent(busId)}`
     );
-    const snap = await getDocs(q);
-    return snap.size;
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao contar inscrições canceladas");
+    }
+
+    const result = await response.json();
+    return result.count;
   }
 
   async checkPhoneUniqueness(
@@ -452,24 +455,23 @@ export class RegistrationRepository {
       paymentStatus?: string;
     }
   ): Promise<RegistrationWithId[]> {
-    const constraints = [where("caravanId", "==", caravanId)];
+    const params = new URLSearchParams({
+      caravanId,
+      ...(filters?.chapelId && { chapelId: filters.chapelId }),
+      ...(filters?.paymentStatus && { paymentStatus: filters.paymentStatus }),
+    });
 
-    if (filters?.chapelId) {
-      constraints.push(where("chapelId", "==", filters.chapelId));
-    }
-
-    if (filters?.paymentStatus) {
-      constraints.push(where("paymentStatus", "==", filters.paymentStatus));
-    }
-
-    const q = query(collection(db, this.collectionName), ...constraints);
-    const snap = await getDocs(q);
-    return snap.docs.map((doc) =>
-      this.migrateRegistration({
-        id: doc.id,
-        ...doc.data(),
-      })
+    const response = await fetch(
+      `/api/registrations/filtered?${params.toString()}`
     );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar inscrições");
+    }
+
+    const result = await response.json();
+    return result.registrations;
   }
 
   async markPaymentAsPaid(id: string): Promise<RegistrationWithId> {

@@ -10,6 +10,7 @@ import {
 } from "@/features/caravans/hooks/caravans.hooks";
 import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { useCountActiveByBus } from "@/features/registrations/hooks/registrations.hooks";
+import { toDate } from "@/common/utils/timestamp.utils";
 import { App, Button, Drawer, Space, Spin, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -134,8 +135,8 @@ export const CaravansList = () => {
       key: "isActive",
       render: (_, record) => {
         const now = new Date();
-        const formOpenAt = record.formOpenAt?.toDate();
-        const formCloseAt = record.formCloseAt?.toDate();
+        const formOpenAt = toDate(record.formOpenAt);
+        const formCloseAt = toDate(record.formCloseAt);
 
         let isActive = false;
         if (formOpenAt && formCloseAt) {
@@ -158,22 +159,16 @@ export const CaravansList = () => {
       title: "Partida",
       key: "departureAt",
       render: (_, record) => {
-        const timestamp = record.departureAt;
-        if (timestamp && "toDate" in timestamp) {
-          return dayjs(timestamp.toDate()).format("DD/MM/YYYY HH:mm");
-        }
-        return "-";
+        const date = toDate(record.departureAt);
+        return date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-";
       },
     },
     {
       title: "Regresso",
       key: "returnAt",
       render: (_, record) => {
-        const timestamp = record.returnAt;
-        if (timestamp && "toDate" in timestamp) {
-          return dayjs(timestamp.toDate()).format("DD/MM/YYYY HH:mm");
-        }
-        return "-";
+        const date = toDate(record.returnAt);
+        return date ? dayjs(date).format("DD/MM/YYYY HH:mm") : "-";
       },
     },
     {

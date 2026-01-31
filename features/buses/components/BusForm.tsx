@@ -1,5 +1,6 @@
 "use client";
 
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useCreateBus, useUpdateBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStopsByBusId, useCreateBusStop, useDeleteBusStop } from "@/features/buses/hooks/busStops.hooks";
 import {
@@ -114,8 +115,8 @@ export const BusForm = ({
         capacity: initialBusData.capacity,
         busStops: stopsToUse.map((stop) => ({
           chapelId: stop.chapelId,
-          pickupTime: stop.pickupTime
-            ? dayjs(stop.pickupTime.toDate())
+          pickupTime: toDate(stop.pickupTime)
+            ? dayjs(toDate(stop.pickupTime))
             : undefined,
         })),
       });
@@ -317,7 +318,8 @@ export const BusForm = ({
       } else {
         router.push("/admin/buses");
       }
-      hasProcessedStops.current = false;
+      // Do NOT reset hasProcessedStops.current - prevents effect from re-running
+      // when isProcessingStops becomes false (which would cause infinite loop)
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erro desconhecido";
@@ -325,7 +327,7 @@ export const BusForm = ({
         title: "Erro",
         description: `Não foi possível atualizar as paradas: ${errorMessage}`,
       });
-      hasProcessedStops.current = false;
+      hasProcessedStops.current = false; // Allow retry on error
     } finally {
       setIsProcessingStops(false);
     }

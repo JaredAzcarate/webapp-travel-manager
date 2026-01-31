@@ -7,9 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to get user role
+    // Helper function to get user role (safe: returns null if user doc doesn't exist)
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role 
+        : null;
     }
     
     // Helper function to check if user is ADMIN
@@ -53,47 +55,47 @@ service cloud.firestore {
     
     // chapels collection
     match /chapels/{chapelId} {
-      // Read: Public (needed for public registration form)
+      // Read: Public (needed for public registration form) or authenticated
       allow read: if true;
       
-      // Write: Blocked from client (only Admin SDK can write)
-      allow write: if false;
+      // Write: Authenticated users (ADMIN) can manage
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // caravans collection
     match /caravans/{caravanId} {
-      // Read: Public (needed for public registration form)
+      // Read: Public (needed for public registration form) or authenticated
       allow read: if true;
       
-      // Write: Blocked from client (only Admin SDK can write)
-      allow write: if false;
+      // Write: Authenticated users (ADMIN) can manage
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // buses collection
     match /buses/{busId} {
-      // Read: Public (needed for public registration form)
+      // Read: Public (needed for public registration form) or authenticated
       allow read: if true;
       
-      // Write: Blocked from client (only Admin SDK can write)
-      allow write: if false;
+      // Write: Authenticated users (ADMIN) can manage
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // busStops collection
     match /busStops/{busStopId} {
-      // Read: Public (needed for public registration form)
+      // Read: Public (needed for public registration form) or authenticated
       allow read: if true;
       
-      // Write: Blocked from client (only Admin SDK can write)
-      allow write: if false;
+      // Write: Authenticated users (ADMIN) can manage
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // ordinances collection
     match /ordinances/{ordinanceId} {
-      // Read: Public (needed for public registration form)
+      // Read: Public (needed for public registration form) or authenticated
       allow read: if true;
       
-      // Write: Blocked from client (only Admin SDK can write)
-      allow write: if false;
+      // Write: Authenticated users (ADMIN) can manage
+      allow create, update, delete: if isAuthenticated() && isAdmin();
     }
     
     // roles collection
@@ -110,21 +112,22 @@ service cloud.firestore {
       // Create: Public (no authentication required) - for public registration form
       allow create: if true;
       
-      // Read: 
+      // Read:
       // - ADMIN: All registrations
       // - CHAPEL: Only registrations from their chapel
       allow read: if isAuthenticated() && (
-        isAdmin() || 
+        isAdmin() ||
         (isChapel() && resource.data.chapelId == getUserChapelId())
       );
       
-      // Update: Blocked from client (only Admin SDK can write)
-      // Updates must go through API routes
-      allow update: if false;
+      // Update: Authenticated ADMIN or CHAPEL (own chapel only) can manage
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        (isChapel() && resource.data.chapelId == getUserChapelId())
+      );
       
-      // Delete: Blocked from client (only Admin SDK can write)
-      // Deletes must go through API routes
-      allow delete: if false;
+      // Delete: Only ADMIN
+      allow delete: if isAuthenticated() && isAdmin();
     }
     
     // dataAccessLogs collection

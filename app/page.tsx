@@ -1,6 +1,7 @@
 "use client";
 
 import { PublicContent } from "@/common/components/PublicContent";
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useActiveCaravans } from "@/features/caravans/hooks/caravans.hooks";
 import { Alert, Badge, Button, Empty, Spin, Typography } from "antd";
 import dayjs from "dayjs";
@@ -36,8 +37,8 @@ export default function HomePage() {
   const isFormOpen = useMemo(() => {
     if (!activeCaravan) return false;
     const now = new Date();
-    const formOpenAt = activeCaravan.formOpenAt?.toDate();
-    const formCloseAt = activeCaravan.formCloseAt?.toDate();
+    const formOpenAt = toDate(activeCaravan.formOpenAt);
+    const formCloseAt = toDate(activeCaravan.formCloseAt);
 
     if (!formOpenAt || !formCloseAt) return false;
 
@@ -123,13 +124,21 @@ export default function HomePage() {
               </div>
             )}
 
-            {!isFormOpen && activeCaravan.formOpenAt && (
-              <Alert
-                showIcon={true}
-                description={`O formulário de inscrição fechou no dia ${dayjs(activeCaravan.formCloseAt?.toDate()).format("DD/MM/YYYY")}`}
-                type="warning"
-              />
-            )}
+            {!isFormOpen && activeCaravan.formOpenAt && (() => {
+              const now = new Date();
+              const formOpenAt = toDate(activeCaravan.formOpenAt);
+              const formCloseAt = toDate(activeCaravan.formCloseAt);
+              const isFormNotYetOpen = formOpenAt && now < formOpenAt;
+              const isFormClosed = formCloseAt && now > formCloseAt;
+              const message = isFormNotYetOpen
+                ? `O formulário abrirá no dia ${dayjs(formOpenAt).format("DD/MM/YYYY")}`
+                : isFormClosed
+                  ? `O formulário de inscrição fechou no dia ${dayjs(formCloseAt).format("DD/MM/YYYY")}`
+                  : null;
+              return message ? (
+                <Alert showIcon description={message} type="warning" />
+              ) : null;
+            })()}
           </motion.div>
         ) : (
           <motion.div
@@ -141,7 +150,7 @@ export default function HomePage() {
             className="p-8 rounded-2xl border border-gray-200 bg-white flex items-center justify-center gap-4"
           >
             <Empty
-              description="Nenhuma caravana ativa"
+              description="Nenhuma caravana programada"
             />
           </motion.div>
         )}

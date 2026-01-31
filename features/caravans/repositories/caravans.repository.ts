@@ -176,22 +176,40 @@ export class CaravanRepository {
   }
 
   async getActive(): Promise<CaravanWithId[]> {
-    const now = Timestamp.now();
-    const allCaravans = await this.getAll();
+    // Fetch all caravans from API (server has full access)
+    const response = await fetch("/api/caravans");
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao buscar caravanas");
+    }
+    const result = await response.json();
+    const allCaravans: CaravanWithId[] = result.caravans || [];
+    if (allCaravans.length === 0) return [];
 
-    // Filter caravans where current time is between formOpenAt and formCloseAt
-    return allCaravans.filter((caravan) => {
-      const formOpenAt = caravan.formOpenAt;
-      const formCloseAt = caravan.formCloseAt;
+    const now = Date.now();
 
-      if (!formOpenAt || !formCloseAt) return false;
+    // Helper to get milliseconds from timestamp (handles serialized format)
+    const toMillis = (ts: unknown): number => {
+      if (!ts) return 0;
+      if (typeof ts === "object" && "toMillis" in (ts as object)) {
+        return (ts as { toMillis: () => number }).toMillis();
+      }
+      const obj = ts as { seconds?: number; _seconds?: number };
+      const sec = obj.seconds ?? obj._seconds ?? 0;
+      return sec * 1000;
+    };
 
-      const nowMillis = now.toMillis();
-      const openMillis = formOpenAt.toMillis();
-      const closeMillis = formCloseAt.toMillis();
-
-      return nowMillis >= openMillis && nowMillis <= closeMillis;
+    // Filter: form open now (active)
+    const activeCaravans = allCaravans.filter((c) => {
+      const open = toMillis(c.formOpenAt);
+      const close = toMillis(c.formCloseAt);
+      return open > 0 && close > 0 && now >= open && now <= close;
     });
+    if (activeCaravans.length > 0) return activeCaravans;
+
+    // Otherwise: upcoming (departure in future)
+    const upcoming = allCaravans.filter((c) => toMillis(c.departureAt) > now);
+    return upcoming.sort((a, b) => toMillis(a.departureAt) - toMillis(b.departureAt));
   }
 
   async updateCapacityCounts(

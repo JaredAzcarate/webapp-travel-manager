@@ -1,5 +1,6 @@
 "use client";
 
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useBuses } from "@/features/buses/hooks/buses.hooks";
 import {
   useCreateCaravan,
@@ -62,17 +63,17 @@ export const CaravanForm = ({
     if (mode === "edit" && initialCaravanData) {
       form.setFieldsValue({
         name: initialCaravanData.name,
-        departureAt: initialCaravanData.departureAt
-          ? dayjs(initialCaravanData.departureAt.toDate())
+        departureAt: toDate(initialCaravanData.departureAt)
+          ? dayjs(toDate(initialCaravanData.departureAt))
           : undefined,
-        returnAt: initialCaravanData.returnAt
-          ? dayjs(initialCaravanData.returnAt.toDate())
+        returnAt: toDate(initialCaravanData.returnAt)
+          ? dayjs(toDate(initialCaravanData.returnAt))
           : undefined,
-        formOpenAt: initialCaravanData.formOpenAt
-          ? dayjs(initialCaravanData.formOpenAt.toDate())
+        formOpenAt: toDate(initialCaravanData.formOpenAt)
+          ? dayjs(toDate(initialCaravanData.formOpenAt))
           : undefined,
-        formCloseAt: initialCaravanData.formCloseAt
-          ? dayjs(initialCaravanData.formCloseAt.toDate())
+        formCloseAt: toDate(initialCaravanData.formCloseAt)
+          ? dayjs(toDate(initialCaravanData.formCloseAt))
           : undefined,
         busIds: initialCaravanData.busIds?.map((busId) => ({ busId })) ?? [],
       });
@@ -211,6 +212,7 @@ export const CaravanForm = ({
           }
         }
       }}
+      className="flex flex-col gap-4"
     >
       <Form.Item
         name="name"
@@ -315,21 +317,21 @@ export const CaravanForm = ({
                 );
                 const allBusesForSelect = currentBusId
                   ? [
-                      ...buses
-                        .filter((bus) => bus.id === currentBusId)
-                        .map((bus) => ({
-                          label: `${bus.name} (Capacidade: ${bus.capacity})`,
-                          value: bus.id,
-                        })),
-                      ...availableBuses.map((bus) => ({
+                    ...buses
+                      .filter((bus) => bus.id === currentBusId)
+                      .map((bus) => ({
                         label: `${bus.name} (Capacidade: ${bus.capacity})`,
                         value: bus.id,
                       })),
-                    ]
-                  : availableBuses.map((bus) => ({
+                    ...availableBuses.map((bus) => ({
                       label: `${bus.name} (Capacidade: ${bus.capacity})`,
                       value: bus.id,
-                    }));
+                    })),
+                  ]
+                  : availableBuses.map((bus) => ({
+                    label: `${bus.name} (Capacidade: ${bus.capacity})`,
+                    value: bus.id,
+                  }));
 
                 return (
                   <div
@@ -403,8 +405,8 @@ export const CaravanForm = ({
                 ? "A criar..."
                 : "A atualizar..."
               : mode === "create"
-              ? "Criar"
-              : "Atualizar"}
+                ? "Criar"
+                : "Atualizar"}
           </Button>
         </div>
       </Form.Item>

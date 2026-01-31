@@ -1,4 +1,4 @@
-import { adminRepository } from "@/features/auth/repositories/admin.repository";
+import { AdminWithId } from "@/features/auth/models/admin.model";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useAdmins = () => {
@@ -8,7 +8,15 @@ export const useAdmins = () => {
     error,
   } = useQuery({
     queryKey: ["admins"],
-    queryFn: () => adminRepository.getAll(),
+    queryFn: async (): Promise<AdminWithId[]> => {
+      const response = await fetch("/api/admin");
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao obter gestores");
+      }
+      const result = await response.json();
+      return result.admins;
+    },
   });
 
   return {
@@ -25,7 +33,15 @@ export const useAdmins = () => {
 export const useDeleteAdmin = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (id: string) => adminRepository.delete(id),
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/admin/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Erro ao eliminar gestor");
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admins"] });
     },

@@ -168,6 +168,41 @@ export class CaravanRepositoryServer {
   async delete(id: string): Promise<void> {
     await adminDb.collection(this.collectionName).doc(id).delete();
   }
+
+  async getActive(): Promise<CaravanWithId[]> {
+    const allCaravans = await this.getAll();
+    const now = Date.now();
+
+    const activeCaravans = allCaravans.filter((caravan) => {
+      const formOpenAt = caravan.formOpenAt;
+      const formCloseAt = caravan.formCloseAt;
+
+      if (!formOpenAt || !formCloseAt) return false;
+
+      const openMillis = formOpenAt.toMillis ? formOpenAt.toMillis() : 0;
+      const closeMillis = formCloseAt.toMillis ? formCloseAt.toMillis() : 0;
+
+      return now >= openMillis && now <= closeMillis;
+    });
+
+    // If we have active (form open) caravans, return those
+    if (activeCaravans.length > 0) return activeCaravans;
+
+    // Otherwise return upcoming caravans (departure in the future) - "caravanas programadas"
+    const upcomingCaravans = allCaravans.filter((caravan) => {
+      const departureAt = caravan.departureAt;
+      if (!departureAt) return false;
+      const depMillis = departureAt.toMillis ? departureAt.toMillis() : 0;
+      return depMillis > now;
+    });
+
+    // Sort by departure date (soonest first)
+    return upcomingCaravans.sort((a, b) => {
+      const aMillis = a.departureAt?.toMillis?.() || 0;
+      const bMillis = b.departureAt?.toMillis?.() || 0;
+      return aMillis - bMillis;
+    });
+  }
 }
 
 export const caravanRepositoryServer = new CaravanRepositoryServer();

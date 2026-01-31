@@ -1,12 +1,12 @@
 "use client";
 
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useAdmins, useDeleteAdmin } from "@/features/auth/hooks/admin.hooks";
 import { AdminWithId } from "@/features/auth/models/admin.model";
 import { App, Button, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Timestamp } from "firebase/firestore";
 import { Pencil, Plus, Trash } from "phosphor-react";
 import { useState } from "react";
 import { CreateManagerDrawer } from "./CreateManagerDrawer";
@@ -70,14 +70,9 @@ export const ManagersList = () => {
     });
   };
 
-  const formatDate = (timestamp: Timestamp | undefined | null) => {
-    if (!timestamp) return "-";
-    try {
-      const date = timestamp.toDate ? timestamp.toDate() : new Date();
-      return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch {
-      return "-";
-    }
+  const formatDate = (timestamp: unknown) => {
+    const date = toDate(timestamp as Parameters<typeof toDate>[0]);
+    return date ? format(date, "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-";
   };
 
   const columns: ColumnsType<AdminWithId> = [
@@ -90,7 +85,7 @@ export const ManagersList = () => {
       title: "Data de Criação",
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (createdAt: Timestamp) => formatDate(createdAt),
+      render: (createdAt: unknown) => formatDate(createdAt),
     },
     {
       title: "Ações",

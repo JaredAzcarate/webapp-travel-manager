@@ -1,7 +1,9 @@
 // lib/firebase.js
+// Firebase Auth is not used - authentication is handled by NextAuth (Credentials).
+// Only Firestore is needed. Removing getAuth avoids CONFIGURATION_NOT_FOUND when
+// Firebase Authentication is not enabled in the Firebase Console.
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth"; // opcional
-import { getFirestore } from "firebase/firestore"; // opcional
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,5 +17,4 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
-export const auth = getAuth(app);
 export default app;
