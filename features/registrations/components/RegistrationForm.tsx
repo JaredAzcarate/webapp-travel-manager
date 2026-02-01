@@ -1,7 +1,6 @@
 "use client";
 
 import { CardRadioGroup } from "@/common/components/CardRadioGroup";
-import { NativeSelect } from "@/common/components/NativeSelect";
 import { OrdinancesListField } from "@/common/components/OrdinancesListField";
 import { PrivacyPolicyModal } from "@/common/components/PrivacyPolicyModal";
 import { OrdinanceFormValue } from "@/common/utils/ordinances.utils";
@@ -71,7 +70,6 @@ interface FormValues {
   isFirstTimeConvert: boolean;
   hasLessThanOneYearAsMember: boolean;
   privacyPolicyAccepted: boolean;
-  _antTestSelect?: string;
 }
 
 interface RegistrationFormProps {
@@ -93,7 +91,8 @@ export const RegistrationForm = ({
   const router = useRouter();
   const [form] = Form.useForm<FormValues>();
   const [privacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
-  const [antSelectOpen, setAntSelectOpen] = useState(false);
+  const [caravanSelectOpen, setCaravanSelectOpen] = useState(false);
+  const [chapelSelectOpen, setChapelSelectOpen] = useState(false);
   const hasShownSuccessRef = useRef(false);
   const hasShownErrorRef = useRef(false);
   const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
@@ -644,9 +643,13 @@ export const RegistrationForm = ({
               },
             ]}
           >
-            <NativeSelect
+            <Select
               placeholder="Selecione uma viagem"
+              loading={loadingCaravans}
               disabled={!isBusAvailable}
+              open={caravanSelectOpen}
+              onOpenChange={setCaravanSelectOpen}
+              onSelect={() => setCaravanSelectOpen(false)}
               options={activeCaravans.map((caravan) => ({
                 label: caravan.name,
                 value: caravan.id,
@@ -662,28 +665,17 @@ export const RegistrationForm = ({
             { required: true, message: "Por favor, selecione uma capela" },
           ]}
         >
-          <NativeSelect
+          <Select
             placeholder={loadingChapels ? "A carregar..." : "Selecione uma capela"}
+            loading={loadingChapels}
             disabled={loadingChapels}
+            open={chapelSelectOpen}
+            onOpenChange={setChapelSelectOpen}
+            onSelect={() => setChapelSelectOpen(false)}
             options={chapels.map((chapel) => ({
               label: chapel.name,
               value: chapel.id,
             }))}
-          />
-        </Form.Item>
-
-        <Form.Item name="_antTestSelect" label="Teste Ant Design (forçar fechar ao selecionar)">
-          <Select
-            placeholder="Selecione uma opção"
-            allowClear
-            open={antSelectOpen}
-            onOpenChange={setAntSelectOpen}
-            onSelect={() => setAntSelectOpen(false)}
-            options={[
-              { label: "Opção A", value: "a" },
-              { label: "Opção B", value: "b" },
-              { label: "Opção C", value: "c" },
-            ]}
           />
         </Form.Item>
 
@@ -1174,10 +1166,10 @@ export const RegistrationForm = ({
           >
             {isPending
               ? mode === "create"
-                ? "A inscrever..."
+                ? "A enviar inscrição..."
                 : "A atualizar..."
               : mode === "create"
-                ? "Me inscrever"
+                ? "Enviar inscrição"
                 : "Atualizar inscrição"}
           </Button>
 
