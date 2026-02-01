@@ -236,27 +236,28 @@ export const RegistrationForm = ({
       prevChapelIdRef.current !== selectedChapelId
     ) {
       const caravanId = form.getFieldValue("caravanId");
-      // Set chapelId first to avoid temporary undefined state
-      form.setFieldsValue({
-        caravanId,
-        chapelId: selectedChapelId,
-      });
-      // Then reset other fields
-      form.setFieldsValue({
-        ageCategory: undefined,
-        isOfficiator: false,
-        isFirstTimeConvert: false,
-        hasLessThanOneYearAsMember: false,
-        skipsOrdinances: false,
-        privacyPolicyAccepted: false,
-        ordinances: [],
-        fullName: undefined,
-        phone: undefined,
-        gender: undefined,
-        legalGuardianName: undefined,
-        legalGuardianEmail: undefined,
-        legalGuardianPhone: undefined,
-      });
+      // Defer form updates to next tick so the chapel Select dropdown can close first
+      const timer = setTimeout(() => {
+        form.setFieldsValue({
+          caravanId,
+          chapelId: selectedChapelId,
+          ageCategory: undefined,
+          isOfficiator: false,
+          isFirstTimeConvert: false,
+          hasLessThanOneYearAsMember: false,
+          skipsOrdinances: false,
+          privacyPolicyAccepted: false,
+          ordinances: [],
+          fullName: undefined,
+          phone: undefined,
+          gender: undefined,
+          legalGuardianName: undefined,
+          legalGuardianEmail: undefined,
+          legalGuardianPhone: undefined,
+        });
+      }, 0);
+      prevChapelIdRef.current = selectedChapelId;
+      return () => clearTimeout(timer);
     }
     prevChapelIdRef.current = selectedChapelId;
   }, [selectedChapelId, form]);
@@ -644,6 +645,7 @@ export const RegistrationForm = ({
               placeholder="Selecione uma viagem"
               loading={loadingCaravans}
               disabled={!isBusAvailable}
+              getPopupContainer={(trigger) => trigger.parentElement || document.body}
               options={activeCaravans.map((caravan) => ({
                 label: caravan.name,
                 value: caravan.id,
@@ -662,6 +664,7 @@ export const RegistrationForm = ({
           <Select
             placeholder="Selecione uma capela"
             loading={loadingChapels}
+            getPopupContainer={(trigger) => trigger.parentElement || document.body}
             options={chapels.map((chapel) => ({
               label: chapel.name,
               value: chapel.id,

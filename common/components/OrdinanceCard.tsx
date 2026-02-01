@@ -91,6 +91,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.2 }}
           className="flex flex-col gap-3 mt-2"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
           {canSelectMultipleSessions && selectedSessions ? (
@@ -115,6 +116,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                       disabled={disabled}
                       value={session.slot}
                       onChange={(value) => onSlotChange(value, index)}
+                      getPopupContainer={(trigger) => trigger.parentElement || document.body}
                       options={availableSlotsForThis.map((slot) => {
                         const slotAvailability = slotAvailabilityMap?.[slot];
                         const isSlotDisabled = slotAvailability 
@@ -150,6 +152,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                   disabled={disabled}
                   value={selectedSlot}
                   onChange={(value) => onSlotChange(value)}
+                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
                   options={availableSlots.map((slot) => {
                     const slotAvailability = slotAvailabilityMap?.[slot];
                     const isSlotDisabled = slotAvailability 
