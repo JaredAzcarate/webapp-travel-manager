@@ -266,40 +266,40 @@ function MyDataContent() {
               transition={cardTransition(0)}
             >
               <Card title="Informações Pessoais">
-            <Descriptions column={1} bordered>
-              <Descriptions.Item label="Nome Completo">
-                {registration.fullName}
-              </Descriptions.Item>
-              <Descriptions.Item label="Telefone">
-                {registration.phone}
-              </Descriptions.Item>
-              <Descriptions.Item label="Categoria de Idade">
-                {registration.ageCategory === "CHILD"
-                  ? "Criança"
-                  : registration.ageCategory === "YOUTH"
-                  ? "Jovem"
-                  : "Adulto"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Sexo">
-                {registration.gender === "M" ? "Masculino" : "Feminino"}
-              </Descriptions.Item>
-              <Descriptions.Item label="É Oficiante">
-                {registration.isOfficiator ? "Sim" : "Não"}
-              </Descriptions.Item>
-              {registration.legalGuardianName && (
-                <>
-                  <Descriptions.Item label="Nome do Responsável Legal">
-                    {registration.legalGuardianName}
+                <Descriptions column={1} bordered>
+                  <Descriptions.Item label="Nome Completo">
+                    {registration.fullName}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Email do Responsável Legal">
-                    {registration.legalGuardianEmail || "-"}
+                  <Descriptions.Item label="Telefone">
+                    {registration.phone}
                   </Descriptions.Item>
-                  <Descriptions.Item label="Telefone do Responsável Legal">
-                    {registration.legalGuardianPhone || "-"}
+                  <Descriptions.Item label="Categoria de Idade">
+                    {registration.ageCategory === "CHILD"
+                      ? "Criança"
+                      : registration.ageCategory === "YOUTH"
+                        ? "Jovem"
+                        : "Adulto"}
                   </Descriptions.Item>
-                </>
-              )}
-            </Descriptions>
+                  <Descriptions.Item label="Sexo">
+                    {registration.gender === "M" ? "Masculino" : "Feminino"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="É Oficiante">
+                    {registration.isOfficiator ? "Sim" : "Não"}
+                  </Descriptions.Item>
+                  {registration.legalGuardianName && (
+                    <>
+                      <Descriptions.Item label="Nome do Responsável Legal">
+                        {registration.legalGuardianName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Email do Responsável Legal">
+                        {registration.legalGuardianEmail || "-"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Telefone do Responsável Legal">
+                        {registration.legalGuardianPhone || "-"}
+                      </Descriptions.Item>
+                    </>
+                  )}
+                </Descriptions>
               </Card>
             </motion.div>
 
@@ -309,26 +309,26 @@ function MyDataContent() {
                 {...cardAnimation}
                 transition={cardTransition(0.1)}
               >
-                <Card title="Informações da Caravana">
-              <Descriptions column={1} bordered>
-                <Descriptions.Item label="Nome da Caravana">
-                  {caravan.name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Data de Partida">
-                  {caravan.departureAt
-                    ? format(caravan.departureAt.toDate(), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })
-                    : "-"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Data de Retorno">
-                  {caravan.returnAt
-                    ? format(caravan.returnAt.toDate(), "dd/MM/yyyy", {
-                        locale: ptBR,
-                      })
-                    : "-"}
-                </Descriptions.Item>
-              </Descriptions>
+                <Card title="Informações da Viagem">
+                  <Descriptions column={1} bordered>
+                    <Descriptions.Item label="Nome da Viagem">
+                      {caravan.name}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Data de Partida">
+                      {caravan.departureAt
+                        ? format(caravan.departureAt.toDate(), "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })
+                        : "-"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Data de Retorno">
+                      {caravan.returnAt
+                        ? format(caravan.returnAt.toDate(), "dd/MM/yyyy", {
+                          locale: ptBR,
+                        })
+                        : "-"}
+                    </Descriptions.Item>
+                  </Descriptions>
                 </Card>
               </motion.div>
             )}
@@ -339,12 +339,12 @@ function MyDataContent() {
                 {...cardAnimation}
                 transition={cardTransition(0.15)}
               >
-                <Card title="Informações da Capela">
-              <Descriptions column={1} bordered>
-                <Descriptions.Item label="Nome da Capela">
-                  {chapel.name}
-                </Descriptions.Item>
-              </Descriptions>
+                <Card title="Informações da Capela de Partida">
+                  <Descriptions column={1} bordered>
+                    <Descriptions.Item label="Nome da Capela">
+                      {chapel.name}
+                    </Descriptions.Item>
+                  </Descriptions>
                 </Card>
               </motion.div>
             )}
@@ -356,18 +356,18 @@ function MyDataContent() {
                 transition={cardTransition(0.2)}
               >
                 <Card title="Ordenanças">
-              <Descriptions column={1} bordered>
-                {registration.ordinances.map((ord, index) => (
-                  <Descriptions.Item
-                    key={index}
-                    label={`Ordenança ${index + 1}`}
-                  >
-                    {ordinanceMap.get(ord.ordinanceId) || "Desconhecida"} -{" "}
-                    {ord.slot}
-                    {ord.isPersonal ? " (Pessoal)" : ""}
-                  </Descriptions.Item>
-                ))}
-              </Descriptions>
+                  <Descriptions column={1} bordered>
+                    {registration.ordinances.map((ord, index) => (
+                      <Descriptions.Item
+                        key={index}
+                        label={`Ordenança ${index + 1}`}
+                      >
+                        {ordinanceMap.get(ord.ordinanceId) || "Desconhecida"} -{" "}
+                        {ord.slot}
+                        {ord.isPersonal ? " (Pessoal)" : ""}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
                 </Card>
               </motion.div>
             )}
@@ -378,37 +378,37 @@ function MyDataContent() {
               transition={cardTransition(0.25)}
             >
               <Card title="Estado de Pagamento e Participação">
-            <Descriptions column={1} bordered>
-              <Descriptions.Item label="Estado de Pagamento">
-                {registration.paymentStatus === "PENDING"
-                  ? "Pendente"
-                  : registration.paymentStatus === "PAID"
-                  ? "Pago"
-                  : registration.paymentStatus === "FREE"
-                  ? "Gratuito"
-                  : "Cancelado"}
-              </Descriptions.Item>
-              <Descriptions.Item label="Estado de Participação">
-                {registration.participationStatus === "ACTIVE"
-                  ? "Ativo"
-                  : registration.participationStatus === "CANCELLED"
-                  ? "Cancelado"
-                  : "Lista de Espera"}
-              </Descriptions.Item>
-              <Descriptions.Item label="É Primeira Vez como Convertido">
-                {registration.isFirstTimeConvert ? "Sim" : "Não"}
-              </Descriptions.Item>
-              {registration.paymentConfirmedAt && (
-                <Descriptions.Item label="Pagamento Confirmado em">
-                  {formatDate(registration.paymentConfirmedAt)}
-                </Descriptions.Item>
-              )}
-              {registration.cancelledAt && (
-                <Descriptions.Item label="Cancelado em">
-                  {formatDate(registration.cancelledAt)}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
+                <Descriptions column={1} bordered>
+                  <Descriptions.Item label="Estado de Pagamento">
+                    {registration.paymentStatus === "PENDING"
+                      ? "Pendente"
+                      : registration.paymentStatus === "PAID"
+                        ? "Pago"
+                        : registration.paymentStatus === "FREE"
+                          ? "Gratuito"
+                          : "Cancelado"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Estado de Participação">
+                    {registration.participationStatus === "ACTIVE"
+                      ? "Ativo"
+                      : registration.participationStatus === "CANCELLED"
+                        ? "Cancelado"
+                        : "Lista de Espera"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="É Primeira Vez como Convertido">
+                    {registration.isFirstTimeConvert ? "Sim" : "Não"}
+                  </Descriptions.Item>
+                  {registration.paymentConfirmedAt && (
+                    <Descriptions.Item label="Pagamento Confirmado em">
+                      {formatDate(registration.paymentConfirmedAt)}
+                    </Descriptions.Item>
+                  )}
+                  {registration.cancelledAt && (
+                    <Descriptions.Item label="Cancelado em">
+                      {formatDate(registration.cancelledAt)}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
               </Card>
             </motion.div>
 
@@ -418,21 +418,21 @@ function MyDataContent() {
               transition={cardTransition(0.3)}
             >
               <Card title="Política de Privacidade">
-            <Descriptions column={1} bordered>
-              <Descriptions.Item label="Política Aceite">
-                {registration.privacyPolicyAccepted ? "Sim" : "Não"}
-              </Descriptions.Item>
-              {registration.privacyPolicyAcceptedAt && (
-                <Descriptions.Item label="Aceite em">
-                  {formatDate(registration.privacyPolicyAcceptedAt)}
-                </Descriptions.Item>
-              )}
-              {registration.consentWithdrawnAt && (
-                <Descriptions.Item label="Consentimento Retirado em">
-                  {formatDate(registration.consentWithdrawnAt)}
-                </Descriptions.Item>
-              )}
-            </Descriptions>
+                <Descriptions column={1} bordered>
+                  <Descriptions.Item label="Política Aceite">
+                    {registration.privacyPolicyAccepted ? "Sim" : "Não"}
+                  </Descriptions.Item>
+                  {registration.privacyPolicyAcceptedAt && (
+                    <Descriptions.Item label="Aceite em">
+                      {formatDate(registration.privacyPolicyAcceptedAt)}
+                    </Descriptions.Item>
+                  )}
+                  {registration.consentWithdrawnAt && (
+                    <Descriptions.Item label="Consentimento Retirado em">
+                      {formatDate(registration.consentWithdrawnAt)}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
               </Card>
             </motion.div>
 
@@ -443,20 +443,20 @@ function MyDataContent() {
                 transition={cardTransition(0.35)}
               >
                 <Card title="Histórico de Acessos">
-              <Descriptions column={1} bordered>
-                {accessLogs.map((log, index) => (
-                  <Descriptions.Item key={index} label={`Acesso ${index + 1}`}>
-                    {log.action === "VIEW"
-                      ? "Visualização"
-                      : log.action === "EXPORT"
-                      ? "Exportação"
-                      : log.action === "DELETE"
-                      ? "Eliminação"
-                      : "Retirada de Consentimento"}{" "}
-                    - {formatDate(log.accessedAt)}
-                  </Descriptions.Item>
-                ))}
-              </Descriptions>
+                  <Descriptions column={1} bordered>
+                    {accessLogs.map((log, index) => (
+                      <Descriptions.Item key={index} label={`Acesso ${index + 1}`}>
+                        {log.action === "VIEW"
+                          ? "Visualização"
+                          : log.action === "EXPORT"
+                            ? "Exportação"
+                            : log.action === "DELETE"
+                              ? "Eliminação"
+                              : "Retirada de Consentimento"}{" "}
+                        - {formatDate(log.accessedAt)}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
                 </Card>
               </motion.div>
             )}
@@ -467,37 +467,37 @@ function MyDataContent() {
               transition={cardTransition(0.4)}
             >
               <Card title="Ações">
-            <Space orientation="vertical" size="middle" className="w-full">
-              <Button
-                type="primary"
-                onClick={handleExport}
-                loading={isExporting}
-                block
-                size="large"
-              >
-                Exportar os Meus Dados (JSON)
-              </Button>
+                <Space orientation="vertical" size="middle" className="w-full">
+                  <Button
+                    type="primary"
+                    onClick={handleExport}
+                    loading={isExporting}
+                    block
+                    size="large"
+                  >
+                    Exportar os Meus Dados (JSON)
+                  </Button>
 
-              <Button
-                onClick={handleWithdrawConsent}
-                loading={isWithdrawing}
-                block
-                size="large"
-                danger
-              >
-                Retirar Consentimento
-              </Button>
+                  <Button
+                    onClick={handleWithdrawConsent}
+                    loading={isWithdrawing}
+                    block
+                    size="large"
+                    danger
+                  >
+                    Retirar Consentimento
+                  </Button>
 
-              <Button
-                onClick={handleDeleteAllData}
-                loading={isDeleting}
-                block
-                size="large"
-                danger
-              >
-                Apagar Todos os Meus Dados
-              </Button>
-            </Space>
+                  <Button
+                    onClick={handleDeleteAllData}
+                    loading={isDeleting}
+                    block
+                    size="large"
+                    danger
+                  >
+                    Apagar Todos os Meus Dados
+                  </Button>
+                </Space>
               </Card>
             </motion.div>
           </Space>

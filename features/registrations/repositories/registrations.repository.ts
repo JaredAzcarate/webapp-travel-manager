@@ -1,5 +1,4 @@
 import { db } from "@/common/lib/firebase";
-import { generateGdprUuid } from "@/common/utils/uuid.utils";
 import { BusRepository } from "@/features/buses/repositories/buses.repository";
 import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { CaravanRepository } from "@/features/caravans/repositories/caravans.repository";
@@ -25,9 +24,8 @@ import {
 } from "firebase/firestore";
 import {
   CreateRegistrationInput,
-  ParticipationStatus,
   RegistrationWithId,
-  UpdateRegistrationInput,
+  UpdateRegistrationInput
 } from "../models/registrations.model";
 
 export class RegistrationRepository {
@@ -37,18 +35,18 @@ export class RegistrationRepository {
 
   private migrateRegistration(data: unknown): RegistrationWithId {
     const registration = data as Partial<RegistrationWithId> & { id: string };
-    
+
     // Migrate isAdult to ageCategory if needed
     const registrationWithLegacy = registration as Partial<RegistrationWithId> & { id: string; isAdult?: boolean };
     if (registrationWithLegacy.isAdult !== undefined && !registrationWithLegacy.ageCategory) {
       registrationWithLegacy.ageCategory = registrationWithLegacy.isAdult ? "ADULT" : "YOUTH";
     }
-    
+
     // Ensure privacyPolicyAccepted exists (default to false for old records)
     if (registration.privacyPolicyAccepted === undefined) {
       registration.privacyPolicyAccepted = false;
     }
-    
+
     return registration as RegistrationWithId;
   }
 
@@ -134,16 +132,16 @@ export class RegistrationRepository {
           if (!wasInOld) {
             const limitValue: CapacityValue | undefined =
               caravan.ordinanceCapacityLimits?.[ordinance.ordinanceId]?.[
-                ordinance.slot
+              ordinance.slot
               ];
             const countValue: CapacityValue | undefined =
               caravan.ordinanceCapacityCounts?.[ordinance.ordinanceId]?.[
-                ordinance.slot
+              ordinance.slot
               ];
 
             if (limitValue === undefined || countValue === undefined) {
               throw new Error(
-                `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta caravana`
+                `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta viagem`
               );
             }
 
@@ -270,7 +268,7 @@ export class RegistrationRepository {
         ...doc.data(),
       })
     );
-    
+
     // Filter by fullName (case-insensitive)
     return allRegistrations.filter(
       (reg) => reg.fullName.toLowerCase() === fullName.toLowerCase()
@@ -283,11 +281,11 @@ export class RegistrationRepository {
       where("gdprUuid", "==", uuid)
     );
     const snap = await getDocs(q);
-    
+
     if (snap.empty) {
       return null;
     }
-    
+
     return this.migrateRegistration({
       id: snap.docs[0].id,
       ...snap.docs[0].data(),

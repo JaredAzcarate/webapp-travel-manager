@@ -32,7 +32,7 @@ export default function EditCaravanPage() {
   if (!caravan) {
     return (
       <div className="p-6">
-        <Title level={2}>Caravana não encontrada</Title>
+        <Title level={2}>Viagem não encontrada</Title>
         <Button onClick={() => router.push("/admin/caravans")}>
           Voltar para lista
         </Button>
@@ -42,7 +42,7 @@ export default function EditCaravanPage() {
 
   return (
     <div className="p-6">
-      <Title level={2}>Editar Caravana</Title>
+      <Title level={2}>Editar Viagem</Title>
 
       <div className="mt-6">
         <CaravanForm

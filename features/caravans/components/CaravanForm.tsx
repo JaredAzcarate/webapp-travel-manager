@@ -84,7 +84,7 @@ export const CaravanForm = ({
     if (mode === "create" && created) {
       notification.success({
         title: "Sucesso",
-        description: "A caravana foi criada com sucesso",
+        description: "A viagem foi criada com sucesso",
       });
       if (onSuccess) {
         onSuccess();
@@ -99,7 +99,7 @@ export const CaravanForm = ({
     if (mode === "edit" && updated) {
       notification.success({
         title: "Sucesso",
-        description: "A caravana foi atualizada com sucesso",
+        description: "A viagem foi atualizada com sucesso",
       });
       if (onSuccess) {
         onSuccess();
@@ -117,7 +117,7 @@ export const CaravanForm = ({
           : "Erro desconhecido";
       notification.error({
         title: "Erro",
-        description: `Não foi possível criar a caravana: ${errorMessage}`,
+        description: `Não foi possível criar a viagem: ${errorMessage}`,
       });
     }
   }, [mode, createError, notification]);
@@ -130,7 +130,7 @@ export const CaravanForm = ({
           : "Erro desconhecido";
       notification.error({
         title: "Erro",
-        description: `Não foi possível atualizar a caravana: ${errorMessage}`,
+        description: `Não foi possível atualizar a viagem: ${errorMessage}`,
       });
     }
   }, [mode, updateError, notification]);
@@ -216,12 +216,12 @@ export const CaravanForm = ({
     >
       <Form.Item
         name="name"
-        label="Nome da Caravana"
+        label="Nome da Viagem"
         rules={[
-          { required: true, message: "Por favor, insira o nome da caravana" },
+          { required: true, message: "Por favor, insira o nome da viagem" },
         ]}
       >
-        <Input placeholder="Ex: Caravana de Março 2025" />
+        <Input placeholder="Ex: Viagem de Março 2025" />
       </Form.Item>
 
       <Form.Item
@@ -299,7 +299,7 @@ export const CaravanForm = ({
       <Form.Item
         label="Autocarros"
         required
-        tooltip="Adicione pelo menos um autocarro à caravana"
+        tooltip="Adicione pelo menos um autocarro à viagem"
       >
         <Form.List name="busIds">
           {(fields, { add, remove }) => (

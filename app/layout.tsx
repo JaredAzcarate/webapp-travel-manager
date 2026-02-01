@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Inscrições Viagens ao Templo — Estaca Porto Norte",
-  description: "Sistema de gestão de caravanas ao templo da Estaca Porto Norte",
+  description: "Sistema de gestão de Viagens ao Templo da Estaca Porto Norte",
 };
 
 export default function RootLayout({

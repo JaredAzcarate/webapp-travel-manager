@@ -1,12 +1,5 @@
-import { adminDb } from '@/lib/firebase-admin';
-import {
-  CreateRegistrationInput,
-  ParticipationStatus,
-  RegistrationWithId,
-  UpdateRegistrationInput,
-} from '../models/registrations.model';
-import { Timestamp } from 'firebase-admin/firestore';
-import { Timestamp as ClientTimestamp } from 'firebase/firestore';
+import { generateGdprUuid } from '@/common/utils/uuid.utils';
+import { busRepositoryServer } from '@/features/buses/repositories/buses.repository.server';
 import { CaravanWithId } from '@/features/caravans/models/caravans.model';
 import {
   decrementCountByGender,
@@ -16,30 +9,47 @@ import {
   isGenderSpecificLimit,
   type CapacityValue,
 } from '@/features/caravans/utils/ordinanceCapacity.utils';
-import { busRepositoryServer } from '@/features/buses/repositories/buses.repository.server';
-import { caravanRepositoryServer } from '@/features/caravans/repositories/caravans.repository.server';
-import { generateGdprUuid } from '@/common/utils/uuid.utils';
+import { adminDb } from '@/lib/firebase-admin';
+import { Query, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp as ClientTimestamp } from 'firebase/firestore';
+import {
+  CreateRegistrationInput,
+  ParticipationStatus,
+  RegistrationWithId,
+  UpdateRegistrationInput,
+} from '../models/registrations.model';
 
 export class RegistrationRepositoryServer {
   private collectionName = 'registrations';
 
-  private convertAdminTimestampToClient(adminTimestamp: any): ClientTimestamp {
+  private convertAdminTimestampToClient(
+    adminTimestamp:
+      | Timestamp
+      | { toDate?: () => Date; seconds?: number; _seconds?: number; nanoseconds?: number; _nanoseconds?: number }
+      | null
+      | undefined
+  ): ClientTimestamp | null | undefined {
     if (!adminTimestamp) return adminTimestamp;
-    if (adminTimestamp.toDate) {
-      return ClientTimestamp.fromDate(adminTimestamp.toDate());
+    if (typeof (adminTimestamp as { toDate?: () => Date }).toDate === "function") {
+      return ClientTimestamp.fromDate((adminTimestamp as { toDate: () => Date }).toDate());
     }
-    return adminTimestamp;
+    const obj = adminTimestamp as { seconds?: number; _seconds?: number; nanoseconds?: number; _nanoseconds?: number };
+    const seconds = obj.seconds ?? obj._seconds;
+    if (typeof seconds === "number") {
+      return ClientTimestamp.fromMillis(seconds * 1000 + (obj.nanoseconds ?? obj._nanoseconds ?? 0) / 1_000_000);
+    }
+    return adminTimestamp as ClientTimestamp;
   }
 
   private migrateRegistration(data: unknown): RegistrationWithId {
     const registration = data as Partial<RegistrationWithId> & { id: string };
-    
+
     // Migrate isAdult to ageCategory if needed
     const registrationWithLegacy = registration as Partial<RegistrationWithId> & { id: string; isAdult?: boolean };
     if (registrationWithLegacy.isAdult !== undefined && !registrationWithLegacy.ageCategory) {
       registrationWithLegacy.ageCategory = registrationWithLegacy.isAdult ? 'ADULT' : 'YOUTH';
     }
-    
+
     // Ensure privacyPolicyAccepted exists (default to false for old records)
     if (registration.privacyPolicyAccepted === undefined) {
       registration.privacyPolicyAccepted = false;
@@ -56,7 +66,7 @@ export class RegistrationRepositoryServer {
       privacyPolicyAcceptedAt: this.convertAdminTimestampToClient(registration.privacyPolicyAcceptedAt),
       consentWithdrawnAt: this.convertAdminTimestampToClient(registration.consentWithdrawnAt),
     };
-    
+
     return converted as RegistrationWithId;
   }
 
@@ -211,10 +221,10 @@ export class RegistrationRepositoryServer {
       .where('caravanId', '==', caravanId);
 
     if (filters?.chapelId) {
-      query = query.where('chapelId', '==', filters.chapelId) as any;
+      query = query.where('chapelId', '==', filters.chapelId) as Query;
     }
     if (filters?.paymentStatus) {
-      query = query.where('paymentStatus', '==', filters.paymentStatus) as any;
+      query = query.where('paymentStatus', '==', filters.paymentStatus) as Query;
     }
 
     const snapshot = await query.get();
@@ -297,7 +307,7 @@ export class RegistrationRepositoryServer {
 
           if (limitValue === undefined || countValue === undefined) {
             throw new Error(
-              `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta caravana`
+              `Ordenança ${ordinance.ordinanceId} - ${ordinance.slot} não configurada para esta viagem`
             );
           }
 
@@ -313,15 +323,15 @@ export class RegistrationRepositoryServer {
       }
 
       const now = Timestamp.now();
-      
+
       // Generate UUID if not provided
       const gdprUuid = input.gdprUuid || generateGdprUuid();
-      
+
       // Set privacyPolicyAcceptedAt if privacy policy is accepted
       const privacyPolicyAcceptedAt = input.privacyPolicyAccepted
         ? input.privacyPolicyAcceptedAt || now
         : undefined;
-      
+
       transaction.set(registrationRef, {
         ...input,
         gdprUuid,
@@ -377,7 +387,7 @@ export class RegistrationRepositoryServer {
     if (!createdDoc.exists) {
       throw new Error('Failed to create registration');
     }
-    
+
     return this.migrateRegistration({
       id: createdDoc.id,
       ...createdDoc.data(),
@@ -389,7 +399,7 @@ export class RegistrationRepositoryServer {
     input: UpdateRegistrationInput
   ): Promise<RegistrationWithId> {
     const now = Timestamp.now();
-    
+
     await adminDb.collection(this.collectionName).doc(id).update({
       ...input,
       updatedAt: now,
@@ -414,7 +424,7 @@ export class RegistrationRepositoryServer {
 
   async markPaymentAsPaid(id: string): Promise<RegistrationWithId> {
     const now = Timestamp.now();
-    
+
     await adminDb.collection(this.collectionName).doc(id).update({
       paymentStatus: 'PAID',
       userReportedPaymentAt: now,

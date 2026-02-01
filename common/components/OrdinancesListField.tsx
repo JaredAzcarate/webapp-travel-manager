@@ -77,7 +77,7 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   // Handle ordinance selection
   const handleSelectOrdinance = (ordinanceId: string) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-    
+
     // If can select multiple sessions, initialize 3 sessions at once
     if (canSelectMultipleSessions) {
       const sessionsCount = getSelectedSessionsCount(ordinanceId);
@@ -134,15 +134,15 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   // Handle ordinance deselection
   const handleDeselectOrdinance = (ordinanceId: string, index?: number) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-    
+
     // If can select multiple sessions and index is provided, remove specific session
     if (canSelectMultipleSessions && index !== undefined) {
       const ordinanceIndices = currentOrdinances
-        .map((ord: OrdinanceFormValue, idx: number) => 
+        .map((ord: OrdinanceFormValue, idx: number) =>
           ord && ord.ordinanceId === ordinanceId ? idx : -1
         )
         .filter((idx: number) => idx >= 0);
-      
+
       if (ordinanceIndices[index] !== undefined) {
         const newOrdinances = currentOrdinances.filter(
           (_: OrdinanceFormValue, idx: number) => idx !== ordinanceIndices[index]
@@ -151,7 +151,7 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         return;
       }
     }
-    
+
     // Original logic: remove all sessions of this ordinance
     const newOrdinances = currentOrdinances.filter(
       (ord: OrdinanceFormValue) => ord && ord.ordinanceId !== ordinanceId
@@ -162,15 +162,15 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   // Handle slot change
   const handleSlotChange = (ordinanceId: string, slot: string | undefined, index?: number) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-    
+
     // If can select multiple sessions and index is provided, update specific session
     if (canSelectMultipleSessions && index !== undefined) {
       const ordinanceIndices = currentOrdinances
-        .map((ord: OrdinanceFormValue, idx: number) => 
+        .map((ord: OrdinanceFormValue, idx: number) =>
           ord && ord.ordinanceId === ordinanceId ? idx : -1
         )
         .filter((idx: number) => idx >= 0);
-      
+
       if (ordinanceIndices[index] !== undefined) {
         const newOrdinances = [...currentOrdinances];
         newOrdinances[ordinanceIndices[index]] = {
@@ -181,7 +181,7 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         return;
       }
     }
-    
+
     // Original logic: update first matching ordinance
     const newOrdinances = currentOrdinances.map((ord: OrdinanceFormValue) => {
       if (ord && ord.ordinanceId === ordinanceId) {
@@ -205,21 +205,31 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   };
 
   // Sync form fields with selected ordinances
+  // Guard: never clear ordinances when selectedOrdinanceIds is empty but we have data -
+  // this prevents spurious clearing during form validation or re-renders
   useEffect(() => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
     const currentIds = currentOrdinances
       .filter((ord: OrdinanceFormValue): ord is OrdinanceFormValue => ord != null)
       .map((ord: OrdinanceFormValue) => ord.ordinanceId)
       .filter(Boolean);
-    
+
+    if (
+      selectedOrdinanceIds.length === 0 &&
+      currentOrdinances.length > 0 &&
+      currentOrdinances.some((o: OrdinanceFormValue) => o?.ordinanceId && o?.slot)
+    ) {
+      return;
+    }
+
     // Check if sync is needed
-    const idsMatch = 
+    const idsMatch =
       currentIds.length === selectedOrdinanceIds.length &&
       currentIds.every((id: string) => selectedOrdinanceIds.includes(id)) &&
       selectedOrdinanceIds.every((id) => currentIds.includes(id));
-    
+
     if (idsMatch) return;
-    
+
     // Remove ordinances that are no longer selected
     const toRemove: number[] = [];
     currentOrdinances.forEach((ord: OrdinanceFormValue, index: number) => {
@@ -227,84 +237,77 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         toRemove.push(index);
       }
     });
-    
+
     // Add newly selected ordinances
     const toAdd = selectedOrdinanceIds.filter((id) => !currentIds.includes(id));
-    
+
     if (toRemove.length > 0 || toAdd.length > 0) {
       const newOrdinances = [...currentOrdinances];
-      
+
       // Remove in reverse order to maintain indices
       toRemove.reverse().forEach((index) => {
         newOrdinances.splice(index, 1);
       });
-      
+
       // Add new ordinances
       toAdd.forEach((id) => {
         newOrdinances.push({ ordinanceId: id, slot: undefined, isPersonal: false });
       });
-      
+
       form.setFieldsValue({ ordinances: newOrdinances });
     }
   }, [selectedOrdinanceIds, form]);
 
   return (
-    <Form.List
-      name="ordinances"
-      rules={[
-        {
-          validator: async (_, ordinancesList) => {
-            const filledOrdinances = ordinancesList.filter(
-              (o: OrdinanceFormValue): o is OrdinanceFormValue =>
-                o != null && !!o.ordinanceId && !!o.slot
-            );
-
-            // If skips ordinances, no minimum required
-            if (skipsOrdinances) {
-              return Promise.resolve();
-            }
-
-            // Require at least 1 ordinance when not skipping
-            if (filledOrdinances.length < 1) {
-              return Promise.reject(
-                new Error(
-                  "Deve selecionar pelo menos uma ordenança ou marcar que não vai fazer ordenanças"
-                )
+    <div className="flex flex-col gap-4">
+      <Form.List
+        name="ordinances"
+        rules={[
+          {
+            validator: async (_, ordinancesList) => {
+              const filledOrdinances = ordinancesList.filter(
+                (o: OrdinanceFormValue): o is OrdinanceFormValue =>
+                  o != null && !!o.ordinanceId && !!o.slot
               );
-            }
 
-            // Check maximum 3 ordinances
-            if (filledOrdinances.length > 3) {
-              return Promise.reject(
-                new Error("Máximo 3 ordenanças podem ser selecionadas")
-              );
-            }
+              // Minimum 1 ordinance is validated on skipsOrdinances field
+              // If skips ordinances, no minimum required here
+              if (skipsOrdinances) {
+                return Promise.resolve();
+              }
 
-            // Check for overlapping time slots
-            for (let i = 0; i < filledOrdinances.length; i++) {
-              for (let j = i + 1; j < filledOrdinances.length; j++) {
-                if (
-                  filledOrdinances[i].slot &&
-                  filledOrdinances[j].slot &&
-                  doTimeSlotsOverlap(
-                    filledOrdinances[i].slot!,
-                    filledOrdinances[j].slot!
-                  )
-                ) {
-                  return Promise.reject(
-                    new Error(
-                      "Os horários das ordenanças não podem se sobrepor"
+              // Check maximum 3 ordinances
+              if (filledOrdinances.length > 3) {
+                return Promise.reject(
+                  new Error("Máximo 3 ordenanças podem ser selecionadas")
+                );
+              }
+
+              // Check for overlapping time slots
+              for (let i = 0; i < filledOrdinances.length; i++) {
+                for (let j = i + 1; j < filledOrdinances.length; j++) {
+                  if (
+                    filledOrdinances[i].slot &&
+                    filledOrdinances[j].slot &&
+                    doTimeSlotsOverlap(
+                      filledOrdinances[i].slot!,
+                      filledOrdinances[j].slot!
                     )
-                  );
+                  ) {
+                    return Promise.reject(
+                      new Error(
+                        "Os horários das ordenanças não podem se sobrepor"
+                      )
+                    );
+                  }
                 }
               }
-            }
+            },
           },
-        },
-      ]}
-    >
-      {(fields) => {
-        return (
+        ]}
+      >
+        {(fields) => {
+          return (
             <div className="grid grid-cols-1 gap-4">
               {availableOrdinances.map((ordinance) => {
                 // Get all selected sessions for this ordinance
@@ -373,8 +376,9 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                 );
               })}
             </div>
-        );
-      }}
-    </Form.List>
+          );
+        }}
+      </Form.List>
+    </div>
   );
 };

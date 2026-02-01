@@ -34,20 +34,20 @@ export function PublicHeader() {
 
         {/* Logo/Title */}
         <div className="flex items-center gap-3">
-        <div className="bg-primary p-1.5 rounded-md">
-          <svg
-                className="w-7 h-7 fill-white"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
-              </svg>
-        </div>
-        <div className="flex flex-col">
-        <p className="text-base font-semibold">Viagens ao Templo</p>
-        <p className="text-xs text-gray-500">Estaca Porto Norte</p>
+          <div className="bg-primary p-1.5 rounded-md">
+            <svg
+              className="w-7 h-7 fill-white"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <p className="text-base font-semibold">Viagens ao Templo</p>
+            <p className="text-xs text-gray-500">Estaca Porto Norte</p>
 
-        </div>
+          </div>
         </div>
 
         {/* Desktop Navigation and Auth - Hidden on mobile */}
@@ -56,21 +56,19 @@ export function PublicHeader() {
           <nav className="flex items-center gap-6">
             <Link
               href="/"
-              className={`no-underline transition-colors ${
-                isActive("/")
+              className={`no-underline transition-colors ${isActive("/")
                   ? "text-primary font-medium"
                   : "text-gray-700 hover:text-primary"
-              }`}
+                }`}
             >
-              Lista de caravanas
+              Lista de viagens
             </Link>
             <Link
               href="/confirm-payment"
-              className={`no-underline transition-colors ${
-                isActive("/confirm-payment")
+              className={`no-underline transition-colors ${isActive("/confirm-payment")
                   ? "text-primary font-medium"
                   : "text-gray-700 hover:text-primary"
-              }`}
+                }`}
             >
               Verificar inscrição
             </Link>
@@ -125,22 +123,20 @@ export function PublicHeader() {
             <Link
               href="/"
               onClick={handleLinkClick}
-              className={`no-underline py-2 px-4 rounded transition-colors ${
-                isActive("/")
+              className={`no-underline py-2 px-4 rounded transition-colors ${isActive("/")
                   ? "text-primary font-medium bg-primary/10"
                   : "text-gray-700 hover:text-primary hover:bg-gray-50"
-              }`}
+                }`}
             >
-              Lista de caravanas
+              Lista de viagens
             </Link>
             <Link
               href="/confirm-payment"
               onClick={handleLinkClick}
-              className={`no-underline py-2 px-4 rounded transition-colors ${
-                isActive("/confirm-payment")
+              className={`no-underline py-2 px-4 rounded transition-colors ${isActive("/confirm-payment")
                   ? "text-primary font-medium bg-primary/10"
                   : "text-gray-700 hover:text-primary hover:bg-gray-50"
-              }`}
+                }`}
             >
               Verificar inscrição
             </Link>

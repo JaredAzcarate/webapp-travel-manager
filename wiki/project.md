@@ -640,7 +640,7 @@ When a user clicks “I have already paid”:
 
 - Generates message like:
 
-> "O participante {fullName} (telefone {phone}) indicou que efetuou o pagamento para a caravana {caravan.name}."
+> "O participante {fullName} (telefone {phone}) indicou que efetuou o pagamento para a viagem {caravan.name}."
 
 Implementation:
 

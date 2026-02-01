@@ -1,5 +1,5 @@
-import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
 import { UpdateCaravanInput } from "@/features/caravans/models/caravans.model";
+import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
@@ -14,7 +14,7 @@ export async function PUT(
 
     return NextResponse.json(
       {
-        message: "Caravana atualizada com sucesso",
+        message: "Viagem atualizada com sucesso",
         caravan,
       },
       { status: 200 }
@@ -23,12 +23,12 @@ export async function PUT(
     console.error("Error updating caravan:", error);
     if (error instanceof Error && error.message.includes("not found")) {
       return NextResponse.json(
-        { message: "Caravana não encontrada" },
+        { message: "Viagem não encontrada" },
         { status: 404 }
       );
     }
     return NextResponse.json(
-      { message: "Erro ao atualizar caravana" },
+      { message: "Erro ao atualizar viagem" },
       { status: 500 }
     );
   }
@@ -45,7 +45,7 @@ export async function DELETE(
 
     return NextResponse.json(
       {
-        message: "Caravana eliminada com sucesso",
+        message: "Viagem eliminada com sucesso",
       },
       { status: 200 }
     );
@@ -53,12 +53,12 @@ export async function DELETE(
     console.error("Error deleting caravan:", error);
     if (error instanceof Error && error.message.includes("not found")) {
       return NextResponse.json(
-        { message: "Caravana não encontrada" },
+        { message: "Viagem não encontrada" },
         { status: 404 }
       );
     }
     return NextResponse.json(
-      { message: "Erro ao eliminar caravana" },
+      { message: "Erro ao eliminar viagem" },
       { status: 500 }
     );
   }

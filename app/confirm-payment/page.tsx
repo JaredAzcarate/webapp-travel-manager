@@ -1,6 +1,7 @@
 "use client";
 
 import { PublicContent } from "@/common/components/PublicContent";
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import {
   useCancelRegistration,
@@ -86,7 +87,7 @@ export default function ConfirmPaymentPage() {
         <div>
           <CaravanNameCell
             caravanId={registration.caravanId}
-            message="Tem certeza que deseja cancelar a sua participação na caravana"
+            message="Tem certeza que deseja cancelar a sua participação na viagem"
           />
         </div>
       ),
@@ -112,8 +113,8 @@ export default function ConfirmPaymentPage() {
 
   const columns: ColumnsType<RegistrationWithId> = [
     {
-      title: "Caravana",
-      key: "caravanName",
+      title: "Viagem",
+      key: "viagemName",
       render: (_, record) => {
         return <CaravanNameCell caravanId={record.caravanId} />;
       },
@@ -150,10 +151,8 @@ export default function ConfirmPaymentPage() {
       title: "Data de Registro",
       key: "createdAt",
       render: (_, record) => {
-        if (record.createdAt && "toDate" in record.createdAt) {
-          return dayjs(record.createdAt.toDate()).format("DD/MM/YYYY");
-        }
-        return "-";
+        const date = toDate(record.createdAt);
+        return date ? dayjs(date).format("DD/MM/YYYY") : "-";
       },
     },
     {
@@ -240,20 +239,20 @@ export default function ConfirmPaymentPage() {
           transition={sectionTransition(0.1)}
           className="bg-white p-4 rounded-2xl flex flex-col gap-4"
         >
-{!phone && (
-              <motion.div
-                key="alert-section"
-                initial={sectionAnimation.initial}
-                animate={sectionAnimation.animate}
-                exit={sectionAnimation.exit}
-                transition={sectionTransition(0.2)}
-              >
-            <Alert
-              showIcon={true}
-              type="info"
-              description="Por favor, introduza o número de telefone do participante ou do responsável legal (se a inscrição foi feita para um menor de 18 anos) para verificar a sua inscrição."
-            />
-          </motion.div>
+          {!phone && (
+            <motion.div
+              key="alert-section"
+              initial={sectionAnimation.initial}
+              animate={sectionAnimation.animate}
+              exit={sectionAnimation.exit}
+              transition={sectionTransition(0.2)}
+            >
+              <Alert
+                showIcon={true}
+                type="info"
+                description="Por favor, introduza o número de telefone do participante ou do responsável legal (se a inscrição foi feita para um menor de 18 anos) para verificar a sua inscrição."
+              />
+            </motion.div>
           )}
           <Form
             form={form}
@@ -357,7 +356,7 @@ const CaravanNameCell = ({ caravanId, message }: CaravanNameCellProps) => {
       <span>
         {message} {caravanName}? Esta ação liberará o seu lugar no autocarro.
       </span>
-    );  
+    );
   }
 
   return <span>{caravanName}</span>;

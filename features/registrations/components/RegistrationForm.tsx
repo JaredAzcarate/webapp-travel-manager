@@ -94,6 +94,7 @@ export const RegistrationForm = ({
   const hasShownSuccessRef = useRef(false);
   const hasShownErrorRef = useRef(false);
   const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
+  const prevSkipsOrdinancesRef = useRef<boolean | undefined>(undefined);
 
   const {
     createRegistrationAsync,
@@ -342,7 +343,19 @@ export const RegistrationForm = ({
       });
     }
     prevAgeCategoryRef.current = ageCategory;
+    prevSkipsOrdinancesRef.current = undefined;
   }, [ageCategory, form]);
+
+  // When "Não vou fazer ordenanças" is checked, clear selected ordinances
+  useEffect(() => {
+    if (
+      prevSkipsOrdinancesRef.current === false &&
+      skipsOrdinances === true
+    ) {
+      form.setFieldsValue({ ordinances: [] });
+    }
+    prevSkipsOrdinancesRef.current = skipsOrdinances;
+  }, [skipsOrdinances, form]);
 
   useEffect(() => {
     if (mode === "create" && created && !hasShownSuccessRef.current) {
@@ -578,6 +591,8 @@ export const RegistrationForm = ({
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
+      validateTrigger="onSubmit"
+      scrollToFirstError={{ behavior: "smooth", block: "center" }}
       initialValues={{
         ageCategory: undefined,
         isOfficiator: false,
@@ -601,11 +616,11 @@ export const RegistrationForm = ({
         {mode === "create" && propCaravanId && (
           <Form.Item
             name="caravanId"
-            label="Caravana"
+            label="viagem"
             rules={[
               {
                 required: true,
-                message: "Por favor, selecione uma caravana",
+                message: "Por favor, selecione uma viagem",
               },
             ]}
             hidden
@@ -617,16 +632,16 @@ export const RegistrationForm = ({
         {mode === "edit" && (
           <Form.Item
             name="caravanId"
-            label="Caravana"
+            label="viagem"
             rules={[
               {
                 required: true,
-                message: "Por favor, selecione uma caravana",
+                message: "Por favor, selecione uma viagem",
               },
             ]}
           >
             <Select
-              placeholder="Selecione uma caravana"
+              placeholder="Selecione uma viagem"
               loading={loadingCaravans}
               disabled={!isBusAvailable}
               options={activeCaravans.map((caravan) => ({
@@ -1023,7 +1038,7 @@ export const RegistrationForm = ({
                 animate={sectionAnimation.animate}
                 exit={sectionAnimation.exit}
                 transition={sectionTransition(0)}
-                className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col"
+                className="p-4 rounded-2xl bg-red-50 border border-red-200 flex flex-col"
               >
 
                 <div className="flex flex-col gap-2">
@@ -1035,6 +1050,26 @@ export const RegistrationForm = ({
                   name="skipsOrdinances"
                   valuePropName="checked"
                   initialValue={false}
+                  required={!ordinancesList.some(
+                    (o) => o != null && !!o.ordinanceId && !!o.slot
+                  )}
+                  rules={[
+                    {
+                      validator: (_, value) => {
+                        const hasOrdinances = ordinancesList.some(
+                          (o) => o != null && !!o.ordinanceId && !!o.slot
+                        );
+                        if (!hasOrdinances && !value) {
+                          return Promise.reject(
+                            new Error(
+                              "Deve selecionar pelo menos uma ordenança ou marcar que não vai fazer ordenanças"
+                            )
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
                 >
                   <Checkbox disabled={!isBusAvailable}>Confirmo que não vou fazer nenhuma ordenança</Checkbox>
                 </Form.Item>
@@ -1058,7 +1093,7 @@ export const RegistrationForm = ({
         </Title>
         <Paragraph>
           Ao se inscrever na viagem, você concorda com o uso dos
-          dados registrados para fins de gestão da caravana ao templo. Este
+          dados registrados para fins de gestão da viagem ao templo. Este
           sistema não é oficial da Igreja de Jesus Cristo dos Santos dos
           Últimos Dias.
         </Paragraph>
@@ -1091,7 +1126,7 @@ export const RegistrationForm = ({
             >
               política de privacidade
             </Button>{" "}
-            e autorizo o uso dos meus dados para fins de gestão da caravana
+            e autorizo o uso dos meus dados para fins de gestão da viagem
           </Checkbox>
         </Form.Item>
 

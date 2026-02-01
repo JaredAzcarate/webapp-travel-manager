@@ -12,7 +12,7 @@ export default function CaravanDistributionPage() {
     <div className="p-6">
       <div className="mb-4">
         <Button onClick={() => router.push("/admin/caravans")}>
-          Voltar para Lista de Caravanas
+          Voltar para Lista de Viagens
         </Button>
       </div>
       <Suspense fallback={<div>Carregando...</div>}>

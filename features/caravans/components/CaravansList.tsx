@@ -1,5 +1,6 @@
 "use client";
 
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { CaravanForm } from "@/features/caravans/components/CaravanForm";
 import { PaymentStatusDrawer } from "@/features/caravans/components/PaymentStatusDrawer";
@@ -10,7 +11,6 @@ import {
 } from "@/features/caravans/hooks/caravans.hooks";
 import { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { useCountActiveByBus } from "@/features/registrations/hooks/registrations.hooks";
-import { toDate } from "@/common/utils/timestamp.utils";
 import { App, Button, Drawer, Space, Spin, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -114,8 +114,8 @@ export const CaravansList = () => {
 
   const handleDelete = (caravan: CaravanWithId) => {
     modal.confirm({
-      title: "Eliminar Caravana",
-      content: `Tem certeza que deseja eliminar a caravana "${caravan.name}"?`,
+      title: "Eliminar Viagem",
+      content: `Tem certeza que deseja eliminar a viagem "${caravan.name}"?`,
       okText: "Eliminar",
       okType: "danger",
       cancelText: "Cancelar",
@@ -123,7 +123,7 @@ export const CaravansList = () => {
         deleteCaravan(caravan.id);
         notification.success({
           title: "Sucesso",
-          description: "A caravana foi eliminada com sucesso",
+          description: "A viagem foi eliminada com sucesso",
         });
       },
     });
@@ -151,7 +151,7 @@ export const CaravansList = () => {
       },
     },
     {
-      title: "Nome da Caravana",
+      title: "Nome da Viagem",
       dataIndex: "name",
       key: "name",
     },
@@ -218,14 +218,14 @@ export const CaravansList = () => {
     <>
       <div className="mb-4 flex items-center justify-between">
         <Title level={4} style={{ margin: 0 }}>
-          Lista de Caravanas
+          Lista de Viagens
         </Title>
         <Button
           type="primary"
           icon={<Plus size={16} />}
           onClick={() => router.push("/admin/caravans/new")}
         >
-          Nova Caravana
+          Nova Viagem
         </Button>
       </div>
       <Table
@@ -237,11 +237,11 @@ export const CaravansList = () => {
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `Total: ${total} caravanas`,
+          showTotal: (total) => `Total: ${total} viagens`,
           responsive: true,
         }}
         locale={{
-          emptyText: "Nenhuma caravana criada ainda",
+          emptyText: "Nenhuma viagem criada ainda",
         }}
       />
 
@@ -282,7 +282,7 @@ const EditCaravanDrawer = ({
 
   return (
     <Drawer
-      title="Editar Caravana"
+      title="Editar Viagem"
       open={open}
       onClose={onClose}
       size="large"
@@ -300,7 +300,7 @@ const EditCaravanDrawer = ({
           onSuccess={onSuccess}
         />
       ) : (
-        <p className="text-gray-500">Caravana não encontrada.</p>
+        <p className="text-gray-500">Viagem não encontrada.</p>
       )}
     </Drawer>
   );

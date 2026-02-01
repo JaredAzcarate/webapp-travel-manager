@@ -66,7 +66,7 @@ export const CaravanDistributionView = () => {
         <Title level={4}>Distribuição de Passageiros</Title>
         <Card>
           <p className="text-gray-500">
-            Nenhuma caravana selecionada. Por favor, selecione uma caravana da
+            Nenhuma viagem selecionada. Por favor, selecione uma viagem da
             lista.
           </p>
         </Card>
@@ -134,7 +134,7 @@ export const CaravanDistributionView = () => {
           ) : (
             <Card>
               <p className="text-gray-500">
-                Esta caravana não tem autocarros atribuídos.
+                Esta viagem não tem autocarros atribuídos.
               </p>
             </Card>
           )}
@@ -143,7 +143,7 @@ export const CaravanDistributionView = () => {
 
       {!loadingCaravan && !selectedCaravan && (
         <Card>
-          <p className="text-gray-500">Caravana não encontrada.</p>
+          <p className="text-gray-500">Viagem não encontrada.</p>
         </Card>
       )}
 
@@ -264,7 +264,7 @@ const BusDistributionCard = ({
       yPosition += 10;
 
       doc.setFontSize(14);
-      doc.text(`Caravana: ${caravanName}`, 10, yPosition);
+      doc.text(`Viagem: ${caravanName}`, 10, yPosition);
       yPosition += 8;
 
       if (bus?.name) {
@@ -329,22 +329,19 @@ const BusDistributionCard = ({
 
           const ordinanceLabels = [
             ordinances[0]
-              ? `${
-                  ordinanceIdToNameMap.get(ordinances[0].ordinanceId) ||
-                  ordinances[0].ordinanceId
-                } - ${ordinances[0].slot}`
+              ? `${ordinanceIdToNameMap.get(ordinances[0].ordinanceId) ||
+              ordinances[0].ordinanceId
+              } - ${ordinances[0].slot}`
               : "-",
             ordinances[1]
-              ? `${
-                  ordinanceIdToNameMap.get(ordinances[1].ordinanceId) ||
-                  ordinances[1].ordinanceId
-                } - ${ordinances[1].slot}`
+              ? `${ordinanceIdToNameMap.get(ordinances[1].ordinanceId) ||
+              ordinances[1].ordinanceId
+              } - ${ordinances[1].slot}`
               : "-",
             ordinances[2]
-              ? `${
-                  ordinanceIdToNameMap.get(ordinances[2].ordinanceId) ||
-                  ordinances[2].ordinanceId
-                } - ${ordinances[2].slot}`
+              ? `${ordinanceIdToNameMap.get(ordinances[2].ordinanceId) ||
+              ordinances[2].ordinanceId
+              } - ${ordinances[2].slot}`
               : "-",
           ];
 
@@ -367,9 +364,8 @@ const BusDistributionCard = ({
         });
       }
 
-      const fileName = `distribuicao-${caravanName.replace(/\s+/g, "-")}-${
-        bus?.name?.replace(/\s+/g, "-") || "autocarro"
-      }-${new Date().toISOString().split("T")[0]}.pdf`;
+      const fileName = `distribuicao-${caravanName.replace(/\s+/g, "-")}-${bus?.name?.replace(/\s+/g, "-") || "autocarro"
+        }-${new Date().toISOString().split("T")[0]}.pdf`;
       doc.save(fileName);
 
       notification.success({

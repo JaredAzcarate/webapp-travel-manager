@@ -19,7 +19,7 @@ interface MenuItem {
 const menuItems: MenuItem[] = [
   {
     key: "caravans",
-    label: "Caravanas",
+    label: "Viagens",
     path: "/admin/caravans",
   },
   {
@@ -88,8 +88,8 @@ export const AdminSidebar = () => {
   }, [selectedKey]);
 
   // Initialize openKeys with defaultOpenKeys if empty
-  const computedOpenKeys = openKeys.length > 0 || defaultOpenKeys.length === 0 
-    ? openKeys 
+  const computedOpenKeys = openKeys.length > 0 || defaultOpenKeys.length === 0
+    ? openKeys
     : defaultOpenKeys;
 
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -132,15 +132,15 @@ export const AdminSidebar = () => {
   return (
     <>
 
-          {/* Mobile Hamburger Button - Rendered via portal to body */}
-          {typeof window !== "undefined" &&
+      {/* Mobile Hamburger Button - Rendered via portal to body */}
+      {typeof window !== "undefined" &&
         createPortal(
           <div className="md:hidden fixed top-4 right-4 z-50">
-          <Button
-            type="primary"
-            icon={<List size={20} className="text-white" />}
-            onClick={() => setMobileMenuOpen(true)}
-          />
+            <Button
+              type="primary"
+              icon={<List size={20} className="text-white" />}
+              onClick={() => setMobileMenuOpen(true)}
+            />
           </div>
           ,
           document.body
@@ -151,44 +151,44 @@ export const AdminSidebar = () => {
         className="hidden md:block"
         theme="light"
       >
-      <div className="flex flex-col h-full min-h-screen justify-between p-2 gap-10">
-        {/* Logo */}
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center gap-3 border-b border-gray-200 py-2">
-            <div className="bg-primary p-1.5 rounded-md">
-              <svg
-                className="w-7 h-7 fill-white"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
-              </svg>
+        <div className="flex flex-col h-full min-h-screen justify-between p-2 gap-10">
+          {/* Logo */}
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-3 border-b border-gray-200 py-2">
+              <div className="bg-primary p-1.5 rounded-md">
+                <svg
+                  className="w-7 h-7 fill-white"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
+                </svg>
+              </div>
+              <div className="flex flex-col">
+                <p className="text-sm font-semibold">Viagens ao Templo</p>
+                <p className="text-xs text-gray-400">Estaca Porto Norte</p>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="text-sm font-semibold">Viagens ao Templo</p>
-              <p className="text-xs text-gray-400">Estaca Porto Norte</p>
-            </div>
+            {/* Menu Items */}
+            <Menu
+              mode="inline"
+              selectedKeys={[selectedKey]}
+              openKeys={computedOpenKeys}
+              onOpenChange={setOpenKeys}
+              items={menuItemsForAntd}
+              onClick={handleMenuClick}
+            />
           </div>
-        {/* Menu Items */}
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          openKeys={computedOpenKeys}
-          onOpenChange={setOpenKeys}
-          items={menuItemsForAntd}
-          onClick={handleMenuClick}
-        />
-        </div>
 
 
-        {/* Sign Out Button */}
-        <Button type="primary" onClick={handleSignOut}>
-          <SignOut size={20} className="text-white" />
-          Fechar sessão
-        </Button>
+          {/* Sign Out Button */}
+          <Button type="primary" onClick={handleSignOut}>
+            <SignOut size={20} className="text-white" />
+            Fechar sessão
+          </Button>
         </div>
       </Sider>
-  
+
       {/* Mobile Menu Drawer */}
       <Drawer
         title="Menu"
@@ -197,41 +197,41 @@ export const AdminSidebar = () => {
         open={mobileMenuOpen}
         closeIcon={<X size={20} />}
       >
-              <div className="flex flex-col h-full justify-between gap-10">
-        {/* Logo */}
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary p-1.5 rounded-md">
-              <svg
-                className="w-7 h-7 fill-white"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
-              </svg>
+        <div className="flex flex-col h-full justify-between gap-10">
+          {/* Logo */}
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary p-1.5 rounded-md">
+                <svg
+                  className="w-7 h-7 fill-white"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M19.75 15v5.75h-5.409v-3.637A2.343 2.343 0 0 0 12 14.772a2.343 2.343 0 0 0-2.341 2.341v3.637H4.25V15h-.056l6.223-3.007c.208-.1.358-.29.407-.516L12 6.045l1.176 5.432a.748.748 0 0 0 .407.516L19.806 15h-.056zm-5.185-4.198l-1.832-8.461c-.171-.788-1.295-.788-1.466 0l-1.832 8.461-7.761 3.75a.75.75 0 1 0 .652 1.351l.424-.205V21.5c0 .414.336.75.75.75h17a.75.75 0 0 0 .75-.75v-5.802l.424.205a.75.75 0 1 0 .652-1.351l-7.761-3.75z"></path>
+                </svg>
+              </div>
+              <div className="flex flex-col">
+                <p className="text-sm font-semibold">Viagens ao Templo</p>
+                <p className="text-xs text-gray-400">Estaca Porto Norte</p>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <p className="text-sm font-semibold">Viagens ao Templo</p>
-              <p className="text-xs text-gray-400">Estaca Porto Norte</p>
-            </div>
+            {/* Menu Items */}
+            <Menu
+              mode="inline"
+              selectedKeys={[selectedKey]}
+              openKeys={computedOpenKeys}
+              onOpenChange={setOpenKeys}
+              items={menuItemsForAntd}
+              onClick={handleMenuClick}
+            />
           </div>
-        {/* Menu Items */}
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          openKeys={computedOpenKeys}
-          onOpenChange={setOpenKeys}
-          items={menuItemsForAntd}
-          onClick={handleMenuClick}
-        />
-        </div>
 
 
-        {/* Sign Out Button */}
-        <Button type="primary" onClick={handleSignOut}>
-          <SignOut size={20} className="text-white" />
-          Fechar sessão
-        </Button>
+          {/* Sign Out Button */}
+          <Button type="primary" onClick={handleSignOut}>
+            <SignOut size={20} className="text-white" />
+            Fechar sessão
+          </Button>
         </div>
       </Drawer>
     </>

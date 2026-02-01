@@ -58,7 +58,7 @@ export const useCreateCaravan = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || "Erro ao criar caravana");
+        throw new Error(data.message || "Erro ao criar viagem");
       }
 
       const result = await response.json();
@@ -93,7 +93,7 @@ export const useUpdateCaravan = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || "Erro ao atualizar caravana");
+        throw new Error(data.message || "Erro ao atualizar viagem");
       }
 
       const result = await response.json();
@@ -127,7 +127,7 @@ export const useDeleteCaravan = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || "Erro ao eliminar caravana");
+        throw new Error(data.message || "Erro ao eliminar viagem");
       }
     },
     onSuccess: () => {

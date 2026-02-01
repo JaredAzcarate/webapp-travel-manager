@@ -8,7 +8,7 @@ const { Title } = Typography;
 export default function NewCaravanPage() {
   return (
     <div className="p-6">
-      <Title level={2}>Criar Nova Caravana</Title>
+      <Title level={2}>Criar Nova Viagem</Title>
 
       <div className="mt-6">
         <CaravanForm mode="create" />

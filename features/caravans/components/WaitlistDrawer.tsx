@@ -120,7 +120,7 @@ export const WaitlistDrawer = ({
         <>
           <div className="mb-4 p-4 bg-blue-50 rounded-lg">
             <div className="text-sm font-medium text-gray-700 mb-2">
-              Vagas Disponíveis na Caravana
+              Vagas Disponíveis na Viagem
             </div>
             <div className="flex gap-4 flex-wrap">
               {caravan?.busIds.map((busId) => {
@@ -148,7 +148,7 @@ export const WaitlistDrawer = ({
               showTotal: (total) => `Total: ${total} em lista de espera`,
             }}
             locale={{
-              emptyText: "Nenhuma pessoa em lista de espera para esta caravana",
+              emptyText: "Nenhuma pessoa em lista de espera para esta viagem",
             }}
           />
         </>

@@ -64,13 +64,13 @@ match /chapels/{chapelId} {
 **Permisos CRUD:**
 
 - **Create**: Solo ADMIN autenticado
-  - Solo usuarios con rol ADMIN pueden crear caravanas
+  - Solo usuarios con rol ADMIN pueden crear viagems
 - **Read**: Usuarios autenticados (ADMIN y CHAPEL)
-  - Todos los usuarios autenticados pueden leer caravanas
+  - Todos los usuarios autenticados pueden leer viagems
 - **Update**: Solo ADMIN autenticado
-  - Solo usuarios con rol ADMIN pueden actualizar caravanas
+  - Solo usuarios con rol ADMIN pueden actualizar viagems
 - **Delete**: Solo ADMIN autenticado
-  - Solo usuarios con rol ADMIN pueden eliminar caravanas
+  - Solo usuarios con rol ADMIN pueden eliminar viagems
 
 **Ejemplo de regla:**
 ```javascript
@@ -93,7 +93,7 @@ match /caravans/{caravanId} {
   - Solo usuarios con rol ADMIN pueden actualizar autocarros
 - **Delete**: Solo ADMIN autenticado (con validación de que no esté en uso)
   - Solo usuarios con rol ADMIN pueden eliminar autocarros
-  - Debe validarse que el autocarro no esté asociado a ninguna caravana activa
+  - Debe validarse que el autocarro no esté asociado a ninguna viagem activa
 
 **Ejemplo de regla:**
 ```javascript

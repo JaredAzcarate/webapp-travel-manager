@@ -71,7 +71,7 @@ export const CaravanInscriptionsDrawer = ({
         size="large"
         destroyOnClose
       >
-        <p className="text-gray-500">Caravana não encontrada.</p>
+        <p className="text-gray-500">Viagem não encontrada.</p>
       </Drawer>
     );
   }
@@ -98,7 +98,7 @@ export const CaravanInscriptionsDrawer = ({
         ) : (
           <Card>
             <p className="text-gray-500">
-              Esta caravana não tem autocarros atribuídos.
+              Esta viagem não tem autocarros atribuídos.
             </p>
           </Card>
         )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { Modal, Typography } from "antd";
-import { useMemo } from "react";
 
 const { Title, Paragraph } = Typography;
 
@@ -29,7 +28,7 @@ export const PrivacyPolicyModal = ({
           <Paragraph>
             Esta Política de Privacidade descreve como os seus dados pessoais são
             coletados, utilizados e protegidos quando utiliza o sistema de gestão
-            de caravanas ao templo. Ao utilizar este sistema, você concorda com
+            de viagens ao templo. Ao utilizar este sistema, você concorda com
             esta política.
           </Paragraph>
         </div>
@@ -38,7 +37,7 @@ export const PrivacyPolicyModal = ({
           <Title level={4}>2. Dados Coletados</Title>
           <Paragraph>
             Coletamos os seguintes dados pessoais para fins de gestão da
-            caravana:
+            viagem:
           </Paragraph>
           <ul className="list-disc pl-6 space-y-2 mt-2">
             <li>Nome completo</li>
@@ -57,11 +56,11 @@ export const PrivacyPolicyModal = ({
             Os dados coletados são utilizados exclusivamente para:
           </Paragraph>
           <ul className="list-disc pl-6 space-y-2 mt-2">
-            <li>Gestão e organização da caravana ao templo</li>
-            <li>Comunicação com os participantes sobre a caravana</li>
+            <li>Gestão e organização da viagem ao templo</li>
+            <li>Comunicação com os participantes sobre a viagem</li>
             <li>Organização dos autocarros e distribuição de passageiros</li>
             <li>Registo de ordenanças do templo</li>
-            <li>Controlo de pagamentos e gestão financeira da caravana</li>
+            <li>Controlo de pagamentos e gestão financeira da viagem</li>
           </ul>
         </div>
 
@@ -138,7 +137,7 @@ export const PrivacyPolicyModal = ({
           </Paragraph>
           <ul className="list-disc pl-6 space-y-2 mt-2">
             <li>
-              Com os gestores da caravana e líderes da estaca para fins de
+              Com os gestores da viagem e líderes da estaca para fins de
               organização
             </li>
             <li>Quando exigido por lei ou ordem judicial</li>
@@ -151,7 +150,7 @@ export const PrivacyPolicyModal = ({
           <Paragraph className="font-semibold text-gray-700">
             IMPORTANTE: Este sistema não é oficial da Igreja de Jesus Cristo
             dos Santos dos Últimos Dias. É uma ferramenta desenvolvida
-            independentemente para auxiliar na gestão de caravanas locais.
+            independentemente para auxiliar na gestão de viagems locais.
           </Paragraph>
         </div>
 
@@ -202,7 +201,7 @@ export const PrivacyPolicyModal = ({
           <Title level={4}>12. Contacto</Title>
           <Paragraph>
             Para questões sobre esta política de privacidade ou para exercer os
-            seus direitos, entre em contacto com os gestores da caravana através
+            seus direitos, entre em contacto com os gestores da viagem através
             da sua capela.
           </Paragraph>
         </div>

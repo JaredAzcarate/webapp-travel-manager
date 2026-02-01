@@ -50,8 +50,8 @@ export default function PublicRegistrationPage() {
       <PublicContent>
         <Card>
           <Alert
-            message="Caravana não encontrada"
-            description="A caravana solicitada não existe ou não está disponível."
+            message="Viagem não encontrada"
+            description="A viagem solicitada não existe ou não está disponível."
             type="error"
             showIcon
           />
@@ -77,9 +77,9 @@ export default function PublicRegistrationPage() {
   return (
     <PublicContent>
 
-        <Title level={3}>
-          {caravan.name}
-        </Title>
+      <Title level={3}>
+        {caravan.name}
+      </Title>
 
       <RegistrationForm
         mode="create"

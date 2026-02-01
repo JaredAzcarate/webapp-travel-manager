@@ -79,7 +79,7 @@ export const PaymentStatusDrawer = ({
 
       if (caravan?.name) {
         doc.setFontSize(14);
-        doc.text(`Caravana: ${caravan.name}`, 10, yPosition);
+        doc.text(`Viagem: ${caravan.name}`, 10, yPosition);
         yPosition += 8;
       }
 
@@ -158,9 +158,8 @@ export const PaymentStatusDrawer = ({
         });
       }
 
-      const fileName = `status-pagamentos-${caravan?.name || caravanId}-${
-        new Date().toISOString().split("T")[0]
-      }.pdf`;
+      const fileName = `status-pagamentos-${caravan?.name || caravanId}-${new Date().toISOString().split("T")[0]
+        }.pdf`;
       doc.save(fileName);
 
       notification.success({
@@ -313,7 +312,7 @@ export const PaymentStatusDrawer = ({
               showTotal: (total) => `Total: ${total} registros`,
             }}
             locale={{
-              emptyText: "Nenhum registro encontrado para esta caravana",
+              emptyText: "Nenhum registro encontrado para esta viagem",
             }}
           />
         </>
