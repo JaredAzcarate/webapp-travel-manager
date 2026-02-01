@@ -1,7 +1,8 @@
 "use client";
 
+import { NativeSelect } from "@/common/components/NativeSelect";
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
-import { Button, Checkbox, Select, Tag } from "antd";
+import { Checkbox, Tag } from "antd";
 import { motion } from "motion/react";
 import React from "react";
 
@@ -100,7 +101,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                 const usedSlots = selectedSessions
                   .filter((s, idx) => idx !== index && s.slot)
                   .map((s) => s.slot!);
-                
+
                 const availableSlotsForThis = availableSlots.filter(
                   (slot) => !usedSlots.includes(slot)
                 );
@@ -110,26 +111,23 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                     <label className="block text-sm font-medium text-gray-700">
                       Sessão {index + 1}
                     </label>
-                    <Select
+                    <NativeSelect
                       placeholder="Selecione o horário"
                       allowClear
                       disabled={disabled}
                       value={session.slot}
-                      onChange={(value) => onSlotChange(value, index)}
-                      getPopupContainer={(trigger) => trigger.parentElement || document.body}
+                      onChange={(value) => onSlotChange(value || undefined, index)}
                       options={availableSlotsForThis.map((slot) => {
                         const slotAvailability = slotAvailabilityMap?.[slot];
-                        const isSlotDisabled = slotAvailability 
+                        const isSlotDisabled = slotAvailability
                           ? slotAvailability.available <= 0 && !slotAvailability.loading
                           : false;
-                        
                         return {
                           label: slot,
                           value: slot,
                           disabled: isSlotDisabled,
                         };
                       })}
-                      className="w-full"
                     />
                     {session.slot && slotAvailabilityMap?.[session.slot] && (
                       <Tag color={slotAvailabilityMap[session.slot].available > 0 ? "green" : "red"}>
@@ -146,26 +144,23 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Horário
                 </label>
-                <Select
+                <NativeSelect
                   placeholder="Selecione o horário"
                   allowClear
                   disabled={disabled}
                   value={selectedSlot}
-                  onChange={(value) => onSlotChange(value)}
-                  getPopupContainer={(trigger) => trigger.parentElement || document.body}
+                  onChange={(value) => onSlotChange(value || undefined)}
                   options={availableSlots.map((slot) => {
                     const slotAvailability = slotAvailabilityMap?.[slot];
-                    const isSlotDisabled = slotAvailability 
+                    const isSlotDisabled = slotAvailability
                       ? slotAvailability.available <= 0 && !slotAvailability.loading
                       : false;
-                    
                     return {
                       label: slot,
                       value: slot,
                       disabled: isSlotDisabled,
                     };
                   })}
-                  className="w-full"
                 />
               </div>
 
