@@ -79,8 +79,8 @@ export const BusForm = ({
     mode === "edit" && busId ? busId : ""
   );
 
-  const { createBusStop } = useCreateBusStop();
-  const { deleteBusStop } = useDeleteBusStop();
+  const { createBusStopAsync } = useCreateBusStop();
+  const { deleteBusStopAsync } = useDeleteBusStop();
 
   const { chapels, loading: loadingChapels } = useChapels();
   const [isProcessingStops, setIsProcessingStops] = useState(false);
@@ -240,7 +240,7 @@ export const BusForm = ({
           pickupTime,
         };
 
-        await createBusStop(busStopInput);
+        await createBusStopAsync(busStopInput);
       }
 
       queryClient.invalidateQueries({ queryKey: ["busStops"] });
@@ -281,7 +281,7 @@ export const BusForm = ({
       const existingStops = stopsToUse;
 
       for (const stop of existingStops) {
-        await deleteBusStop(stop.id);
+        await deleteBusStopAsync(stop.id);
       }
 
       const today = dayjs().startOf("day");
@@ -301,7 +301,7 @@ export const BusForm = ({
           pickupTime,
         };
 
-        await createBusStop(busStopInput);
+        await createBusStopAsync(busStopInput);
       }
 
       queryClient.invalidateQueries({ queryKey: ["busStops"] });

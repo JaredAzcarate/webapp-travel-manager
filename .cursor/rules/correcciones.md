@@ -1,0 +1,4 @@
+- pagamento dos jovens e crinaças 10€
+- o email do responsavel nao é obrigtario
+- podemos agreagr un checkbox indicando que no voy a hacer ordenanzas (esta opcion por defecto viene desactivada; si no se marca esta opcion tenemos que tener por lo menos una ordenanza seleccionada)
+- Mejorar el checkbox de primera ordenanza y "oficiante" quedo solo la palabra Sim.

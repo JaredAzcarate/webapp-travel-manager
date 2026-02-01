@@ -9,7 +9,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Agendamentos do Templo",
+  title: "Inscrições Viagens ao Templo — Estaca Porto Norte",
   description: "Sistema de gestão de caravanas ao templo da Estaca Porto Norte",
 };
 

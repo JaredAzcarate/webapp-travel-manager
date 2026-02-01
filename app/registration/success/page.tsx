@@ -39,7 +39,9 @@ export default function RegistrationSuccessPage() {
       status: "process" as const,
       content: (
         <span>
-          Para realizar o pagamento da viagem é necessário fazer uma doação através da papeleta de doações na coluna
+          O valor da viagem é de <strong>10€</strong> para jovens e crianças
+          (1-17 anos) ou <strong>25€</strong> para adultos (18+). O pagamento
+          deve ser efetuado através da papeleta de doações na coluna
           &quot;outros&quot; na sua unidade.
         </span>
       ),

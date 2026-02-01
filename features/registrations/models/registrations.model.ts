@@ -27,6 +27,7 @@ export interface Registration {
     slot: string; // e.g. "9:30-10:00"
     isPersonal?: boolean; // indica si la ordenanza es personal
   }>; // Máximo 3, mínimo 0 (opcional)
+  skipsOrdinances?: boolean; // true = no hará ordenanzas; default false
 
   isFirstTimeConvert: boolean;
   paymentStatus: PaymentStatus;

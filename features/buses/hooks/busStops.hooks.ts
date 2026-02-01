@@ -98,8 +98,13 @@ export const useCreateBusStop = () => {
     mutation.mutate(input);
   };
 
+  const createBusStopAsync = async (input: CreateBusStopInput) => {
+    return mutation.mutateAsync(input);
+  };
+
   return {
     createBusStop,
+    createBusStopAsync,
     isPending: mutation.isPending,
     isSuccess: mutation.isSuccess,
     error: mutation.error,
@@ -171,8 +176,13 @@ export const useDeleteBusStop = () => {
     mutation.mutate(id);
   };
 
+  const deleteBusStopAsync = async (id: string) => {
+    return mutation.mutateAsync(id);
+  };
+
   return {
     deleteBusStop,
+    deleteBusStopAsync,
     isPending: mutation.isPending,
     isSuccess: mutation.isSuccess,
     error: mutation.error,

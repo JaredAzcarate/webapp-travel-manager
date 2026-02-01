@@ -24,6 +24,7 @@ export interface OrdinancesListFieldProps {
   isFirstTimeConvert: boolean;
   hasLessThanOneYearAsMember: boolean;
   ordinancesList: OrdinanceFormValue[];
+  skipsOrdinances: boolean;
   disabled?: boolean;
 }
 
@@ -36,6 +37,7 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   isFirstTimeConvert,
   hasLessThanOneYearAsMember,
   ordinancesList,
+  skipsOrdinances,
   disabled = false,
 }) => {
   // Filter available ordinances
@@ -253,9 +255,23 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         {
           validator: async (_, ordinancesList) => {
             const filledOrdinances = ordinancesList.filter(
-              (o: OrdinanceFormValue): o is OrdinanceFormValue => 
+              (o: OrdinanceFormValue): o is OrdinanceFormValue =>
                 o != null && !!o.ordinanceId && !!o.slot
             );
+
+            // If skips ordinances, no minimum required
+            if (skipsOrdinances) {
+              return Promise.resolve();
+            }
+
+            // Require at least 1 ordinance when not skipping
+            if (filledOrdinances.length < 1) {
+              return Promise.reject(
+                new Error(
+                  "Deve selecionar pelo menos uma ordenança ou marcar que não vai fazer ordenanças"
+                )
+              );
+            }
 
             // Check maximum 3 ordinances
             if (filledOrdinances.length > 3) {
@@ -340,6 +356,7 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                       gender={gender}
                       disabled={
                         disabled ||
+                        skipsOrdinances ||
                         (!isSelected &&
                           !canSelectMultipleSessions &&
                           selectedOrdinanceIds.length >= 3)

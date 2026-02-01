@@ -415,8 +415,15 @@ const BusDistributionCard = ({
       render: (_, record) => {
         const tags = [];
 
-        // Tag "Jovem" si es menor de edad
-        if (record.ageCategory === "YOUTH" || record.ageCategory === "CHILD") {
+        // Tag "Criança" (1-10) o "Jovem" (11-17)
+        if (record.ageCategory === "CHILD") {
+          tags.push(
+            <Tag key="crianca" color="cyan">
+              Criança
+            </Tag>
+          );
+        }
+        if (record.ageCategory === "YOUTH") {
           tags.push(
             <Tag key="jovem" color="blue">
               Jovem

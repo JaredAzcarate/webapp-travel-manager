@@ -28,12 +28,12 @@ import {
   App,
   Button,
   Checkbox,
+  Divider,
   Form,
   FormInstance,
   Input,
   Radio,
   Select,
-  Switch,
   Typography
 } from "antd";
 import { Timestamp } from "firebase/firestore";
@@ -66,6 +66,7 @@ interface FormValues {
   legalGuardianEmail?: string;
   legalGuardianPhone?: string;
   ordinances: OrdinanceFormValue[];
+  skipsOrdinances?: boolean;
   isFirstTimeConvert: boolean;
   hasLessThanOneYearAsMember: boolean;
   privacyPolicyAccepted: boolean;
@@ -124,6 +125,7 @@ export const RegistrationForm = ({
     "hasLessThanOneYearAsMember",
     form
   );
+  const skipsOrdinances = Form.useWatch("skipsOrdinances", form);
 
   const { caravan: selectedCaravan } = useCaravan(selectedCaravanId || "");
 
@@ -198,18 +200,18 @@ export const RegistrationForm = ({
   const isBusAvailable = useMemo(() => {
     // If no chapel is selected, form should be disabled
     if (!selectedChapelId) return false;
-    
+
     // Use busAssignmentMessage.available if it exists
     if (busAssignmentMessage) {
       return busAssignmentMessage.available ?? false;
     }
-    
+
     // If there's no assigned bus, bus is not available
     if (!assignedBusId) return false;
-    
+
     // If capacity info is not loaded yet but bus is assigned, assume available
     if (!capacityInfo) return true;
-    
+
     // Bus is available if there's capacity or if it's full but still allows waitlist
     return true;
   }, [selectedChapelId, assignedBusId, capacityInfo, busAssignmentMessage]);
@@ -244,6 +246,7 @@ export const RegistrationForm = ({
         isOfficiator: false,
         isFirstTimeConvert: false,
         hasLessThanOneYearAsMember: false,
+        skipsOrdinances: false,
         privacyPolicyAccepted: false,
         ordinances: [],
         fullName: undefined,
@@ -262,7 +265,7 @@ export const RegistrationForm = ({
     if (mode === "edit" && initialRegistrationData) {
       const existingOrdinances =
         initialRegistrationData.ordinances &&
-        Array.isArray(initialRegistrationData.ordinances)
+          Array.isArray(initialRegistrationData.ordinances)
           ? initialRegistrationData.ordinances
           : [];
 
@@ -294,6 +297,9 @@ export const RegistrationForm = ({
         legalGuardianEmail: initialRegistrationData.legalGuardianEmail,
         legalGuardianPhone: initialRegistrationData.legalGuardianPhone,
         ordinances: ordinancesData,
+        skipsOrdinances:
+          initialRegistrationData.skipsOrdinances ??
+          (ordinancesData.length === 0),
         isFirstTimeConvert: initialRegistrationData.isFirstTimeConvert,
         hasLessThanOneYearAsMember: false,
         privacyPolicyAccepted: initialRegistrationData.privacyPolicyAccepted ?? false,
@@ -306,6 +312,7 @@ export const RegistrationForm = ({
       form.setFieldsValue({
         caravanId: propCaravanId,
         ordinances: [],
+        skipsOrdinances: false,
       });
     }
   }, [mode, propCaravanId, form]);
@@ -322,6 +329,7 @@ export const RegistrationForm = ({
       form.setFieldsValue({
         hasLessThanOneYearAsMember: false,
         isFirstTimeConvert: false,
+        skipsOrdinances: false,
         fullName: undefined,
         phone: undefined,
         gender: undefined,
@@ -344,7 +352,7 @@ export const RegistrationForm = ({
         description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
         duration: 3,
       });
-      
+
       // Add a small delay before redirecting to allow the notification to be visible
       const redirectTimer = setTimeout(() => {
         if (onSuccess) {
@@ -486,13 +494,17 @@ export const RegistrationForm = ({
         ...(values.legalGuardianPhone && {
           legalGuardianPhone: values.legalGuardianPhone,
         }),
-        ordinances: (values.ordinances || [])
-          .filter((ord) => ord.ordinanceId && ord.slot)
-          .map((ord) => ({
-            ordinanceId: ord.ordinanceId!,
-            slot: ord.slot!,
-            isPersonal: ord.isPersonal ?? false,
-          })),
+        ordinances:
+          values.skipsOrdinances === true
+            ? []
+            : (values.ordinances || [])
+              .filter((ord) => ord.ordinanceId && ord.slot)
+              .map((ord) => ({
+                ordinanceId: ord.ordinanceId!,
+                slot: ord.slot!,
+                isPersonal: ord.isPersonal ?? false,
+              })),
+        skipsOrdinances: values.skipsOrdinances ?? false,
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
         paymentStatus,
         participationStatus: "ACTIVE",
@@ -504,7 +516,7 @@ export const RegistrationForm = ({
 
       try {
         await createRegistrationAsync(input);
-        
+
         if (onSuccess) {
           onSuccess();
         }
@@ -538,13 +550,17 @@ export const RegistrationForm = ({
         ...(values.legalGuardianPhone && {
           legalGuardianPhone: values.legalGuardianPhone,
         }),
-        ordinances: (values.ordinances || [])
-          .filter((ord) => ord.ordinanceId && ord.slot)
-          .map((ord) => ({
-            ordinanceId: ord.ordinanceId!,
-            slot: ord.slot!,
-            isPersonal: ord.isPersonal ?? false,
-          })),
+        ordinances:
+          values.skipsOrdinances === true
+            ? []
+            : (values.ordinances || [])
+              .filter((ord) => ord.ordinanceId && ord.slot)
+              .map((ord) => ({
+                ordinanceId: ord.ordinanceId!,
+                slot: ord.slot!,
+                isPersonal: ord.isPersonal ?? false,
+              })),
+        skipsOrdinances: values.skipsOrdinances ?? false,
         isFirstTimeConvert: values.isFirstTimeConvert ?? false,
         privacyPolicyAccepted: values.privacyPolicyAccepted,
       };
@@ -712,22 +728,18 @@ export const RegistrationForm = ({
                     animate={sectionAnimation.animate}
                     exit={sectionAnimation.exit}
                     transition={sectionTransition(0)}
-                    className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row justify-between"
+                    className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col"
                   >
-                   <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2">
                       <Title level={5}>É primeira vez que vai fazer uma ordenança no templo?</Title>
-                      <Paragraph>A estaca Porto Norte oferece uma viagem gratuita para <strong>membros recem conversos que fazem a sua primeira ordenança no templo.</strong> Por favor, marque a opção &quot;sim&quot; se esse for o caso.</Paragraph>
+                      <Paragraph>A estaca Porto Norte oferece uma viagem gratuita para <strong>membros recem conversos que fazem a sua primeira ordenança no templo.</strong> Por favor, marque o checkbox se esse for o caso.</Paragraph>
                     </div>
 
                     <Form.Item
                       name="isFirstTimeConvert"
                       valuePropName="checked"
                     >
-                      <Switch
-                        disabled={!isBusAvailable}
-                        checkedChildren="Sim"
-                        unCheckedChildren="Não"
-                      />
+                      <Checkbox disabled={!isBusAvailable}>Confirmo que é a minha primeira vez que vou fazer uma ordenança no templo</Checkbox>
                     </Form.Item>
 
                   </motion.div>
@@ -744,7 +756,7 @@ export const RegistrationForm = ({
           ${!isBusAvailable
             ? "opacity-30 pointer-events-none"
             : "opacity-100"
-        }`}
+          }`}
         initial={sectionAnimation.initial}
         animate={sectionAnimation.animate}
         transition={sectionTransition(0.06)}
@@ -753,54 +765,54 @@ export const RegistrationForm = ({
           Dados Pessoais
         </Title>
         <div className="flex flex-col md:flex-row gap-4">
-        <Form.Item
-          name="fullName"
-          label="Nome Completo do participante"
-          rules={[
-            {
-              required: true,
-              message: "Por favor, insira o nome completo",
-            },
-          ]}
-          className="flex-1"
-        >
-          <Input placeholder="Ex: João Silva" disabled={!isBusAvailable} />
-        </Form.Item>
+          <Form.Item
+            name="fullName"
+            label="Nome Completo do participante"
+            rules={[
+              {
+                required: true,
+                message: "Por favor, insira o nome completo",
+              },
+            ]}
+            className="flex-1"
+          >
+            <Input placeholder="Ex: João Silva" disabled={!isBusAvailable} />
+          </Form.Item>
 
-        <AnimatePresence>
-          {ageCategory === "ADULT" && (
-            <motion.div
-              key="adult-phone"
-              initial={sectionAnimation.initial}
-              animate={sectionAnimation.animate}
-              exit={sectionAnimation.exit}
-              transition={sectionTransition(0)}
-              className="flex-1"
-            >
-              <Form.Item
-                name="phone"
-                label="Número de Telefone do participante"
-                rules={[
-                  {
-                    required: true,
-                    message: "Por favor, insira o número de telefone",
-                  },
-                  {
-                    pattern: /^\+?[1-9]\d{1,14}$/,
-                    message: "Por favor, insira um número de telefone válido",
-                  },
-                ]}
+          <AnimatePresence>
+            {ageCategory === "ADULT" && (
+              <motion.div
+                key="adult-phone"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
+                className="flex-1"
               >
-                <Input
-                  placeholder="Ex: +351912345678"
-                  disabled={!isBusAvailable}
-                  maxLength={9}
-                  type="tel"
-                />
-              </Form.Item>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <Form.Item
+                  name="phone"
+                  label="Número de Telefone do participante"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Por favor, insira o número de telefone",
+                    },
+                    {
+                      pattern: /^\+?[1-9]\d{1,14}$/,
+                      message: "Por favor, insira um número de telefone válido",
+                    },
+                  ]}
+                >
+                  <Input
+                    placeholder="Ex: +351912345678"
+                    disabled={!isBusAvailable}
+                    maxLength={9}
+                    type="tel"
+                  />
+                </Form.Item>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <AnimatePresence>
           {ageCategory !== "CHILD" && (
@@ -828,102 +840,112 @@ export const RegistrationForm = ({
         <AnimatePresence>
           {(ageCategory === "CHILD" || ageCategory === "YOUTH") && (
             <>
-            <motion.div
-              key="legal-guardian"
-              initial={sectionAnimation.initial}
-              animate={sectionAnimation.animate}
-              exit={sectionAnimation.exit}
-              transition={sectionTransition(0)}
-              className="flex flex-col gap-4 border-t border-gray-200 pt-4"
-            >
-              <div className="flex flex-col ">
-              <Title level={5}>Responsável Legal do Participante</Title>
-              <Paragraph>Todos os participantes menores de 18 anos devem ter um responsável legal. Alem disso, o responsável legal deve assinar o formulário de autorização médica e permissão dos pais/responsáveis.</Paragraph>
-              </div>
-              <Form.Item
-                name="legalGuardianName"
-                label="Nome do completo do responsável legal"
-                rules={[
-                  {
-                    required: true,
-                    message: "Por favor, insira o nome do responsável legal",
-                  },
-                ]}
+              <motion.div
+                key="legal-guardian"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
+                className="flex flex-col gap-4 border-t border-gray-200 pt-4"
               >
-                <Input
-                  placeholder="Ex: Maria Silva"
-                  disabled={!isBusAvailable}
-                />
-              </Form.Item>
+                <div className="flex flex-col ">
+                  <Title level={5}>Responsável Legal do Participante</Title>
+                  <Paragraph>Todos os participantes menores de 18 anos devem ter um responsável legal. Alem disso, o responsável legal deve assinar o formulário de autorização médica e permissão dos pais/responsáveis.</Paragraph>
+                </div>
+                <Form.Item
+                  name="legalGuardianName"
+                  label="Nome do completo do responsável legal"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Por favor, insira o nome do responsável legal",
+                    },
+                  ]}
+                >
+                  <Input
+                    placeholder="Ex: Maria Silva"
+                    disabled={!isBusAvailable}
+                  />
+                </Form.Item>
 
-              <div className="flex flex-col md:flex-row gap-4">
-              <Form.Item
-                name="legalGuardianEmail"
-                label="Email do responsável legal"
-                rules={[
-                  {
-                    type: "email",
-                    message: "Por favor, insira um email válido",
-                  },
-                ]}
-                className="flex-1"
+                <div className="flex flex-col md:flex-row gap-4">
+                  <Form.Item
+                    name="legalGuardianEmail"
+                    label="Email do responsável legal (opcional)"
+                    rules={[
+                      {
+                        validator: (_, value) => {
+                          if (!value || String(value).trim() === "") {
+                            return Promise.resolve();
+                          }
+                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                          if (!emailRegex.test(String(value))) {
+                            return Promise.reject(
+                              new Error("Por favor, insira um email válido")
+                            );
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                    className="flex-1"
+                  >
+                    <Input
+                      placeholder="Ex: maria@exemplo.pt"
+                      disabled={!isBusAvailable}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="legalGuardianPhone"
+                    label="Telefone do responsável legal"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Por favor, insira o número de telefone do responsável legal",
+                      },
+                      {
+                        pattern: /^\+?[1-9]\d{1,14}$/,
+                        message: "Por favor, insira um número de telefone válido",
+                      },
+                    ]}
+                    className="flex-1"
+                  >
+                    <Input
+                      placeholder="Ex: 912345678"
+                      disabled={!isBusAvailable}
+                      maxLength={9}
+                      type="tel"
+                    />
+                  </Form.Item>
+                </div>
+              </motion.div>
+
+              <motion.div
+                key="medical-release-form"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
               >
-                <Input
-                  placeholder="Ex: maria@exemplo.pt"
-                  disabled={!isBusAvailable}
+                <Alert
+                  title="Formulário de Autorização Médica"
+                  description={
+                    <div>
+                      <Paragraph>
+                        Por favor, descarregue e complete o formulário de autorização
+                        médica e permissão dos pais/responsáveis. Este formulário
+                        deve ser entregue completo no dia da viagem.
+                      </Paragraph>
+
+                      <Button type="primary" href="/documents/2017_parental_or_guardian_permission_medical_release.pdf" target="_blank">Descarregar formulário PDF</Button>
+                    </div>
+                  }
+                  type="info"
+                  showIcon
                 />
-              </Form.Item>
-
-              <Form.Item
-                name="legalGuardianPhone"
-                label="Telefone do responsável legal"
-                rules={[
-                  {
-                    required: true,
-                    message: "Por favor, insira o número de telefone do responsável legal",
-                  },
-                  {
-                    pattern: /^\+?[1-9]\d{1,14}$/,
-                    message: "Por favor, insira um número de telefone válido",
-                  },
-                ]}
-                className="flex-1"
-              >
-                <Input
-                  placeholder="Ex: 912345678"
-                  disabled={!isBusAvailable}
-                  maxLength={9}
-                  type="tel"
-                />
-              </Form.Item>
-              </div>
-            </motion.div>
-
-            <motion.div
-              key="medical-release-form"
-              initial={sectionAnimation.initial}
-              animate={sectionAnimation.animate}
-              exit={sectionAnimation.exit}
-              transition={sectionTransition(0)}
-            >
-            <Alert
-            title="Formulário de Autorização Médica"
-            description={
-              <div>
-                <Paragraph>
-                  Por favor, descarregue e complete o formulário de autorização
-                  médica e permissão dos pais/responsáveis. Este formulário
-                  deve ser entregue completo no dia da viagem.
-                </Paragraph>
-
-                <Button type="primary" href="/documents/2017_parental_or_guardian_permission_medical_release.pdf" target="_blank">Descarregar formulário PDF</Button>
-              </div>
-            }
-            type="info"
-            showIcon
-          />
-          </motion.div>
-          </>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
@@ -937,22 +959,18 @@ export const RegistrationForm = ({
                 animate={sectionAnimation.animate}
                 exit={sectionAnimation.exit}
                 transition={sectionTransition(0)}
-                className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col sm:flex-row justify-between"
+                className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col"
               >
                 <div className="flex flex-col gap-2">
-                  <Title level={5}>És oficiante do templo?</Title>
-                  <Paragraph>Se és um oficiante, marca esta opção.</Paragraph>
+                  <Title level={5}>És oficiante do templo em Portugal?</Title>
+                  <Paragraph>Os oficiantes do templo devem ter sido ordenados no templo de Portugal. Se for oficiante de outro templo não deve marcar esta opção.</Paragraph>
                 </div>
 
                 <Form.Item
                   name="isOfficiator"
                   valuePropName="checked"
                 >
-                  <Switch
-                    disabled={!isBusAvailable}
-                    checkedChildren="Sim"
-                    unCheckedChildren="Não"
-                  />
+                  <Checkbox disabled={!isBusAvailable}>Confirmo que sou oficiante do templo em Portugal</Checkbox>
                 </Form.Item>
               </motion.div>
             )}
@@ -974,11 +992,14 @@ export const RegistrationForm = ({
             exit={sectionAnimation.exit}
             transition={sectionTransition(0.12)}
           >
-            <Title level={4} className="mb-4">
-              Ordenanças
-            </Title>
+            <div className="flex flex-col gap-2">
+              <Title level={4}>
+                Ordenanças
+              </Title>
 
-      
+              <Paragraph>Por favor, selecione pelo menos uma ordenança que deseja realizar.<strong> Caso não venha a realizar nenhuma, marque a última opção.</strong></Paragraph>
+            </div>
+
             <OrdinancesListField
               form={form as unknown as FormInstance<{ ordinances: OrdinanceFormValue[] }>}
               selectedCaravanId={selectedCaravanId}
@@ -988,8 +1009,37 @@ export const RegistrationForm = ({
               isFirstTimeConvert={isFirstTimeConvert}
               hasLessThanOneYearAsMember={hasLessThanOneYearAsMember}
               ordinancesList={ordinancesList}
+              skipsOrdinances={skipsOrdinances ?? false}
               disabled={!isBusAvailable}
             />
+
+            <Divider />
+
+
+            <AnimatePresence>
+              <motion.div
+                key="is-officiator"
+                initial={sectionAnimation.initial}
+                animate={sectionAnimation.animate}
+                exit={sectionAnimation.exit}
+                transition={sectionTransition(0)}
+                className="p-4 rounded-2xl bg-white border border-gray-200 flex flex-col"
+              >
+
+                <div className="flex flex-col gap-2">
+                  <Title level={5}>Não vou fazer ordenanças</Title>
+                  <Paragraph>Por favor, marque esta opção se não deseja fazer nenhuma ordenança nesta viagem.</Paragraph>
+                </div>
+
+                <Form.Item
+                  name="skipsOrdinances"
+                  valuePropName="checked"
+                  initialValue={false}
+                >
+                  <Checkbox disabled={!isBusAvailable}>Confirmo que não vou fazer nenhuma ordenança</Checkbox>
+                </Form.Item>
+              </motion.div>
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1074,8 +1124,8 @@ export const RegistrationForm = ({
                 ? "A inscrever..."
                 : "A atualizar..."
               : mode === "create"
-              ? "Me inscrever"
-              : "Atualizar inscrição"}
+                ? "Me inscrever"
+                : "Atualizar inscrição"}
           </Button>
 
           <Button

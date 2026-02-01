@@ -125,7 +125,7 @@ export default function HomePage() {
           transition={sectionTransition(0)}
         >
           <Title level={3} className="text-2xl sm:text-3xl md:text-4xl">
-            Lista de caravanas
+            Lista de viagens ao templo
           </Title>
         </motion.div>
       </AnimatePresence>
@@ -150,7 +150,7 @@ export default function HomePage() {
             transition={sectionTransition(0.1)}
             className="p-8 rounded-2xl border border-gray-200 bg-white flex items-center justify-center gap-4"
           >
-            <Empty description="Nenhuma caravana programada" />
+            <Empty description="Nenhuma viagem ao templo programada" />
           </motion.div>
         )}
       </AnimatePresence>

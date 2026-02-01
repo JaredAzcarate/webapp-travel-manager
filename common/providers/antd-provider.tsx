@@ -51,6 +51,7 @@ export function AntdProvider({ children }: AntdProviderProps) {
           },
         },
       }}
+      virtual={false}
     >
       <App>{children}</App>
     </ConfigProvider>
