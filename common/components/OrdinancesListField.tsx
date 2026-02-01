@@ -78,21 +78,16 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   const handleSelectOrdinance = (ordinanceId: string) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
 
-    // If can select multiple sessions, initialize 3 sessions at once
+    // If can select multiple sessions, initialize 2 sessions at once
     if (canSelectMultipleSessions) {
       const sessionsCount = getSelectedSessionsCount(ordinanceId);
-      if (sessionsCount >= 3) {
+      if (sessionsCount >= 2) {
         return;
       }
-      // If not selected yet, add 3 sessions at once
+      // If not selected yet, add 2 sessions at once
       if (sessionsCount === 0) {
         const newOrdinances = [
           ...currentOrdinances,
-          {
-            ordinanceId,
-            slot: undefined,
-            isPersonal: false,
-          },
           {
             ordinanceId,
             slot: undefined,
