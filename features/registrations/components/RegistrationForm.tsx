@@ -70,6 +70,7 @@ interface FormValues {
   isFirstTimeConvert: boolean;
   hasLessThanOneYearAsMember: boolean;
   privacyPolicyAccepted: boolean;
+  _testSelect?: string;
 }
 
 interface RegistrationFormProps {
@@ -669,6 +670,18 @@ export const RegistrationForm = ({
               label: chapel.name,
               value: chapel.id,
             }))}
+          />
+        </Form.Item>
+
+        <Form.Item name="_testSelect" label="Teste (select simples)">
+          <Select
+            placeholder="Selecione uma opção"
+            allowClear
+            options={[
+              { label: "Opção A", value: "a" },
+              { label: "Opção B", value: "b" },
+              { label: "Opção C", value: "c" },
+            ]}
           />
         </Form.Item>
 
