@@ -25,8 +25,8 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useSearchParams } from "next/navigation";
-import { FilePdf, List, Plus } from "phosphor-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CaretLeft, FilePdf, List, Plus } from "phosphor-react";
 import { useMemo, useState } from "react";
 import { WaitlistDrawer } from "./WaitlistDrawer";
 
@@ -39,7 +39,7 @@ export const CaravanDistributionView = () => {
   const { ordinances } = useOrdinances();
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [waitlistDrawerOpen, setWaitlistDrawerOpen] = useState(false);
-
+  const router = useRouter();
   const ordinanceIdToNameMap = useMemo(() => {
     const map = new Map<string, string>();
     ordinances.forEach((ordinance) => {
@@ -93,9 +93,13 @@ export const CaravanDistributionView = () => {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <Title level={4} style={{ margin: 0 }}>
-          Distribuição de Passageiros
-        </Title>
+        <div className="flex items-center gap-4">
+          <Button icon={<CaretLeft size={16} />} onClick={() => router.push("/admin/caravans")}>
+          </Button>
+          <Title level={4} style={{ margin: 0 }}>
+            Inscrições da viagem
+          </Title>
+        </div>
         {selectedCaravan && (
           <Space>
             <Button icon={<List size={16} />} onClick={handleOpenWaitlist}>
