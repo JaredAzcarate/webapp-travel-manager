@@ -1,6 +1,6 @@
 "use client";
 
-import { Modal, Typography } from "antd";
+import { Button, Modal, Typography } from "antd";
 
 const { Title, Paragraph } = Typography;
 
@@ -34,7 +34,18 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>2. Dados Coletados</Title>
+          <Title level={4}>2. Objetivo e Uso da Aplicação</Title>
+          <Paragraph>
+            O uso desta aplicação tem como objetivo facilitar a organização das
+            viagens ao templo de uma estaca da Igreja de Jesus Cristo dos Santos
+            dos Últimos Dias. Não há qualquer fim comercial. O único objetivo é
+            ajudar as lideranças a facilitar o processo e garantir ordem e gestão
+            em cada viagem. Tudo visa ajudar na obra de Deus.
+          </Paragraph>
+        </div>
+
+        <div>
+          <Title level={4}>3. Dados Coletados</Title>
           <Paragraph>
             Coletamos os seguintes dados pessoais para fins de gestão da
             viagem:
@@ -51,7 +62,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>3. Finalidade do Tratamento</Title>
+          <Title level={4}>4. Finalidade do Tratamento</Title>
           <Paragraph>
             Os dados coletados são utilizados exclusivamente para:
           </Paragraph>
@@ -65,7 +76,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>4. Base Legal (RGPD)</Title>
+          <Title level={4}>5. Base Legal (RGPD)</Title>
           <Paragraph>
             O tratamento dos seus dados pessoais baseia-se no seu consentimento
             explícito, conforme o Regulamento Geral sobre a Proteção de Dados
@@ -76,7 +87,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>5. Conservação dos Dados</Title>
+          <Title level={4}>6. Conservação dos Dados</Title>
           <Paragraph>
             Os dados pessoais serão conservados apenas pelo tempo necessário
             para cumprir as finalidades para as quais foram coletados, ou
@@ -85,7 +96,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>6. Direitos do Titular dos Dados</Title>
+          <Title level={4}>7. Direitos do Titular dos Dados</Title>
           <Paragraph>
             De acordo com o RGPD, você tem os seguintes direitos:
           </Paragraph>
@@ -122,7 +133,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>7. Segurança dos Dados</Title>
+          <Title level={4}>8. Segurança dos Dados</Title>
           <Paragraph>
             Implementamos medidas técnicas e organizacionais adequadas para
             proteger os seus dados pessoais contra acesso não autorizado,
@@ -131,7 +142,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>8. Partilha de Dados</Title>
+          <Title level={4}>9. Partilha de Dados</Title>
           <Paragraph>
             Os seus dados pessoais não serão partilhados com terceiros, exceto:
           </Paragraph>
@@ -146,7 +157,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>9. Sistema Não Oficial</Title>
+          <Title level={4}>10. Sistema Não Oficial</Title>
           <Paragraph className="font-semibold text-gray-700">
             IMPORTANTE: Este sistema não é oficial da Igreja de Jesus Cristo
             dos Santos dos Últimos Dias. É uma ferramenta desenvolvida
@@ -155,7 +166,37 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>10. Limitação de Responsabilidade</Title>
+          <Title level={4}>11. Uso em Outras Estacas</Title>
+          <Paragraph>
+            Se desejar utilizar esta aplicação noutra estaca, basta solicitar
+            informação ao autor:{" "}
+            <Button
+              type="link"
+              href="https://www.linkedin.com/in/jared-azcarate/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-0 h-auto font-normal"
+              style={{ padding: 0, height: "auto" }}
+            >
+              LinkedIn
+            </Button>{" "}
+            ou{" "}
+            <Button
+              type="link"
+              href="https://github.com/JaredAzcarate"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-0 h-auto font-normal"
+              style={{ padding: 0, height: "auto" }}
+            >
+              GitHub
+            </Button>
+            .
+          </Paragraph>
+        </div>
+
+        <div>
+          <Title level={4}>12. Limitação de Responsabilidade</Title>
           <Paragraph>
             O desenvolvedor deste sistema e a Igreja de Jesus Cristo dos Santos
             dos Últimos Dias não se responsabilizam por:
@@ -188,7 +229,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>11. Alterações à Política</Title>
+          <Title level={4}>13. Alterações à Política</Title>
           <Paragraph>
             Esta política de privacidade pode ser atualizada periodicamente. A
             versão mais recente estará sempre disponível neste sistema. O uso
@@ -198,7 +239,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>12. Contacto</Title>
+          <Title level={4}>14. Contacto</Title>
           <Paragraph>
             Para questões sobre esta política de privacidade ou para exercer os
             seus direitos, entre em contacto com os gestores da viagem através
@@ -207,7 +248,7 @@ export const PrivacyPolicyModal = ({
         </div>
 
         <div>
-          <Title level={4}>13. Transferências Internacionais de Dados</Title>
+          <Title level={4}>15. Transferências Internacionais de Dados</Title>
           <Paragraph>
             Os seus dados pessoais podem ser transferidos e armazenados em servidores
             localizados fora da União Europeia, nomeadamente nos Estados Unidos da América,

@@ -125,7 +125,7 @@ export default function HomePage() {
           transition={sectionTransition(0)}
         >
           <Title level={3} className="text-2xl sm:text-3xl md:text-4xl">
-            Lista de viagens ao templo
+            Lista de viagens
           </Title>
         </motion.div>
       </AnimatePresence>

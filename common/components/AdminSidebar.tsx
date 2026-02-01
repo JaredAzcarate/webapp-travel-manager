@@ -148,12 +148,12 @@ export const AdminSidebar = () => {
 
       {/* Desktop Sidebar */}
       <Sider
-        className="hidden md:block"
+        className="hidden md:block sticky! top-0! h-screen! self-start!"
         theme="light"
       >
-        <div className="flex flex-col h-full min-h-screen justify-between p-2 gap-10">
-          {/* Logo */}
+        <div className="flex flex-col h-screen justify-between p-2 gap-10">
           <div className="flex flex-col gap-5">
+            {/* Logo */}
             <div className="flex items-center gap-3 border-b border-gray-200 py-2">
               <div className="bg-primary p-1.5 rounded-md">
                 <svg
@@ -169,6 +169,7 @@ export const AdminSidebar = () => {
                 <p className="text-xs text-gray-400">Estaca Porto Norte</p>
               </div>
             </div>
+
             {/* Menu Items */}
             <Menu
               mode="inline"

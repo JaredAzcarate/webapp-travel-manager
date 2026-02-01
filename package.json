@@ -1,6 +1,7 @@
 {
   "name": "agendamentos-do-templo",
   "version": "0.1.0",
+  "author": "Jared Azcárate (https://github.com/JaredAzcarate)",
   "private": true,
   "scripts": {
     "dev": "next dev",
