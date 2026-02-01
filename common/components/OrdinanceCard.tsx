@@ -1,9 +1,9 @@
 "use client";
 
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
-import { Button, Checkbox, Select, Tag } from "antd";
+import { Checkbox, Select, Tag } from "antd";
 import { motion } from "motion/react";
-import React from "react";
+import React, { useState } from "react";
 
 export interface OrdinanceCardProps {
   ordinance: OrdinanceWithId;
@@ -38,6 +38,8 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
   onPersonalChange,
   canSelectMultipleSessions = false,
 }) => {
+  const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
+
   const handleCardClick = () => {
     if (disabled) return;
     if (selected) {
@@ -91,6 +93,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.2 }}
           className="flex flex-col gap-3 mt-2"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
           {canSelectMultipleSessions && selectedSessions ? (
@@ -99,7 +102,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                 const usedSlots = selectedSessions
                   .filter((s, idx) => idx !== index && s.slot)
                   .map((s) => s.slot!);
-                
+
                 const availableSlotsForThis = availableSlots.filter(
                   (slot) => !usedSlots.includes(slot)
                 );
@@ -114,13 +117,15 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                       allowClear
                       disabled={disabled}
                       value={session.slot}
+                      open={openSlotKey === `multi-${index}`}
+                      onOpenChange={(open) => setOpenSlotKey(open ? `multi-${index}` : null)}
+                      onSelect={() => setOpenSlotKey(null)}
                       onChange={(value) => onSlotChange(value, index)}
                       options={availableSlotsForThis.map((slot) => {
                         const slotAvailability = slotAvailabilityMap?.[slot];
-                        const isSlotDisabled = slotAvailability 
+                        const isSlotDisabled = slotAvailability
                           ? slotAvailability.available <= 0 && !slotAvailability.loading
                           : false;
-                        
                         return {
                           label: slot,
                           value: slot,
@@ -149,13 +154,15 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                   allowClear
                   disabled={disabled}
                   value={selectedSlot}
+                  open={openSlotKey === "single"}
+                  onOpenChange={(open) => setOpenSlotKey(open ? "single" : null)}
+                  onSelect={() => setOpenSlotKey(null)}
                   onChange={(value) => onSlotChange(value)}
                   options={availableSlots.map((slot) => {
                     const slotAvailability = slotAvailabilityMap?.[slot];
-                    const isSlotDisabled = slotAvailability 
+                    const isSlotDisabled = slotAvailability
                       ? slotAvailability.available <= 0 && !slotAvailability.loading
                       : false;
-                    
                     return {
                       label: slot,
                       value: slot,

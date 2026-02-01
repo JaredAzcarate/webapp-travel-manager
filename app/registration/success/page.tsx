@@ -52,20 +52,20 @@ export default function RegistrationSuccessPage() {
       content: (
         <div className="flex flex-col gap-2">
 
-        <span>
-          Após realizar o pagamento, pode confirmar através da página de
-          confirmação de pagamento.
-        </span>
-        <div>
-        <Button
-          type="primary"
-          size="middle"
-          onClick={() => router.push("/confirm-payment")}
-        >
-          Confirmar pagamento
-        </Button>
+          <span>
+            Após realizar o pagamento, pode confirmar através da página de
+            confirmação de pagamento.
+          </span>
+          <div>
+            <Button
+              type="primary"
+              size="middle"
+              onClick={() => router.push("/confirm-payment")}
+            >
+              Confirmar pagamento
+            </Button>
 
-        </div>
+          </div>
         </div>
       ),
     },
@@ -75,21 +75,21 @@ export default function RegistrationSuccessPage() {
       content: (
         <div className="flex flex-col gap-2">
 
-        <span>
-          Preparamos um instrutivo para a viagem que pode ser descarregado abaixo.
-        </span>
-        <div>
+          <span>
+            Preparamos um instrutivo para a viagem que pode ser descarregado abaixo.
+          </span>
+          <div>
 
-        <Button
-          type="default"
-          size="middle"
-          href="/documents/Instruções.pdf"
-          target="_blank"
-        >
-          Baixar instrutivo
-        </Button>
+            <Button
+              type="default"
+              size="middle"
+              href="/documents/Instruções.pdf"
+              target="_blank"
+            >
+              Ver instruções
+            </Button>
 
-        </div>
+          </div>
         </div>
       ),
     },

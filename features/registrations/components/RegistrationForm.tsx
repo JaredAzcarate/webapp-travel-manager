@@ -91,6 +91,8 @@ export const RegistrationForm = ({
   const router = useRouter();
   const [form] = Form.useForm<FormValues>();
   const [privacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
+  const [caravanSelectOpen, setCaravanSelectOpen] = useState(false);
+  const [chapelSelectOpen, setChapelSelectOpen] = useState(false);
   const hasShownSuccessRef = useRef(false);
   const hasShownErrorRef = useRef(false);
   const prevAgeCategoryRef = useRef<AgeCategory | undefined>(undefined);
@@ -236,27 +238,28 @@ export const RegistrationForm = ({
       prevChapelIdRef.current !== selectedChapelId
     ) {
       const caravanId = form.getFieldValue("caravanId");
-      // Set chapelId first to avoid temporary undefined state
-      form.setFieldsValue({
-        caravanId,
-        chapelId: selectedChapelId,
-      });
-      // Then reset other fields
-      form.setFieldsValue({
-        ageCategory: undefined,
-        isOfficiator: false,
-        isFirstTimeConvert: false,
-        hasLessThanOneYearAsMember: false,
-        skipsOrdinances: false,
-        privacyPolicyAccepted: false,
-        ordinances: [],
-        fullName: undefined,
-        phone: undefined,
-        gender: undefined,
-        legalGuardianName: undefined,
-        legalGuardianEmail: undefined,
-        legalGuardianPhone: undefined,
-      });
+      // Defer form updates to next tick so the chapel Select dropdown can close first
+      const timer = setTimeout(() => {
+        form.setFieldsValue({
+          caravanId,
+          chapelId: selectedChapelId,
+          ageCategory: undefined,
+          isOfficiator: false,
+          isFirstTimeConvert: false,
+          hasLessThanOneYearAsMember: false,
+          skipsOrdinances: false,
+          privacyPolicyAccepted: false,
+          ordinances: [],
+          fullName: undefined,
+          phone: undefined,
+          gender: undefined,
+          legalGuardianName: undefined,
+          legalGuardianEmail: undefined,
+          legalGuardianPhone: undefined,
+        });
+      }, 0);
+      prevChapelIdRef.current = selectedChapelId;
+      return () => clearTimeout(timer);
     }
     prevChapelIdRef.current = selectedChapelId;
   }, [selectedChapelId, form]);
@@ -360,18 +363,15 @@ export const RegistrationForm = ({
   useEffect(() => {
     if (mode === "create" && created && !hasShownSuccessRef.current) {
       hasShownSuccessRef.current = true;
-      notification.success({
-        title: "Inscrição realizada com sucesso!",
-        description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
-        duration: 3,
-      });
 
-      // Add a small delay before redirecting to allow the notification to be visible
-      const redirectTimer = setTimeout(() => {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          // Reset form only if onSuccess is not provided
+      // When onSuccess is provided, parent handles notification and redirect (called from handleSubmit)
+      if (!onSuccess) {
+        notification.success({
+          title: "Inscrição realizada com sucesso!",
+          description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
+          duration: 3,
+        });
+        const redirectTimer = setTimeout(() => {
           form.resetFields();
           if (propCaravanId) {
             form.setFieldsValue({
@@ -379,10 +379,9 @@ export const RegistrationForm = ({
               ordinances: [],
             });
           }
-        }
-      }, 500);
-
-      return () => clearTimeout(redirectTimer);
+        }, 500);
+        return () => clearTimeout(redirectTimer);
+      }
     }
     if (!created && !isCreating) {
       hasShownSuccessRef.current = false;
@@ -529,7 +528,6 @@ export const RegistrationForm = ({
 
       try {
         await createRegistrationAsync(input);
-
         if (onSuccess) {
           onSuccess();
         }
@@ -644,6 +642,9 @@ export const RegistrationForm = ({
               placeholder="Selecione uma viagem"
               loading={loadingCaravans}
               disabled={!isBusAvailable}
+              open={caravanSelectOpen}
+              onOpenChange={setCaravanSelectOpen}
+              onSelect={() => setCaravanSelectOpen(false)}
               options={activeCaravans.map((caravan) => ({
                 label: caravan.name,
                 value: caravan.id,
@@ -660,8 +661,12 @@ export const RegistrationForm = ({
           ]}
         >
           <Select
-            placeholder="Selecione uma capela"
+            placeholder={loadingChapels ? "A carregar..." : "Selecione uma capela"}
             loading={loadingChapels}
+            disabled={loadingChapels}
+            open={chapelSelectOpen}
+            onOpenChange={setChapelSelectOpen}
+            onSelect={() => setChapelSelectOpen(false)}
             options={chapels.map((chapel) => ({
               label: chapel.name,
               value: chapel.id,
@@ -1156,10 +1161,10 @@ export const RegistrationForm = ({
           >
             {isPending
               ? mode === "create"
-                ? "A inscrever..."
+                ? "A enviar inscrição..."
                 : "A atualizar..."
               : mode === "create"
-                ? "Me inscrever"
+                ? "Enviar inscrição"
                 : "Atualizar inscrição"}
           </Button>
 
