@@ -363,18 +363,15 @@ export const RegistrationForm = ({
   useEffect(() => {
     if (mode === "create" && created && !hasShownSuccessRef.current) {
       hasShownSuccessRef.current = true;
-      notification.success({
-        title: "Inscrição realizada com sucesso!",
-        description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
-        duration: 3,
-      });
 
-      // Add a small delay before redirecting to allow the notification to be visible
-      const redirectTimer = setTimeout(() => {
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          // Reset form only if onSuccess is not provided
+      // When onSuccess is provided, parent handles notification and redirect (called from handleSubmit)
+      if (!onSuccess) {
+        notification.success({
+          title: "Inscrição realizada com sucesso!",
+          description: "A sua inscrição foi registrada. Será redirecionado para a página de confirmação.",
+          duration: 3,
+        });
+        const redirectTimer = setTimeout(() => {
           form.resetFields();
           if (propCaravanId) {
             form.setFieldsValue({
@@ -382,10 +379,9 @@ export const RegistrationForm = ({
               ordinances: [],
             });
           }
-        }
-      }, 500);
-
-      return () => clearTimeout(redirectTimer);
+        }, 500);
+        return () => clearTimeout(redirectTimer);
+      }
     }
     if (!created && !isCreating) {
       hasShownSuccessRef.current = false;
@@ -532,7 +528,6 @@ export const RegistrationForm = ({
 
       try {
         await createRegistrationAsync(input);
-
         if (onSuccess) {
           onSuccess();
         }

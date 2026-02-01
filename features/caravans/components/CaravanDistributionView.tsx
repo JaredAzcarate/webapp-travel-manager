@@ -453,6 +453,15 @@ const BusDistributionCard = ({
           );
         }
 
+        // Tag "Oficiante" si es oficiante del templo
+        if (record.isOfficiator) {
+          tags.push(
+            <Tag key="oficiante" color="orange">
+              Oficiante
+            </Tag>
+          );
+        }
+
         return (
           <div className="flex flex-col gap-1 w-40">
             <span className="text-sm font-semibold">{record.fullName}</span>
