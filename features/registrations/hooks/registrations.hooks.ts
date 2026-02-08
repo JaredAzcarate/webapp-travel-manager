@@ -396,6 +396,8 @@ export const useFilteredRegistrations = (
   filters?: {
     chapelId?: string;
     paymentStatus?: string;
+    participationStatus?: string;
+    withOrdinances?: boolean;
   }
 ) => {
   const {

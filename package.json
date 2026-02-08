@@ -17,6 +17,8 @@
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "firebase": "^12.6.0",
     "firebase-admin": "^13.6.0",
     "jspdf": "^3.0.4",
@@ -30,7 +32,6 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
-    "firebase-tools": "^13.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pdfkit": "^0.17.3",
@@ -38,6 +39,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^16.0.10",
+    "firebase-tools": "^13.0.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

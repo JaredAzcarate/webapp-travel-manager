@@ -7,6 +7,8 @@ export async function GET(request: NextRequest) {
     const caravanId = searchParams.get("caravanId");
     const chapelId = searchParams.get("chapelId") || undefined;
     const paymentStatus = searchParams.get("paymentStatus") || undefined;
+    const participationStatus = searchParams.get("participationStatus") || undefined;
+    const withOrdinances = searchParams.get("withOrdinances") === "true";
 
     if (!caravanId) {
       return NextResponse.json(
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const registrations = await registrationRepositoryServer.getFiltered(
       caravanId,
-      { chapelId, paymentStatus }
+      { chapelId, paymentStatus, participationStatus, withOrdinances }
     );
 
     return NextResponse.json(
