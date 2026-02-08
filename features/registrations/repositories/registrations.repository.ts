@@ -451,12 +451,16 @@ export class RegistrationRepository {
     filters?: {
       chapelId?: string;
       paymentStatus?: string;
+      participationStatus?: string;
+      withOrdinances?: boolean;
     }
   ): Promise<RegistrationWithId[]> {
     const params = new URLSearchParams({
       caravanId,
       ...(filters?.chapelId && { chapelId: filters.chapelId }),
       ...(filters?.paymentStatus && { paymentStatus: filters.paymentStatus }),
+      ...(filters?.participationStatus && { participationStatus: filters.participationStatus }),
+      ...(filters?.withOrdinances === true && { withOrdinances: "true" }),
     });
 
     const response = await fetch(

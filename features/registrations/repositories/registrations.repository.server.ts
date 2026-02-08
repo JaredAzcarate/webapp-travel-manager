@@ -214,7 +214,12 @@ export class RegistrationRepositoryServer {
 
   async getFiltered(
     caravanId: string,
-    filters?: { chapelId?: string; paymentStatus?: string }
+    filters?: {
+      chapelId?: string;
+      paymentStatus?: string;
+      participationStatus?: string;
+      withOrdinances?: boolean;
+    }
   ): Promise<RegistrationWithId[]> {
     let query = adminDb
       .collection(this.collectionName)
@@ -226,14 +231,23 @@ export class RegistrationRepositoryServer {
     if (filters?.paymentStatus) {
       query = query.where('paymentStatus', '==', filters.paymentStatus) as Query;
     }
+    if (filters?.participationStatus) {
+      query = query.where('participationStatus', '==', filters.participationStatus) as Query;
+    }
 
     const snapshot = await query.get();
-    return snapshot.docs.map((doc) =>
+    let result = snapshot.docs.map((doc) =>
       this.migrateRegistration({
         id: doc.id,
         ...doc.data(),
       })
     );
+
+    if (filters?.withOrdinances === true) {
+      result = result.filter((r) => r.ordinances?.length > 0);
+    }
+
+    return result;
   }
 
   async countActiveByBus(
