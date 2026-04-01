@@ -1,7 +1,8 @@
 "use client";
 
+import { doTimeSlotsOverlap } from "@/common/utils/ordinances.utils";
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
-import { Checkbox, Select, Tag } from "antd";
+import { Button, Checkbox, Select, Tag } from "antd";
 import { motion } from "motion/react";
 import React, { useState } from "react";
 
@@ -20,6 +21,7 @@ export interface OrdinanceCardProps {
   onSlotChange: (slot: string | undefined, index?: number) => void;
   onPersonalChange: (isPersonal: boolean) => void;
   canSelectMultipleSessions?: boolean;
+  onAddSecondSession?: () => void;
 }
 
 export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
@@ -37,6 +39,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
   onSlotChange,
   onPersonalChange,
   canSelectMultipleSessions = false,
+  onAddSecondSession,
 }) => {
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
 
@@ -103,9 +106,15 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                   .filter((s, idx) => idx !== index && s.slot)
                   .map((s) => s.slot!);
 
-                const availableSlotsForThis = availableSlots.filter(
-                  (slot) => !usedSlots.includes(slot)
-                );
+                const availableSlotsForThis = availableSlots.filter((slot) => {
+                  if (usedSlots.includes(slot)) return false;
+                  return !selectedSessions.some(
+                    (s, idx) =>
+                      idx !== index &&
+                      !!s.slot &&
+                      doTimeSlotsOverlap(slot, s.slot)
+                  );
+                });
 
                 return (
                   <div key={index} className="flex flex-col gap-2 p-3 border border-gray-200 rounded-lg">
@@ -142,6 +151,19 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                   </div>
                 );
               })}
+              {onAddSecondSession && selectedSessions.length === 1 && (
+                <Button
+                  type="link"
+                  className="p-0! self-start"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddSecondSession();
+                  }}
+                >
+                  Adicionar segunda sessão para esta ordenança
+                </Button>
+              )}
             </>
           ) : (
             <>

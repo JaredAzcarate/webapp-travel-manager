@@ -1,4 +1,5 @@
 import {
+  CaravanWithId,
   CreateCaravanInput,
   UpdateCaravanInput,
 } from "@/features/caravans/models/caravans.model";
@@ -145,6 +146,40 @@ export const useDeleteCaravan = () => {
     isSuccess: mutation.isSuccess,
     error: mutation.error,
   };
+};
+
+export const useUpdateCaravanOrdinanceCapacities = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      caravanId,
+      ordinanceCapacityLimits,
+    }: {
+      caravanId: string;
+      ordinanceCapacityLimits: NonNullable<
+        CaravanWithId["ordinanceCapacityLimits"]
+      >;
+    }) => {
+      const response = await fetch(
+        `/api/caravans/${caravanId}/ordinance-capacities`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ordinanceCapacityLimits }),
+        }
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Erro ao atualizar cupos");
+      }
+      const result = await response.json();
+      return result.caravan as CaravanWithId;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["caravans"] });
+      queryClient.invalidateQueries({ queryKey: ["caravans", variables.caravanId] });
+    },
+  });
 };
 
 export const useActiveCaravans = () => {

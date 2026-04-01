@@ -1,16 +1,26 @@
 # 🔒 Firestore Security Rules
 
+## Alineación con la app actual
+
+Los **ejemplos de reglas** de este documento están pensados para un modelo con **Firebase Authentication** y un documento `users/{uid}` con roles (`ADMIN`, `CHAPEL`). **El panel del repositorio usa NextAuth y la colección `admin`**, no Firebase Auth para esos usuarios. Por tanto:
+
+- Trate este archivo como **orientación y borrador**, no como descripción exacta del enforcement actual.
+- La fuente de verdad desplegada es **`firestore.rules`** en la raíz del proyecto.
+- Para auth, rutas y colecciones reales, ver **[Implementación actual](./current-implementation.md)**.
+
+---
+
 ## Configuración
 
 Las reglas de seguridad de Firestore están definidas en `firestore.rules` en la raíz del proyecto.
 
-## Reglas Básicas
+## Reglas Básicas (ejemplos orientativos)
 
-### Autenticación
+### Autenticación (modelo Firebase Auth + users)
 
-- Todas las operaciones requieren autenticación (excepto creación de registros públicos)
-- Los usuarios ADMIN tienen acceso completo
-- Los usuarios CHAPEL solo pueden ver/editar registros de su propia capilla
+- En un despliegue alineado con estos ejemplos: operaciones requieren autenticación (salvo creación pública de inscripciones donde se defina).
+- Usuarios ADMIN: acceso amplio según las reglas siguientes.
+- Usuarios CHAPEL: solo registros de su capilla (cuando `request.auth` y `users` estén enlazados así).
 
 ### Colecciones
 

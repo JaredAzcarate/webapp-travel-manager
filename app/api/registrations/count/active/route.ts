@@ -1,8 +1,14 @@
 import { adminDb } from "@/lib/firebase-admin";
+import { requirePanelSession } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const caravanId = searchParams.get("caravanId");
     const busId = searchParams.get("busId");
@@ -14,12 +20,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const snapshot = await adminDb
+    const queryRef = adminDb
       .collection("registrations")
       .where("caravanId", "==", caravanId)
       .where("busId", "==", busId)
-      .where("participationStatus", "==", "ACTIVE")
-      .get();
+      .where("participationStatus", "==", "ACTIVE");
+
+    const snapshot = await queryRef.get();
 
     const count = snapshot.size;
 

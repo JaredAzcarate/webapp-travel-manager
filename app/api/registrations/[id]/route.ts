@@ -1,5 +1,9 @@
+import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
 import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
 import { UpdateRegistrationInput } from "@/features/registrations/models/registrations.model";
+import { validateOrdinanceSelectionRules } from "@/features/registrations/services/validateOrdinanceSelections.server";
+import { denySecretaryIfWrongChapel } from "@/lib/auth/registration-access.server";
+import { requirePanelSession } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
@@ -7,8 +11,31 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const input: UpdateRegistrationInput = await request.json();
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { id } = await params;
+
+    const denied = await denySecretaryIfWrongChapel(id);
+    if (denied) {
+      return denied;
+    }
+
+    const input: UpdateRegistrationInput = await request.json();
+
+    if (auth.user.role === "SECRETARY") {
+      delete (input as { chapelId?: string }).chapelId;
+    }
+
+    const existing = await registrationRepositoryServer.getById(id);
+    const caravan = await caravanRepositoryServer.getById(existing.caravanId);
+    const mergedOrdinances =
+      input.ordinances !== undefined ? input.ordinances : existing.ordinances;
+    if (mergedOrdinances?.length) {
+      validateOrdinanceSelectionRules(mergedOrdinances, caravan);
+    }
 
     const registration = await registrationRepositoryServer.update(id, input);
 
@@ -39,7 +66,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { id } = await params;
+
+    const denied = await denySecretaryIfWrongChapel(id);
+    if (denied) {
+      return denied;
+    }
 
     await registrationRepositoryServer.delete(id);
 

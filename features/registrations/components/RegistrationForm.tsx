@@ -3,7 +3,10 @@
 import { CardRadioGroup } from "@/common/components/CardRadioGroup";
 import { OrdinancesListField } from "@/common/components/OrdinancesListField";
 import { PrivacyPolicyModal } from "@/common/components/PrivacyPolicyModal";
-import { OrdinanceFormValue } from "@/common/utils/ordinances.utils";
+import {
+  filterOrdinancesByCaravanLimits,
+  OrdinanceFormValue,
+} from "@/common/utils/ordinances.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import {
@@ -38,6 +41,7 @@ import {
 } from "antd";
 import { Timestamp } from "firebase/firestore";
 import { AnimatePresence, motion } from "motion/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -89,6 +93,10 @@ export const RegistrationForm = ({
 }: RegistrationFormProps) => {
   const { notification } = App.useApp();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isSecretaryPanel =
+    session?.user?.role === "SECRETARY" && !!session?.user?.chapelId;
+  const secretaryChapelId = session?.user?.chapelId;
   const [form] = Form.useForm<FormValues>();
   const [privacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
   const [caravanSelectOpen, setCaravanSelectOpen] = useState(false);
@@ -115,8 +123,15 @@ export const RegistrationForm = ({
   const { caravans: activeCaravans, loading: loadingCaravans } =
     useActiveCaravans();
   const { chapels, loading: loadingChapels } = useChapels();
+
+  const chapelOptions = useMemo(() => {
+    if (isSecretaryPanel && secretaryChapelId) {
+      return chapels.filter((c) => c.id === secretaryChapelId);
+    }
+    return chapels;
+  }, [chapels, isSecretaryPanel, secretaryChapelId]);
   const { busStops } = useBusStops();
-  const { ordinances } = useOrdinances();
+  const { ordinances: allOrdinances } = useOrdinances();
 
   const selectedCaravanId = Form.useWatch("caravanId", form);
   const selectedChapelId = Form.useWatch("chapelId", form);
@@ -131,6 +146,13 @@ export const RegistrationForm = ({
   const skipsOrdinances = Form.useWatch("skipsOrdinances", form);
 
   const { caravan: selectedCaravan } = useCaravan(selectedCaravanId || "");
+
+  const ordinances = useMemo(() => {
+    if (!selectedCaravan) {
+      return [];
+    }
+    return filterOrdinancesByCaravanLimits(selectedCaravan, allOrdinances);
+  }, [selectedCaravan, allOrdinances]);
 
   const assignedBusId = useMemo(() => {
     if (!selectedChapelId || !selectedCaravan || !busStops.length) return null;
@@ -320,6 +342,12 @@ export const RegistrationForm = ({
       });
     }
   }, [mode, propCaravanId, form]);
+
+  useEffect(() => {
+    if (mode === "create" && isSecretaryPanel && secretaryChapelId) {
+      form.setFieldsValue({ chapelId: secretaryChapelId });
+    }
+  }, [mode, isSecretaryPanel, secretaryChapelId, form]);
 
   useEffect(() => {
     if (mode === "create" && assignedBusId && selectedChapelId) {
@@ -663,11 +691,11 @@ export const RegistrationForm = ({
           <Select
             placeholder={loadingChapels ? "A carregar..." : "Selecione uma capela"}
             loading={loadingChapels}
-            disabled={loadingChapels}
+            disabled={loadingChapels || isSecretaryPanel}
             open={chapelSelectOpen}
             onOpenChange={setChapelSelectOpen}
             onSelect={() => setChapelSelectOpen(false)}
-            options={chapels.map((chapel) => ({
+            options={chapelOptions.map((chapel) => ({
               label: chapel.name,
               value: chapel.id,
             }))}

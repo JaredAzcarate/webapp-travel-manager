@@ -1,3 +1,4 @@
+import type { CaravanWithId } from "@/features/caravans/models/caravans.model";
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
 import { AgeCategory } from "@/features/registrations/models/registrations.model";
 
@@ -99,11 +100,11 @@ export const getAvailableSlots = (
 
   let availableSlotsList = Array.from(slotSet);
 
-  // Filter out slots that overlap with already selected ordinances
+  // Filter out slots that overlap with any already selected session (including a second session of this ordinance)
   if (selectedOrdinances.length > 0) {
     availableSlotsList = availableSlotsList.filter((slot) => {
       return !selectedOrdinances.some((selected) => {
-        if (!selected.slot || selected.ordinanceId === ordinance.id) return false;
+        if (!selected.slot) return false;
         return doTimeSlotsOverlap(slot, selected.slot);
       });
     });
@@ -111,3 +112,30 @@ export const getAvailableSlots = (
 
   return availableSlotsList;
 };
+
+/**
+ * Keeps only ordinances and sessions that exist in the caravan's capacity limits
+ * (public registration must match this trip's configuration).
+ */
+export function filterOrdinancesByCaravanLimits(
+  caravan: CaravanWithId,
+  allOrdinances: OrdinanceWithId[]
+): OrdinanceWithId[] {
+  const limits = caravan.ordinanceCapacityLimits;
+  if (!limits || Object.keys(limits).length === 0) {
+    return [];
+  }
+
+  return allOrdinances
+    .filter(
+      (o) => limits[o.id] && Object.keys(limits[o.id] || {}).length > 0
+    )
+    .map((o) => {
+      const allowedSlots = new Set(Object.keys(limits[o.id] || {}));
+      const sessions = (o.sessions || []).filter(
+        (s) => s.slot && allowedSlots.has(s.slot)
+      );
+      return { ...o, sessions };
+    })
+    .filter((o) => o.sessions.length > 0);
+}

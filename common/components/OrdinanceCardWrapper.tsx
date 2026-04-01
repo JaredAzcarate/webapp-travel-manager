@@ -23,6 +23,7 @@ export interface OrdinanceCardWrapperProps {
   onSlotChange: (slot: string | undefined, index?: number) => void;
   onPersonalChange: (isPersonal: boolean) => void;
   canSelectMultipleSessions?: boolean;
+  onAddSecondSession?: () => void;
 }
 
 export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
@@ -39,6 +40,7 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
   onSlotChange,
   onPersonalChange,
   canSelectMultipleSessions = false,
+  onAddSecondSession,
 }) => {
   const selectedSlot = selectedOrdinance?.slot;
   const isPersonal = selectedOrdinance?.isPersonal ?? false;
@@ -46,13 +48,8 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
 
   // Get available slots for this ordinance
   const availableSlots = useMemo(() => {
-    return getAvailableSlots(
-      ordinance,
-      gender,
-      ordinancesList.filter(
-        (ord) => ord.ordinanceId && ord.ordinanceId !== ordinance.id
-      )
-    );
+    const selectedWithSlots = ordinancesList.filter((ord) => ord.slot);
+    return getAvailableSlots(ordinance, gender, selectedWithSlots);
   }, [ordinance, gender, ordinancesList]);
 
   // Get availability info for selected slot
@@ -115,6 +112,7 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
       onSlotChange={onSlotChange}
       onPersonalChange={onPersonalChange}
       canSelectMultipleSessions={canSelectMultipleSessions}
+      onAddSecondSession={onAddSecondSession}
     />
   );
 };

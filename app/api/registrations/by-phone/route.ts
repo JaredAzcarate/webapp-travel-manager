@@ -1,4 +1,6 @@
 import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
+import { filterRegistrationsForPanelUser } from "@/lib/auth/registration-access.server";
+import { getPanelSessionUser } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -14,10 +16,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const registrations = await registrationRepositoryServer.getByPhone(
+    let registrations = await registrationRepositoryServer.getByPhone(
       phone,
       caravanId
     );
+
+    const user = await getPanelSessionUser();
+    if (user) {
+      registrations = filterRegistrationsForPanelUser(user, registrations);
+    }
 
     return NextResponse.json({ registrations }, { status: 200 });
   } catch (error) {

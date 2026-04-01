@@ -11,6 +11,10 @@ import { AgeCategory } from "@/features/registrations/models/registrations.model
 import { Form, FormInstance, Input } from "antd";
 import React, { useEffect, useMemo } from "react";
 
+const MAX_DISTINCT_ORDINANCE_TYPES = 3;
+const MAX_SESSIONS_PER_ORDINANCE = 2;
+const MAX_TOTAL_SESSION_ROWS = 6;
+
 interface FormValuesWithOrdinances {
   ordinances: OrdinanceFormValue[];
 }
@@ -51,133 +55,108 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
     );
   }, [ordinances, gender, ageCategory, isFirstTimeConvert, hasLessThanOneYearAsMember]);
 
-  // Check if user can select multiple sessions of the same ordinance (only Batistério for YOUTH or members with less than 1 year)
-  const canSelectMultipleSessions = useMemo(() => {
-    return (
-      (ageCategory === "YOUTH" || hasLessThanOneYearAsMember) &&
-      availableOrdinances.length === 1 &&
-      availableOrdinances[0]?.name.toLowerCase().includes("batistério")
-    );
-  }, [ageCategory, hasLessThanOneYearAsMember, availableOrdinances]);
+  const allowTwoSessionsPerOrdinance = !skipsOrdinances;
 
-  // Get selected ordinance IDs
   const selectedOrdinanceIds = useMemo(() => {
     return ordinancesList
       .filter((ord): ord is OrdinanceFormValue => ord != null && !!ord.ordinanceId)
       .map((ord) => ord.ordinanceId!);
   }, [ordinancesList]);
 
-  // Get count of selected sessions for a specific ordinance
-  const getSelectedSessionsCount = (ordinanceId: string) => {
-    return ordinancesList.filter(
-      (ord) => ord && ord.ordinanceId === ordinanceId && ord.slot
-    ).length;
-  };
+  const distinctSelectedOrdinanceTypes = useMemo(() => {
+    return new Set(
+      ordinancesList
+        .filter((ord): ord is OrdinanceFormValue => ord != null && !!ord.ordinanceId)
+        .map((ord) => ord.ordinanceId!)
+    ).size;
+  }, [ordinancesList]);
 
-  // Handle ordinance selection
   const handleSelectOrdinance = (ordinanceId: string) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-
-    // If can select multiple sessions, initialize 2 sessions at once
-    if (canSelectMultipleSessions) {
-      const sessionsCount = getSelectedSessionsCount(ordinanceId);
-      if (sessionsCount >= 2) {
-        return;
-      }
-      // If not selected yet, add 2 sessions at once
-      if (sessionsCount === 0) {
-        const newOrdinances = [
-          ...currentOrdinances,
-          {
-            ordinanceId,
-            slot: undefined,
-            isPersonal: false,
-          },
-          {
-            ordinanceId,
-            slot: undefined,
-            isPersonal: false,
-          },
-        ];
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
-    }
-
-    // Original logic: Check if already selected
-    if (selectedOrdinanceIds.includes(ordinanceId)) {
+    const rowsForOrd = currentOrdinances.filter(
+      (o: OrdinanceFormValue) => o?.ordinanceId === ordinanceId
+    );
+    if (rowsForOrd.length >= 1) {
       return;
     }
-
-    // Check maximum 3 ordinances
-    if (currentOrdinances.filter((ord: OrdinanceFormValue) => ord && ord.ordinanceId).length >= 3) {
+    const distinct = new Set(
+      currentOrdinances
+        .filter((o: OrdinanceFormValue) => o?.ordinanceId)
+        .map((o: OrdinanceFormValue) => o.ordinanceId!)
+    );
+    if (distinct.size >= MAX_DISTINCT_ORDINANCE_TYPES) {
       return;
     }
-
-    // Add new ordinance
-    const newOrdinances = [
-      ...currentOrdinances,
-      {
-        ordinanceId,
-        slot: undefined,
-        isPersonal: false,
-      },
-    ];
-    form.setFieldsValue({ ordinances: newOrdinances });
+    form.setFieldsValue({
+      ordinances: [
+        ...currentOrdinances,
+        { ordinanceId, slot: undefined, isPersonal: false },
+      ],
+    });
   };
 
-  // Handle ordinance deselection
+  const handleAddSecondSession = (ordinanceId: string) => {
+    if (!allowTwoSessionsPerOrdinance) return;
+    const currentOrdinances = form.getFieldValue("ordinances") || [];
+    const rowsForOrd = currentOrdinances.filter(
+      (o: OrdinanceFormValue) => o?.ordinanceId === ordinanceId
+    );
+    if (rowsForOrd.length !== 1) {
+      return;
+    }
+    form.setFieldsValue({
+      ordinances: [
+        ...currentOrdinances,
+        { ordinanceId, slot: undefined, isPersonal: false },
+      ],
+    });
+  };
+
   const handleDeselectOrdinance = (ordinanceId: string, index?: number) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-
-    // If can select multiple sessions and index is provided, remove specific session
-    if (canSelectMultipleSessions && index !== undefined) {
+    if (allowTwoSessionsPerOrdinance && index !== undefined) {
       const ordinanceIndices = currentOrdinances
         .map((ord: OrdinanceFormValue, idx: number) =>
           ord && ord.ordinanceId === ordinanceId ? idx : -1
         )
         .filter((idx: number) => idx >= 0);
-
-      if (ordinanceIndices[index] !== undefined) {
-        const newOrdinances = currentOrdinances.filter(
-          (_: OrdinanceFormValue, idx: number) => idx !== ordinanceIndices[index]
-        );
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
+      const removeAt = ordinanceIndices[index];
+      if (removeAt === undefined) return;
+      form.setFieldsValue({
+        ordinances: currentOrdinances.filter(
+          (_: OrdinanceFormValue, idx: number) => idx !== removeAt
+        ),
+      });
+      return;
     }
-
-    // Original logic: remove all sessions of this ordinance
     const newOrdinances = currentOrdinances.filter(
       (ord: OrdinanceFormValue) => ord && ord.ordinanceId !== ordinanceId
     );
     form.setFieldsValue({ ordinances: newOrdinances });
   };
 
-  // Handle slot change
-  const handleSlotChange = (ordinanceId: string, slot: string | undefined, index?: number) => {
+  const handleSlotChange = (
+    ordinanceId: string,
+    slot: string | undefined,
+    index?: number
+  ) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-
-    // If can select multiple sessions and index is provided, update specific session
-    if (canSelectMultipleSessions && index !== undefined) {
+    if (allowTwoSessionsPerOrdinance && index !== undefined) {
       const ordinanceIndices = currentOrdinances
         .map((ord: OrdinanceFormValue, idx: number) =>
           ord && ord.ordinanceId === ordinanceId ? idx : -1
         )
         .filter((idx: number) => idx >= 0);
-
-      if (ordinanceIndices[index] !== undefined) {
-        const newOrdinances = [...currentOrdinances];
-        newOrdinances[ordinanceIndices[index]] = {
-          ...newOrdinances[ordinanceIndices[index]],
-          slot,
-        };
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
+      const targetIdx = ordinanceIndices[index];
+      if (targetIdx === undefined) return;
+      const newOrdinances = [...currentOrdinances];
+      newOrdinances[targetIdx] = {
+        ...newOrdinances[targetIdx],
+        slot,
+      };
+      form.setFieldsValue({ ordinances: newOrdinances });
+      return;
     }
-
-    // Original logic: update first matching ordinance
     const newOrdinances = currentOrdinances.map((ord: OrdinanceFormValue) => {
       if (ord && ord.ordinanceId === ordinanceId) {
         return { ...ord, slot };
@@ -271,11 +250,40 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                 return Promise.resolve();
               }
 
-              // Check maximum 3 ordinances
-              if (filledOrdinances.length > 3) {
+              if (filledOrdinances.length > MAX_TOTAL_SESSION_ROWS) {
                 return Promise.reject(
-                  new Error("Máximo 3 ordenanças podem ser selecionadas")
+                  new Error(
+                    "Máximo 6 sessões (até 3 ordenanças com até 2 sessões cada)"
+                  )
                 );
+              }
+
+              const byOrdinance: Record<string, OrdinanceFormValue[]> = {};
+              filledOrdinances.forEach((o: OrdinanceFormValue) => {
+                const id = o.ordinanceId!;
+                if (!byOrdinance[id]) byOrdinance[id] = [];
+                byOrdinance[id].push(o);
+              });
+
+              if (Object.keys(byOrdinance).length > MAX_DISTINCT_ORDINANCE_TYPES) {
+                return Promise.reject(
+                  new Error("Máximo 3 tipos de ordenanças diferentes")
+                );
+              }
+
+              for (const id of Object.keys(byOrdinance)) {
+                const rows = byOrdinance[id];
+                if (rows.length > MAX_SESSIONS_PER_ORDINANCE) {
+                  return Promise.reject(
+                    new Error("Máximo 2 sessões por ordenança")
+                  );
+                }
+                const slots = rows.map((r) => r.slot!);
+                if (new Set(slots).size !== slots.length) {
+                  return Promise.reject(
+                    new Error("Não pode repetir o mesmo horário na mesma ordenança")
+                  );
+                }
               }
 
               // Check for overlapping time slots
@@ -348,7 +356,9 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                       ordinance={ordinance}
                       selected={isSelected}
                       selectedOrdinance={selectedSessions[0]}
-                      selectedSessions={canSelectMultipleSessions ? selectedSessions : undefined}
+                      selectedSessions={
+                        allowTwoSessionsPerOrdinance ? selectedSessions : undefined
+                      }
                       ordinancesList={ordinancesList}
                       selectedCaravanId={selectedCaravanId}
                       gender={gender}
@@ -356,16 +366,26 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                         disabled ||
                         skipsOrdinances ||
                         (!isSelected &&
-                          !canSelectMultipleSessions &&
-                          selectedOrdinanceIds.length >= 3)
+                          distinctSelectedOrdinanceTypes >=
+                            MAX_DISTINCT_ORDINANCE_TYPES &&
+                          !selectedSessions.length)
                       }
                       onSelect={() => handleSelectOrdinance(ordinance.id)}
-                      onDeselect={(index) => handleDeselectOrdinance(ordinance.id, index)}
-                      onSlotChange={(slot, index) => handleSlotChange(ordinance.id, slot, index)}
+                      onDeselect={(index) =>
+                        handleDeselectOrdinance(ordinance.id, index)
+                      }
+                      onSlotChange={(slot, index) =>
+                        handleSlotChange(ordinance.id, slot, index)
+                      }
                       onPersonalChange={(isPersonal) =>
                         handlePersonalChange(ordinance.id, isPersonal)
                       }
-                      canSelectMultipleSessions={canSelectMultipleSessions}
+                      canSelectMultipleSessions={allowTwoSessionsPerOrdinance}
+                      onAddSecondSession={
+                        allowTwoSessionsPerOrdinance
+                          ? () => handleAddSecondSession(ordinance.id)
+                          : undefined
+                      }
                     />
                   </div>
                 );

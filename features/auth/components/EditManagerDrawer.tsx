@@ -1,12 +1,16 @@
 "use client";
 
 import { toDate } from "@/common/utils/timestamp.utils";
-import { AdminWithId } from "@/features/auth/models/admin.model";
+import {
+  type AdminWithId,
+  type PanelAdminRole,
+} from "@/features/auth/models/admin.model";
+import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { App, Button, Drawer, Form, Input } from "antd";
+import { App, Button, Divider, Drawer, Form, Input, Select } from "antd";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface EditManagerDrawerProps {
   open: boolean;
@@ -20,6 +24,11 @@ interface EditAdminFormValues {
   confirmPassword: string;
 }
 
+interface ProfileFormValues {
+  role: PanelAdminRole;
+  chapelId?: string;
+}
+
 export const EditManagerDrawer = ({
   open,
   onClose,
@@ -29,7 +38,59 @@ export const EditManagerDrawer = ({
   const { notification } = App.useApp();
   const queryClient = useQueryClient();
   const [form] = Form.useForm<EditAdminFormValues>();
+  const [profileForm] = Form.useForm<ProfileFormValues>();
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const { chapels, loading: loadingChapels } = useChapels();
+  const role = Form.useWatch("role", profileForm);
+
+  useEffect(() => {
+    if (admin) {
+      profileForm.setFieldsValue({
+        role: admin.role ?? "ADMIN",
+        chapelId: admin.chapelId,
+      });
+    }
+  }, [admin, profileForm]);
+
+  const handleProfileSubmit = async (values: ProfileFormValues) => {
+    if (!admin) return;
+
+    setProfileLoading(true);
+    try {
+      const response = await fetch(`/api/admin/${admin.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: values.role,
+          chapelId: values.role === "SECRETARY" ? values.chapelId : undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erro ao atualizar perfil");
+      }
+
+      notification.success({
+        title: "Sucesso",
+        description: "Perfil atualizado com sucesso!",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["admins"] });
+      onClose();
+      onSuccess();
+    } catch (error) {
+      notification.error({
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro desconhecido",
+      });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const handleSubmit = async (values: EditAdminFormValues) => {
     if (!admin) return;
@@ -110,6 +171,66 @@ export const EditManagerDrawer = ({
             />
           </div>
 
+          <Divider>Perfil e capela</Divider>
+
+          <Form
+            form={profileForm}
+            layout="vertical"
+            onFinish={handleProfileSubmit}
+            className="flex flex-col gap-4"
+          >
+            <Form.Item
+              name="role"
+              label="Perfil"
+              rules={[{ required: true, message: "Selecione o perfil" }]}
+            >
+              <Select
+                options={[
+                  { value: "ADMIN", label: "Administrador" },
+                  {
+                    value: "SECRETARY",
+                    label: "Secretário (apenas inscrições da capela)",
+                  },
+                ]}
+              />
+            </Form.Item>
+
+            {role === "SECRETARY" && (
+              <Form.Item
+                name="chapelId"
+                label="Capela"
+                rules={[
+                  {
+                    required: true,
+                    message: "Selecione a capela do secretário",
+                  },
+                ]}
+              >
+                <Select
+                  placeholder={
+                    loadingChapels ? "A carregar..." : "Selecione a capela"
+                  }
+                  loading={loadingChapels}
+                  options={chapels.map((c) => ({ label: c.name, value: c.id }))}
+                />
+              </Form.Item>
+            )}
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={profileLoading}
+                block
+              >
+                Guardar perfil
+              </Button>
+            </Form.Item>
+          </Form>
+
+          <Divider>Alterar senha</Divider>
+
           <Form form={form} layout="vertical" onFinish={handleSubmit} className="flex flex-col gap-4">
             <Form.Item
               name="newPassword"
@@ -157,7 +278,7 @@ export const EditManagerDrawer = ({
 
             <Form.Item className="mt-6">
               <Button
-                type="primary"
+                type="default"
                 htmlType="submit"
                 size="large"
                 loading={loading}

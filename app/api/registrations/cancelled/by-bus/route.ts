@@ -1,8 +1,15 @@
 import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
+import { filterRegistrationsForPanelUser } from "@/lib/auth/registration-access.server";
+import { requirePanelSession } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const busId = searchParams.get("busId");
     const caravanId = searchParams.get("caravanId");
@@ -14,10 +21,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const registrations = await registrationRepositoryServer.getCancelledByBusId(
+    let registrations = await registrationRepositoryServer.getCancelledByBusId(
       busId,
       caravanId
     );
+
+    registrations = filterRegistrationsForPanelUser(auth.user, registrations);
 
     return NextResponse.json({ registrations }, { status: 200 });
   } catch (error) {

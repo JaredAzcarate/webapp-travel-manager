@@ -2,14 +2,15 @@
 
 ## Configuración
 
-- Cliente Firebase: `/firebase/client.ts` (singleton)
-- Admin SDK: `/firebase/admin.ts` (para server-side)
-- Configuración en variables de entorno (`.env.local`)
+- Cliente (browser): **`common/lib/firebase.js`** — inicialización del SDK cliente y `db`
+- Admin SDK (servidor): **`lib/firebase-admin.ts`**
+- Variables de entorno: `.env.local` (y credenciales del Admin según [15-configuracion-firebase-admin.md](./15-configuracion-firebase-admin.md))
 
 ## Collections (Firestore)
 
 - Nombres en inglés, plural, camelCase
-- `chapels`, `users`, `caravans`, `buses`, `busStops`, `registrations`
+- En uso principal: **`admin`**, **`chapels`**, **`caravans`**, **`buses`**, **`busStops`**, **`ordinances`**, **`registrations`**, **`roles`**, **`dataAccessLogs`**
+- **`users`**: existe repositorio en código pero **no** está conectado al login actual; ver [Implementación actual](./current-implementation.md)
 
 ## Repository Pattern
 
@@ -53,7 +54,7 @@ export class ChapelRepository {
 
 ## Errores
 
-- Clases de error personalizadas en `/utils/firestore/errors.ts`
+- Clases de error personalizadas en **`utils/firestore/errors.ts`** (raíz del repo)
 - `FirestoreNotFoundError`, `FirestoreValidationError`, etc.
 
 ---

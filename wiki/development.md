@@ -1,6 +1,9 @@
 # 📚 Wiki de Desarrollo - Temple Caravan Management System
 
-Esta wiki explica cómo está estructurado y cómo se trabaja en el proyecto. Para la especificación funcional completa, consulta [project.md](./project.md).
+Esta wiki explica cómo está estructurado y cómo se trabaja en el proyecto.
+
+- **[Implementación actual](./current-implementation.md)** — Auth, colecciones Firestore, rutas y modelos **tal como están en el código** (fuente de verdad técnica).
+- **[project.md](./project.md)** — Especificación funcional del producto (puede describir comportamiento objetivo aún no implementado).
 
 La documentación está organizada por temas en archivos separados para facilitar la navegación y el mantenimiento.
 
@@ -8,49 +11,52 @@ La documentación está organizada por temas en archivos separados para facilita
 
 ## 📋 Índice de Temas
 
-1. [🛠 Stack Tecnológico](./01-stack-tecnologico.md)
+1. [📌 Implementación actual](./current-implementation.md)
+   - Auth (NextAuth), Firestore, rutas y datos reales del repositorio
+
+2. [🛠 Stack Tecnológico](./01-stack-tecnologico.md)
    - Frontend, Backend y Utilidades
 
-2. [🏗 Arquitectura y Principios](./02-arquitectura.md)
+3. [🏗 Arquitectura y Principios](./02-arquitectura.md)
    - Principios SOLID y Patrones de Diseño
 
-3. [📁 Estructura de Carpetas](./03-estructura-carpetas.md)
+4. [📁 Estructura de Carpetas](./03-estructura-carpetas.md)
    - Organización del proyecto
 
-4. [📝 Convenciones de Código](./04-convenciones-codigo.md)
+5. [📝 Convenciones de Código](./04-convenciones-codigo.md)
    - Nombres de archivos, variables, imports y tipos
 
-5. [🔄 Manejo de Estado y Datos](./05-estado-datos.md)
+6. [🔄 Manejo de Estado y Datos](./05-estado-datos.md)
    - React Query, Context API y estado local
 
-6. [📋 Formularios](./06-formularios.md)
+7. [📋 Formularios](./06-formularios.md)
    - Ant Design Form (NO react-hook-form)
 
-7. [🧭 Routing y Navegación](./07-routing.md)
+8. [🧭 Routing y Navegación](./07-routing.md)
    - Next.js App Router, protección de rutas y filtros
 
-8. [🎨 UI y Estilos](./08-ui-estilos.md)
+9. [🎨 UI y Estilos](./08-ui-estilos.md)
    - Ant Design, Tailwind CSS y responsive design
 
-9. [💬 Feedback al Usuario](./09-feedback-usuario.md)
-   - **Notification de Ant Design (OBLIGATORIO)**
+10. [💬 Feedback al Usuario](./09-feedback-usuario.md)
+    - **Notification de Ant Design (OBLIGATORIO)**
 
-10. [🔌 API Routes](./10-api-routes.md)
+11. [🔌 API Routes](./10-api-routes.md)
     - Estructura, convenciones y autenticación
 
-11. [🔥 Firebase y Firestore](./11-firebase.md)
+12. [🔥 Firebase y Firestore](./11-firebase.md)
     - Configuración, Repository Pattern y tipos
 
-12. [✅ Testing y Validación](./12-testing.md)
+13. [✅ Testing y Validación](./12-testing.md)
     - Validación de datos y manejo de errores
 
-13. [📦 Dependencias Clave](./13-dependencias.md)
+14. [📦 Dependencias Clave](./13-dependencias.md)
     - Librerías principales del proyecto
 
-14. [🔒 Firestore Security Rules](./14-firestore-rules.md)
+15. [🔒 Firestore Security Rules](./14-firestore-rules.md)
     - Reglas de seguridad y permisos
 
-15. [⚙️ Configuración Firebase Admin](./15-configuracion-firebase-admin.md)
+16. [⚙️ Configuración Firebase Admin](./15-configuracion-firebase-admin.md)
     - Configurar credenciales del Admin SDK
 
 ---
@@ -80,4 +86,4 @@ Cuando implementes nuevas features:
 
 ---
 
-**Última actualización**: Enero 2025
+**Última actualización**: Marzo 2026

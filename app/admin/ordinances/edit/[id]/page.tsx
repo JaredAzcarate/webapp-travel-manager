@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminOnlyGuard } from "@/common/components/AdminOnlyGuard";
 import { OrdinanceForm } from "@/features/ordinances/components/OrdinanceForm";
 import { useOrdinance } from "@/features/ordinances/hooks/ordinances.hooks";
 import { Button, Spin, Typography } from "antd";
@@ -23,34 +24,40 @@ export default function EditOrdinancePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <Spin size="large" />
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Spin size="large" />
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   if (!ordinance) {
     return (
-      <div className="p-6">
-        <Title level={2}>Ordenança não encontrada</Title>
-        <Button onClick={() => router.push("/admin/ordinances")}>
-          Voltar para lista
-        </Button>
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Title level={2}>Ordenança não encontrada</Title>
+          <Button onClick={() => router.push("/admin/ordinances")}>
+            Voltar para lista
+          </Button>
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   return (
-    <div className="p-6">
-      <Title level={2}>Editar Ordenança</Title>
+    <AdminOnlyGuard>
+      <div className="p-6">
+        <Title level={2}>Editar Ordenança</Title>
 
-      <div className="mt-6">
-        <OrdinanceForm
-          mode="edit"
-          ordinanceId={ordinanceId}
-          initialOrdinanceData={ordinance}
-        />
+        <div className="mt-6">
+          <OrdinanceForm
+            mode="edit"
+            ordinanceId={ordinanceId}
+            initialOrdinanceData={ordinance}
+          />
+        </div>
       </div>
-    </div>
+    </AdminOnlyGuard>
   );
 }

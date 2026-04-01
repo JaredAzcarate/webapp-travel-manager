@@ -3,7 +3,7 @@ Aquí va el **markdown completo**, ya corregido con:
 - Nombres de colecciones/modelos en **inglés**
 - Rutas en **inglés**
 - **Tailwind CSS** (no CSS Modules)
-- **Next.js 15 + Firebase + TypeScript + Ant Design**
+- **Next.js 16 + Firestore + TypeScript + Ant Design** (ver nota de implementación abajo)
 - Buses **reutilizables** entre caravans (sin compartir participantes)
 
 Listo para pegar en un archivo de contexto en Cursor.
@@ -12,7 +12,9 @@ Listo para pegar en un archivo de contexto en Cursor.
 
 # ✅ SPEC – Temple Caravan Management System
 
-**Stack:** Next.js 15 · TypeScript · Firebase (Auth + Firestore + Functions) · Ant Design · React Query · Tailwind CSS
+**Stack (especificación):** Next.js · TypeScript · Firestore · Ant Design · React Query · Tailwind CSS
+
+> **Implementation note (March 2026):** The codebase runs **Next.js 16** with **NextAuth v5 (Credentials)** and Firestore collection **`admin`** for panel users—not Firebase Auth for ADMIN/CHAPEL as described in the sections below. **CHAPEL-scoped sessions and role-based UI are not implemented** in the current app; all logged-in panel users share the same admin experience until that changes. For routes, collections, and models as implemented, see **[current-implementation.md](./current-implementation.md)** (Spanish, technical source of truth).
 
 ---
 
@@ -114,16 +116,18 @@ Without login, can:
 
 ### Frontend
 
-- **Next.js 15** with **App Router** (`app/` directory).
+- **Next.js 16** with **App Router** (`app/` directory).
 - **TypeScript**.
 - **Ant Design** for UI components.
 - **Tailwind CSS** for styling (no CSS Modules).
 
 ### Backend
 
-- **Firebase Auth**
+- **Panel authentication (implemented):** **NextAuth (Credentials)** with user records in Firestore collection **`admin`** (see [current-implementation.md](./current-implementation.md)).
 
-  - For ADMIN and CHAPEL logins.
+- **Firebase Auth** (optional / future)
+
+  - The spec originally targeted ADMIN and CHAPEL via Firebase Auth; that split is **not** the current panel login.
 
 - **Firestore**
 
@@ -147,11 +151,14 @@ All **collection names and field names are in English**.
 ### Collections overview
 
 - `chapels`
-- `users`
+- `users` (spec / future Firebase Auth users; not wired to panel login today)
+- `admin` (**panel users** for NextAuth Credentials in the current app)
 - `caravans`
 - `buses`
 - `busStops`
+- `ordinances` (templates: sessions, slots, capacities)
 - `registrations`
+- `roles`, `dataAccessLogs` (supporting collections in the codebase)
 
 > Buses are **reusable templates**, and can be associated with multiple caravans.
 > Registrations always reference **one caravan** and **one bus**, so participants never “carry over” between caravans.
@@ -194,6 +201,21 @@ All **collection names and field names are in English**.
 
 ---
 
+### `admin` collection (current panel login)
+
+```ts
+// Collection: admin — used by NextAuth Credentials in the implemented app
+{
+  id: string,
+  username: string,
+  password: string, // bcrypt hash
+  createdAt: Timestamp,
+  updatedAt?: Timestamp
+}
+```
+
+---
+
 ### `caravans` collection
 
 ```ts
@@ -208,12 +230,14 @@ All **collection names and field names are in English**.
   formCloseAt: Timestamp,
   isActive: boolean,
   busIds: string[],      // references to buses.id (reusable buses)
+  ordinanceCapacityLimits?: Record<string, Record<string, number | { M: number; F: number }>>,
+  ordinanceCapacityCounts?: Record<string, Record<string, number | { M: number; F: number }>>,
   createdAt: Timestamp,
   updatedAt: Timestamp
 }
 ```
 
-- **Note:** `busIds` defines which buses are used for this caravan.
+- **Note:** `busIds` defines which buses are used for this caravan. **`ordinanceCapacityLimits` / `ordinanceCapacityCounts`** are populated when creating a caravan from **`ordinances`** templates in the current implementation.
 
 ---
 
@@ -511,7 +535,11 @@ All routes in **English**.
 
 - `/registration`
 
-  - Main registration form.
+  - Main registration flow (and/or caravan selection).
+
+- `/registration/[caravanId]`
+
+  - Registration for a specific caravan.
 
 - `/registration/success`
 
@@ -521,51 +549,49 @@ All routes in **English**.
 
   - Phone-based payment confirmation and cancellation.
 
-### Protected (admin) routes
+- `/privacy-and-policy/*`, `/setup`
 
-All protected by Firebase Auth + role-based checks.
+  - Privacy / GDPR and optional setup flows (see codebase).
 
-- `/admin/login`
+### Protected (panel) routes
 
-  - Email/password login for ADMIN and CHAPEL users.
+Protected by **NextAuth** session; layout under `/admin` redirects unauthenticated users to **`/auth/login`**. Role-based CHAPEL filtering is **target behavior** in this spec, not fully implemented in the current app (see [current-implementation.md](./current-implementation.md)).
+
+- `/auth/login`
+
+  - Username/password login (Credentials); users stored in Firestore **`admin`**.
 
 - `/admin`
 
-  - Simple dashboard: upcoming caravans and summary cards.
+  - Dashboard / entry to admin area (as implemented).
 
 - `/admin/caravans`
 
-  - List of caravans (ADMIN)
-  - For CHAPEL: list caravans where that chapel has registrations (filtered view).
+  - List and management of caravans.
 
-- `/admin/caravans/[id]`
+- `/admin/caravans/new`, `/admin/caravans/edit/[id]`
 
-  - Tabs:
+  - Create and edit caravan (dates, name, `busIds`).
 
-    - **Overview**
-    - **Buses & Routes**
-    - **Registrations**
+- `/admin/caravans/distribution`
+
+  - Operational view: registrations distribution / lists (uses URL params where applicable).
 
 - `/admin/chapels`
 
-  - ADMIN only.
-  - CRUD of chapels (with whatsappPhone and email).
+  - CRUD of chapels.
 
-- `/admin/users`
+- `/admin/managers`
 
-  - ADMIN only.
-  - Manage users:
-
-    - Create ADMIN and CHAPEL users.
-    - Link CHAPEL user to a chapel.
+  - Manage **`admin`** users (panel accounts), not `/admin/users`.
 
 - `/admin/buses`
 
-  - ADMIN only.
-  - CRUD for reusable bus templates:
+  - CRUD for reusable bus templates (name, capacity) and related **`busStops`**.
 
-    - Name, capacity.
-    - Route (busStops) with chapels and pickup times.
+- `/admin/ordinances`
+
+  - CRUD for ordinance templates (sessions, slots, capacities).
 
 ---
 
@@ -681,7 +707,7 @@ Implementation notes:
 
 ## 📁 Project Structure
 
-Recommended structure for Next.js 15 + Firebase + Tailwind + Ant Design:
+Recommended structure for Next.js 16 + Firestore + Tailwind + Ant Design:
 
 ```bash
 /app
@@ -739,13 +765,13 @@ Recommended structure for Next.js 15 + Firebase + Tailwind + Ant Design:
 Copy-paste this into Cursor as the high-level instruction:
 
 ```text
-Act as a senior fullstack developer expert in Next.js 15, TypeScript, Firebase, Tailwind CSS and Ant Design.
+Act as a senior fullstack developer expert in Next.js 16, TypeScript, Firestore, NextAuth, Tailwind CSS and Ant Design.
 
 We are building a complete "Temple Caravan Management System" based on the specification in this Markdown file.
 
 ### TECH REQUIREMENTS
 
-- Next.js 15 with App Router.
+- Next.js 16 with App Router.
 - TypeScript.
 - Tailwind CSS (NO CSS Modules).
 - Ant Design as the primary component library.
@@ -790,7 +816,7 @@ We are building a complete "Temple Caravan Management System" based on the speci
 
 ### WHAT YOU SHOULD DO NOW
 
-1. Scaffold the Next.js 15 project with Tailwind CSS and Ant Design properly integrated.
+1. Scaffold the Next.js 16 project with Tailwind CSS and Ant Design properly integrated.
 2. Configure Firebase (client SDK and, if needed, admin SDK).
 3. Implement Firestore data models and TypeScript interfaces matching the specification:
    - chapels
@@ -799,21 +825,20 @@ We are building a complete "Temple Caravan Management System" based on the speci
    - buses
    - busStops
    - registrations
-4. Implement Firebase Auth-based protection for `/admin/**` routes and role-based access:
-   - ADMIN vs CHAPEL.
+4. Implement **NextAuth** protection for `/admin/**` and (optionally) Firebase Auth + role-based access for CHAPEL users as a future step.
 5. Create the public pages:
    - `/` (home)
-   - `/registration`
+   - `/registration`, `/registration/[caravanId]`
    - `/registration/success`
    - `/confirm-payment`
    including all form logic, first-time-convert handling, bus assignment and capacity checks.
 6. Create the admin area:
-   - `/admin/login`
+   - `/auth/login`
    - `/admin` (dashboard)
-   - `/admin/caravans` + `/admin/caravans/[id]`
+   - `/admin/caravans`, `/admin/caravans/distribution`, new/edit caravan routes
    - `/admin/chapels`
-   - `/admin/users`
-   - `/admin/buses`
+   - `/admin/managers` (admin users)
+   - `/admin/buses`, `/admin/ordinances`
    with Ant Design tables/forms and Tailwind where needed.
 7. Implement filtering and PDF export from the registrations tables (server-side).
 8. Implement a `notifyChapelOnPayment()` stub helper, and call it when a user marks that they have paid.

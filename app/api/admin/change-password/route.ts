@@ -1,8 +1,14 @@
 import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
+import { requirePanelSession } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { username, newPassword } = await request.json();
 
     if (!username || !newPassword) {
@@ -26,6 +32,13 @@ export async function POST(request: NextRequest) {
         { message: "Admin não encontrado" },
         { status: 404 }
       );
+    }
+
+    if (
+      auth.user.role !== "ADMIN" &&
+      auth.user.username !== username
+    ) {
+      return NextResponse.json({ message: "Acesso negado" }, { status: 403 });
     }
 
     // Update password

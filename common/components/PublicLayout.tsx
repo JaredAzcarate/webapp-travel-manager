@@ -1,6 +1,7 @@
 "use client";
 
 import { AppFooter } from "@/common/components/AppFooter";
+import { PublicFeedbackFab } from "@/common/components/PublicFeedbackFab";
 import { PublicHeader } from "@/common/components/PublicHeader";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
@@ -22,6 +23,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         {children}
       </div>
       {isPublicRoute && <AppFooter />}
+      {isPublicRoute && <PublicFeedbackFab />}
     </div>
   );
 }

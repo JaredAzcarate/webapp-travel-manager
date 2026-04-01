@@ -1,5 +1,6 @@
 import { UpdateCaravanInput } from "@/features/caravans/models/caravans.model";
 import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
+import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
@@ -7,6 +8,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const input: UpdateCaravanInput = await request.json();
     const { id } = await params;
 
@@ -39,6 +45,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     await caravanRepositoryServer.delete(id);
