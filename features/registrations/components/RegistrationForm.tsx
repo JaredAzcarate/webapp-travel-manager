@@ -1017,7 +1017,11 @@ export const RegistrationForm = ({
                 Ordenanças
               </Title>
 
-              <Paragraph>Por favor, selecione pelo menos uma ordenança que deseja realizar.<strong> Caso não venha a realizar nenhuma, marque a última opção.</strong></Paragraph>
+              <Paragraph>
+                Por favor, selecione as ordenanças que deseja realizar (até 3 tipos diferentes;
+                em cada tipo pode escolher até 3 horários).
+                <strong> Caso não venha a realizar nenhuma, marque a última opção.</strong>
+              </Paragraph>
             </div>
 
             <OrdinancesListField

@@ -37,6 +37,20 @@ export const doTimeSlotsOverlap = (
   return !(end1 <= start2 || end2 <= start1);
 };
 
+// Filter slot options for one row: exclude overlaps with every other row that already has a slot
+export const filterSlotsAvoidingOverlap = (
+  slots: string[],
+  ordinancesList: OrdinanceFormValue[],
+  skipListIndex: number
+): string[] => {
+  return slots.filter((slot) => {
+    return !ordinancesList.some((o, idx) => {
+      if (idx === skipListIndex || !o?.slot) return false;
+      return doTimeSlotsOverlap(slot, o.slot);
+    });
+  });
+};
+
 // Filter ordinances based on age category, gender, and restrictions
 export const filterAvailableOrdinances = (
   ordinances: OrdinanceWithId[],

@@ -26,7 +26,7 @@ export interface Registration {
     ordinanceId: string; // references ordinances.id
     slot: string; // e.g. "9:30-10:00"
     isPersonal?: boolean; // indica si la ordenanza es personal
-  }>; // Máximo 3, mínimo 0 (opcional)
+  }>; // Up to 3 distinct ordinance types; up to 3 sessions (slots) per type; min 0 if skipsOrdinances
   skipsOrdinances?: boolean; // true = no hará ordenanzas; default false
 
   isFirstTimeConvert: boolean;

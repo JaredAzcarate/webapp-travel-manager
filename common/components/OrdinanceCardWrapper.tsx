@@ -1,34 +1,32 @@
 "use client";
 
 import { OrdinanceCard } from "@/common/components/OrdinanceCard";
-import { getAvailableSlots, OrdinanceFormValue } from "@/common/utils/ordinances.utils";
-import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
 import {
-    useOrdinanceAvailabilityFromCaravan,
-    useOrdinanceSlotsAvailabilityFromCaravan
-} from "@/features/registrations/hooks/registrations.hooks";
+  doTimeSlotsOverlap,
+  getAvailableSlots,
+  OrdinanceFormValue,
+} from "@/common/utils/ordinances.utils";
+import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
+import { useOrdinanceSlotsAvailabilityFromCaravan } from "@/features/registrations/hooks/registrations.hooks";
 import { useMemo } from "react";
 
 export interface OrdinanceCardWrapperProps {
   ordinance: OrdinanceWithId;
   selected: boolean;
-  selectedOrdinance?: OrdinanceFormValue;
-  selectedSessions?: OrdinanceFormValue[];
+  selectedSessions: OrdinanceFormValue[];
   ordinancesList: OrdinanceFormValue[];
   selectedCaravanId: string | null;
   gender: "M" | "F" | null;
   disabled?: boolean;
   onSelect: () => void;
-  onDeselect: (index?: number) => void;
-  onSlotChange: (slot: string | undefined, index?: number) => void;
+  onDeselect: () => void;
+  onSlotsChange: (slots: string[]) => void;
   onPersonalChange: (isPersonal: boolean) => void;
-  canSelectMultipleSessions?: boolean;
 }
 
 export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
   ordinance,
   selected,
-  selectedOrdinance,
   selectedSessions,
   ordinancesList,
   selectedCaravanId,
@@ -36,35 +34,33 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
   disabled = false,
   onSelect,
   onDeselect,
-  onSlotChange,
+  onSlotsChange,
   onPersonalChange,
-  canSelectMultipleSessions = false,
 }) => {
-  const selectedSlot = selectedOrdinance?.slot;
-  const isPersonal = selectedOrdinance?.isPersonal ?? false;
-  const sessions = canSelectMultipleSessions && selectedSessions ? selectedSessions : selectedOrdinance ? [selectedOrdinance] : [];
+  const selectedSlots = useMemo(
+    () =>
+      selectedSessions
+        .map((session) => session.slot)
+        .filter((slot): slot is string => typeof slot === "string"),
+    [selectedSessions]
+  );
 
-  // Get available slots for this ordinance
+  const isPersonal = selectedSessions.some((session) => session.isPersonal === true);
+
   const availableSlots = useMemo(() => {
-    return getAvailableSlots(
-      ordinance,
-      gender,
-      ordinancesList.filter(
-        (ord) => ord.ordinanceId && ord.ordinanceId !== ordinance.id
-      )
-    );
-  }, [ordinance, gender, ordinancesList]);
+    const allSlots = getAvailableSlots(ordinance, gender, []);
+    const otherSelectedSlots = ordinancesList
+      .filter((ord) => ord?.ordinanceId && ord.ordinanceId !== ordinance.id && ord.slot)
+      .map((ord) => ord.slot as string);
 
-  // Get availability info for selected slot
-  const { available, maxCapacity, loading: loadingAvailability } =
-    useOrdinanceAvailabilityFromCaravan(
-      selectedCaravanId ?? null,
-      selected ? ordinance.id : null,
-      selectedSlot ?? null,
-      gender
-    );
+    return allSlots.filter((candidateSlot) => {
+      if (selectedSlots.includes(candidateSlot)) return true;
+      return !otherSelectedSlots.some((otherSlot) =>
+        doTimeSlotsOverlap(candidateSlot, otherSlot)
+      );
+    });
+  }, [ordinance, gender, ordinancesList, selectedSlots]);
 
-  // Get availability for all slots when ordinance is selected
   const { availabilityMap, loading: loadingSlotsAvailability } =
     useOrdinanceSlotsAvailabilityFromCaravan(
       selectedCaravanId ?? null,
@@ -73,12 +69,14 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
       gender
     );
 
-  // Build slot availability map with loading state
   const slotAvailabilityMap = useMemo(() => {
     if (!selected || !selectedCaravanId) return undefined;
-    
-    const map: Record<string, { available: number; maxCapacity: number; loading: boolean }> = {};
-    
+
+    const map: Record<
+      string,
+      { available: number; maxCapacity: number; loading: boolean }
+    > = {};
+
     availableSlots.forEach((slot) => {
       const slotAvailability = availabilityMap[slot];
       map[slot] = {
@@ -87,34 +85,29 @@ export const OrdinanceCardWrapper: React.FC<OrdinanceCardWrapperProps> = ({
         loading: loadingSlotsAvailability,
       };
     });
-    
+
     return map;
-  }, [selected, selectedCaravanId, availableSlots, availabilityMap, loadingSlotsAvailability]);
+  }, [
+    selected,
+    selectedCaravanId,
+    availableSlots,
+    availabilityMap,
+    loadingSlotsAvailability,
+  ]);
 
   return (
     <OrdinanceCard
       ordinance={ordinance}
       selected={selected}
-      selectedSlot={selectedSlot}
-      selectedSessions={canSelectMultipleSessions ? sessions : undefined}
+      selectedSlots={selectedSlots}
       isPersonal={isPersonal}
       availableSlots={availableSlots}
-      availability={
-        selectedSlot
-          ? {
-              available,
-              maxCapacity,
-              loading: loadingAvailability,
-            }
-          : undefined
-      }
       slotAvailabilityMap={slotAvailabilityMap}
       disabled={disabled}
       onSelect={onSelect}
       onDeselect={onDeselect}
-      onSlotChange={onSlotChange}
+      onSlotsChange={onSlotsChange}
       onPersonalChange={onPersonalChange}
-      canSelectMultipleSessions={canSelectMultipleSessions}
     />
   );
 };
