@@ -22,6 +22,15 @@ import { useState } from "react";
 
 const { Title } = Typography;
 
+/** Same rule as the Status column: form open window (not DB flag alone). */
+function isCaravanFormWindowOpen(caravan: CaravanWithId): boolean {
+  const now = new Date();
+  const formOpenAt = toDate(caravan.formOpenAt);
+  const formCloseAt = toDate(caravan.formCloseAt);
+  if (!formOpenAt || !formCloseAt) return false;
+  return now >= formOpenAt && now <= formCloseAt;
+}
+
 interface CaravanOccupationProps {
   caravan: CaravanWithId;
   isSecretary?: boolean;
@@ -162,14 +171,7 @@ export const CaravansList = () => {
       title: "Status",
       key: "isActive",
       render: (_, record) => {
-        const now = new Date();
-        const formOpenAt = toDate(record.formOpenAt);
-        const formCloseAt = toDate(record.formCloseAt);
-
-        let isActive = false;
-        if (formOpenAt && formCloseAt) {
-          isActive = now >= formOpenAt && now <= formCloseAt;
-        }
+        const isActive = isCaravanFormWindowOpen(record);
 
         return (
           <Tag color={isActive ? "green" : "default"}>
@@ -239,11 +241,13 @@ export const CaravansList = () => {
           </Button>
           {!isSecretary && (
             <>
-              <Button
-                type="link"
-                icon={<Pencil size={16} />}
-                onClick={() => handleEdit(record.id)}
-              />
+              {isCaravanFormWindowOpen(record) && (
+                <Button
+                  type="link"
+                  icon={<Pencil size={16} />}
+                  onClick={() => handleEdit(record.id)}
+                />
+              )}
               <Button
                 type="link"
                 danger

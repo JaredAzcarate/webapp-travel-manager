@@ -5,6 +5,7 @@ import {
   type CapacityValue,
 } from "@/features/caravans/utils/ordinanceCapacity.utils";
 import {
+  BusSeatSummary,
   CreateRegistrationInput,
   UpdateRegistrationInput,
 } from "@/features/registrations/models/registrations.model";
@@ -215,6 +216,29 @@ export const useCountActiveByBus = (caravanId: string, busId: string) => {
   };
 };
 
+/** Public seat summary for registration form (no panel session). */
+export const usePublicBusSeatSummary = (caravanId: string, busId: string) => {
+  const {
+    data: summary,
+    isLoading,
+    error,
+  } = useQuery<BusSeatSummary>({
+    queryKey: ["public", "bus-seat-summary", caravanId, busId],
+    queryFn: () => repository.getPublicBusSeatSummary(caravanId, busId),
+    enabled: !!caravanId && !!busId,
+  });
+
+  return {
+    summary,
+    loading: isLoading,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Erro desconhecido"
+      : null,
+  };
+};
+
 export const useCountCancelledByBus = (caravanId: string, busId: string) => {
   const {
     data: count = 0,
@@ -270,6 +294,7 @@ export const useCreateRegistration = () => {
       queryClient.invalidateQueries({
         queryKey: ["ordinance-availability"],
       });
+      queryClient.invalidateQueries({ queryKey: ["public", "bus-seat-summary"] });
     },
   });
 
@@ -346,6 +371,7 @@ export const useUpdateRegistration = () => {
       queryClient.invalidateQueries({
         queryKey: ["ordinance-availability"],
       });
+      queryClient.invalidateQueries({ queryKey: ["public", "bus-seat-summary"] });
     },
   });
 
@@ -504,6 +530,7 @@ export const useCancelRegistration = () => {
       queryClient.invalidateQueries({
         queryKey: ["ordinance-availability"],
       });
+      queryClient.invalidateQueries({ queryKey: ["public", "bus-seat-summary"] });
     },
   });
 
@@ -660,6 +687,7 @@ export const usePromoteFromWaitlist = () => {
       queryClient.invalidateQueries({
         queryKey: ["ordinance-availability"],
       });
+      queryClient.invalidateQueries({ queryKey: ["public", "bus-seat-summary"] });
     },
   });
 

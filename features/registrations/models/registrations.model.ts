@@ -50,3 +50,10 @@ export interface Registration {
 export type CreateRegistrationInput = CreateInput<Registration>;
 export type UpdateRegistrationInput = UpdateInput<Registration>;
 export type RegistrationWithId = WithId<Registration>;
+
+/** Public API payload: bus seat counts for a (caravan, bus) pair */
+export interface BusSeatSummary {
+  capacity: number;
+  occupied: number;
+  available: number;
+}

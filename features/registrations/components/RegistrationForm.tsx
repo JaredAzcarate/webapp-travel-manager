@@ -16,8 +16,8 @@ import {
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import {
-  useCountActiveByBus,
   useCreateRegistration,
+  usePublicBusSeatSummary,
   useUpdateRegistration,
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
@@ -173,23 +173,30 @@ export const RegistrationForm = ({
   }, [selectedChapelId, selectedCaravan, busStops]);
 
   const { bus: assignedBus } = useBus(assignedBusId || "");
-  const { count: occupiedCount } = useCountActiveByBus(
+  const { summary: busSeatSummary } = usePublicBusSeatSummary(
     selectedCaravanId || "",
     assignedBusId || ""
   );
 
   const capacityInfo = useMemo(() => {
-    if (!assignedBus || !selectedCaravanId || !assignedBusId) return null;
-    const available = assignedBus.capacity - occupiedCount;
-    const isFull = occupiedCount >= assignedBus.capacity;
+    if (
+      !assignedBus ||
+      !selectedCaravanId ||
+      !assignedBusId ||
+      !busSeatSummary
+    ) {
+      return null;
+    }
+    const { capacity, occupied, available } = busSeatSummary;
+    const isFull = occupied >= capacity;
     return {
-      occupied: occupiedCount,
-      capacity: assignedBus.capacity,
+      occupied,
+      capacity,
       available,
       isFull,
       busName: assignedBus.name,
     };
-  }, [assignedBus, occupiedCount, selectedCaravanId, assignedBusId]);
+  }, [assignedBus, busSeatSummary, selectedCaravanId, assignedBusId]);
 
   const busAssignmentMessage = useMemo(() => {
     if (!selectedChapelId) return null;

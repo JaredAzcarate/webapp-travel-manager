@@ -23,9 +23,10 @@ import {
   where,
 } from "firebase/firestore";
 import {
+  BusSeatSummary,
   CreateRegistrationInput,
   RegistrationWithId,
-  UpdateRegistrationInput
+  UpdateRegistrationInput,
 } from "../models/registrations.model";
 
 export class RegistrationRepository {
@@ -422,6 +423,26 @@ export class RegistrationRepository {
 
     const result = await response.json();
     return result.count;
+  }
+
+  async getPublicBusSeatSummary(
+    caravanId: string,
+    busId: string
+  ): Promise<BusSeatSummary> {
+    const params = new URLSearchParams({
+      caravanId,
+      busId,
+    });
+    const response = await fetch(
+      `/api/public/bus-seat-summary?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || "Erro ao obter resumo de lugares");
+    }
+
+    return response.json() as Promise<BusSeatSummary>;
   }
 
   async countCancelledByBus(caravanId: string, busId: string): Promise<number> {
