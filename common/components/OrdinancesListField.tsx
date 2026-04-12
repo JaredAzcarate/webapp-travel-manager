@@ -104,6 +104,9 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
     if (rowsForOrd.length !== 1) {
       return;
     }
+    if (rowsForOrd[0]?.isPersonal === true) {
+      return;
+    }
     form.setFieldsValue({
       ordinances: [
         ...currentOrdinances,
@@ -305,6 +308,8 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                   }
                 }
               }
+
+              return Promise.resolve();
             },
           },
         ]}

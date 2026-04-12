@@ -24,11 +24,6 @@ const menuItems: MenuItem[] = [
     path: "/admin/caravans",
   },
   {
-    key: "feedback-tickets",
-    label: "Feedback",
-    path: "/admin/feedback-tickets",
-  },
-  {
     key: "configuracoes",
     label: "Configurações",
     children: [
@@ -46,6 +41,17 @@ const menuItems: MenuItem[] = [
         key: "ordinances",
         label: "Ordenanças",
         path: "/admin/ordinances",
+      },
+    ],
+  },
+  {
+    key: "sistema",
+    label: "Sistema",
+    children: [
+      {
+        key: "feedback-tickets",
+        label: "Feedbacks",
+        path: "/admin/feedback-tickets",
       },
       {
         key: "managers",
@@ -97,10 +103,20 @@ export const AdminSidebar = () => {
 
   // Calculate default openKeys - auto-open configuracoes if subitem is selected
   const defaultOpenKeys = useMemo(() => {
-    if (selectedKey && ["chapels", "buses", "ordinances", "managers"].includes(selectedKey)) {
-      return ["configuracoes"];
+    const keys: string[] = [];
+    if (
+      selectedKey &&
+      ["feedback-tickets", "managers"].includes(selectedKey)
+    ) {
+      keys.push("sistema");
     }
-    return [];
+    if (
+      selectedKey &&
+      ["chapels", "buses", "ordinances"].includes(selectedKey)
+    ) {
+      keys.push("configuracoes");
+    }
+    return keys;
   }, [selectedKey]);
 
   // Initialize openKeys with defaultOpenKeys if empty

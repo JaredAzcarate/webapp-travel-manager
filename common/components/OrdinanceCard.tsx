@@ -42,6 +42,12 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
   onAddSecondSession,
 }) => {
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
+  const isBaptistry = ordinance.name.toLowerCase().includes("batistério");
+  const multiSessionCount = selectedSessions?.length ?? 0;
+  const canShowAddSecondSession =
+    Boolean(onAddSecondSession) &&
+    multiSessionCount === 1 &&
+    !isPersonal;
 
   const handleCardClick = () => {
     if (disabled) return;
@@ -148,20 +154,44 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                         {slotAvailabilityMap[session.slot].available}/{slotAvailabilityMap[session.slot].maxCapacity} disponíveis
                       </Tag>
                     )}
+                    {index === 0 && !isBaptistry && (
+                      <Checkbox
+                        disabled={disabled || multiSessionCount > 1}
+                        checked={isPersonal}
+                        onChange={(e) => onPersonalChange(e.target.checked)}
+                      >
+                        Se for uma ordenança pessoal, marque esta opção
+                      </Checkbox>
+                    )}
                   </div>
                 );
               })}
-              {onAddSecondSession && selectedSessions.length === 1 && (
+              {canShowAddSecondSession && (
                 <Button
                   type="link"
-                  className="p-0! self-start"
+                  className="p-0 h-auto self-start"
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddSecondSession();
+                    onAddSecondSession?.();
                   }}
                 >
                   Adicionar segunda sessão para esta ordenança
+                </Button>
+              )}
+              {canSelectMultipleSessions && multiSessionCount === 2 && (
+                <Button
+                  type="link"
+                  danger
+                  className="p-0 h-auto self-start"
+                  disabled={disabled}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeselect(1);
+                  }}
+                >
+                  Remover segunda sessão
                 </Button>
               )}
             </>
@@ -207,7 +237,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
                 </div>
               )}
 
-              {!ordinance.name.toLowerCase().includes("batistério") && (
+              {!isBaptistry && (
                 <Checkbox
                   disabled={disabled}
                   checked={isPersonal}

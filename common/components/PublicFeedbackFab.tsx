@@ -3,8 +3,8 @@
 import { useSubmitPublicFeedback } from "@/features/feedback/hooks/feedbackTickets.hooks";
 import { App, Button, Form, Input, Modal, Radio, Space } from "antd";
 import { usePathname } from "next/navigation";
+import { ChatCircle } from "phosphor-react";
 import { useState } from "react";
-import { ChatCircle, Warning } from "phosphor-react";
 
 const { TextArea } = Input;
 
@@ -63,7 +63,6 @@ export function PublicFeedbackFab() {
       <Modal
         title={
           <Space>
-            <Warning size={22} />
             Reportar erro ou sugerir alteração
           </Space>
         }
