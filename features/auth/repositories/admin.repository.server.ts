@@ -1,7 +1,11 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { hashPassword } from '@/lib/auth/password.utils';
-import { AdminWithId, CreateAdminInput } from '../models/admin.model';
-import { Timestamp } from 'firebase-admin/firestore';
+import {
+  AdminWithId,
+  CreateAdminInput,
+  PanelAdminRole,
+} from '../models/admin.model';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { Timestamp as ClientTimestamp } from 'firebase/firestore';
 
 export class AdminRepositoryServer {
@@ -40,9 +44,12 @@ export class AdminRepositoryServer {
     const now = Timestamp.now();
     const hashedPassword = await hashPassword(input.password);
 
+    const role: PanelAdminRole = input.role ?? 'ADMIN';
     const docRef = await adminDb.collection(this.collectionName).add({
       username: input.username,
       password: hashedPassword,
+      role,
+      ...(input.chapelId ? { chapelId: input.chapelId } : {}),
       createdAt: now,
       updatedAt: now,
     });
@@ -51,6 +58,8 @@ export class AdminRepositoryServer {
       id: docRef.id,
       username: input.username,
       password: hashedPassword,
+      role,
+      ...(input.chapelId ? { chapelId: input.chapelId } : {}),
       createdAt: this.convertAdminTimestampToClient(now),
       updatedAt: this.convertAdminTimestampToClient(now),
     } as AdminWithId;
@@ -92,6 +101,24 @@ export class AdminRepositoryServer {
         updatedAt: this.convertAdminTimestampToClient(data.updatedAt),
       };
     }) as AdminWithId[];
+  }
+
+  async updateProfile(
+    id: string,
+    input: { role?: PanelAdminRole; chapelId?: string | null }
+  ): Promise<void> {
+    const updates: Record<string, unknown> = { updatedAt: Timestamp.now() };
+    if (input.role !== undefined) {
+      updates.role = input.role;
+    }
+    if (input.chapelId !== undefined) {
+      if (input.chapelId === null) {
+        updates.chapelId = FieldValue.delete();
+      } else {
+        updates.chapelId = input.chapelId;
+      }
+    }
+    await adminDb.collection(this.collectionName).doc(id).update(updates);
   }
 
   async delete(id: string): Promise<void> {

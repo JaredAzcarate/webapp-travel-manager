@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminOnlyGuard } from "@/common/components/AdminOnlyGuard";
 import { ChapelForm } from "@/features/chapels/components/ChapelForm";
 import { useChapel } from "@/features/chapels/hooks/chapels.hooks";
 import { Button, Spin, Typography } from "antd";
@@ -23,35 +24,41 @@ export default function EditChapelPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <Spin size="large" />
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Spin size="large" />
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   if (!chapel) {
     return (
-      <div className="p-6">
-        <Title level={2}>Capela não encontrada</Title>
-        <Button onClick={() => router.push("/admin/chapels")}>
-          Voltar para lista
-        </Button>
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Title level={2}>Capela não encontrada</Title>
+          <Button onClick={() => router.push("/admin/chapels")}>
+            Voltar para lista
+          </Button>
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   return (
-    <div className="p-6">
-      <Title level={2}>Editar Capela</Title>
+    <AdminOnlyGuard>
+      <div className="p-6">
+        <Title level={2}>Editar Capela</Title>
 
-      <div className="mt-6">
-        <ChapelForm
-          mode="edit"
-          chapelId={chapelId}
-          initialChapelData={chapel}
-        />
+        <div className="mt-6">
+          <ChapelForm
+            mode="edit"
+            chapelId={chapelId}
+            initialChapelData={chapel}
+          />
+        </div>
       </div>
-    </div>
+    </AdminOnlyGuard>
   );
 }
 

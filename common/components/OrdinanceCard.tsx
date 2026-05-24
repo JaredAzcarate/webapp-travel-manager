@@ -1,52 +1,51 @@
 "use client";
 
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
-import { Checkbox, Select, Tag } from "antd";
+import { Checkbox, Select, Tag, Typography } from "antd";
 import { motion } from "motion/react";
-import React, { useState } from "react";
+import React from "react";
 
 export interface OrdinanceCardProps {
   ordinance: OrdinanceWithId;
   selected: boolean;
-  selectedSlot?: string;
-  selectedSessions?: Array<{ slot?: string; isPersonal?: boolean }>;
-  isPersonal?: boolean;
+  selectedSlots: string[];
+  isPersonal: boolean;
   availableSlots: string[];
-  availability?: { available: number; maxCapacity: number; loading: boolean };
-  slotAvailabilityMap?: Record<string, { available: number; maxCapacity: number; loading: boolean }>;
+  slotAvailabilityMap?: Record<
+    string,
+    { available: number; maxCapacity: number; loading: boolean }
+  >;
   disabled?: boolean;
   onSelect: () => void;
-  onDeselect: (index?: number) => void;
-  onSlotChange: (slot: string | undefined, index?: number) => void;
+  onDeselect: () => void;
+  onSlotsChange: (slots: string[]) => void;
   onPersonalChange: (isPersonal: boolean) => void;
-  canSelectMultipleSessions?: boolean;
 }
+
+const MAX_SESSIONS_PER_ORDINANCE = 3;
+
+const { Text } = Typography;
 
 export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
   ordinance,
   selected,
-  selectedSlot,
-  selectedSessions,
-  isPersonal = false,
+  selectedSlots,
+  isPersonal,
   availableSlots,
-  availability,
   slotAvailabilityMap,
   disabled = false,
   onSelect,
   onDeselect,
-  onSlotChange,
+  onSlotsChange,
   onPersonalChange,
-  canSelectMultipleSessions = false,
 }) => {
-  const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
+  const isBaptistry = ordinance.name.toLowerCase().includes("batistério");
 
   const handleCardClick = () => {
     if (disabled) return;
     if (selected) {
-      // If already selected, deselect (remove all sessions)
       onDeselect();
     } else {
-      // Select if not selected (will initialize 3 sessions if canSelectMultipleSessions)
       onSelect();
     }
   };
@@ -68,7 +67,8 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
             ${selected ? "bg-primary text-white" : "bg-gray-50 text-gray-800"}
           `}
         >
-          {availableSlots.length} {availableSlots.length === 1 ? "sessão" : "sessões"} disponíveis
+          {availableSlots.length}{" "}
+          {availableSlots.length === 1 ? "sessão" : "sessões"} disponíveis
         </span>
         <span
           className={`
@@ -76,9 +76,7 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
             ${selected ? "bg-primary" : "border-2 border-gray-300"}
           `}
         >
-          {selected && (
-            <span className="w-1.5 h-1.5 rounded-full bg-white" />
-          )}
+          {selected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
         </span>
       </div>
 
@@ -96,106 +94,65 @@ export const OrdinanceCard: React.FC<OrdinanceCardProps> = ({
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          {canSelectMultipleSessions && selectedSessions ? (
-            <>
-              {selectedSessions.map((session, index) => {
-                const usedSlots = selectedSessions
-                  .filter((s, idx) => idx !== index && s.slot)
-                  .map((s) => s.slot!);
-
-                const availableSlotsForThis = availableSlots.filter(
-                  (slot) => !usedSlots.includes(slot)
-                );
-
-                return (
-                  <div key={index} className="flex flex-col gap-2 p-3 border border-gray-200 rounded-lg">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Sessão {index + 1}
-                    </label>
-                    <Select
-                      placeholder="Selecione o horário"
-                      allowClear
-                      disabled={disabled}
-                      value={session.slot}
-                      open={openSlotKey === `multi-${index}`}
-                      onOpenChange={(open) => setOpenSlotKey(open ? `multi-${index}` : null)}
-                      onSelect={() => setOpenSlotKey(null)}
-                      onChange={(value) => onSlotChange(value, index)}
-                      options={availableSlotsForThis.map((slot) => {
-                        const slotAvailability = slotAvailabilityMap?.[slot];
-                        const isSlotDisabled = slotAvailability
-                          ? slotAvailability.available <= 0 && !slotAvailability.loading
-                          : false;
-                        return {
-                          label: slot,
-                          value: slot,
-                          disabled: isSlotDisabled,
-                        };
-                      })}
-                      className="w-full"
-                    />
-                    {session.slot && slotAvailabilityMap?.[session.slot] && (
-                      <Tag color={slotAvailabilityMap[session.slot].available > 0 ? "green" : "red"}>
-                        {slotAvailabilityMap[session.slot].available}/{slotAvailabilityMap[session.slot].maxCapacity} disponíveis
-                      </Tag>
-                    )}
-                  </div>
-                );
+          <div className="flex flex-col gap-2 p-3 border border-gray-200 rounded-lg">
+            <div className="flex flex-col gap-0.5">
+              <label
+                className="block text-sm font-medium text-gray-700"
+                htmlFor={`ordinance-slots-${ordinance.id}`}
+              >
+                Horários
+              </label>
+              <Text type="secondary" className="text-xs block">
+                Pode escolher até {MAX_SESSIONS_PER_ORDINANCE} sessões.
+              </Text>
+            </div>
+            <Select
+              id={`ordinance-slots-${ordinance.id}`}
+              mode="multiple"
+              placeholder="Selecione um ou mais horários"
+              disabled={disabled}
+              maxCount={MAX_SESSIONS_PER_ORDINANCE}
+              value={selectedSlots}
+              onChange={(value) => onSlotsChange(value as string[])}
+              options={availableSlots.map((slot) => {
+                const slotAvailability = slotAvailabilityMap?.[slot];
+                const isSlotDisabled = slotAvailability
+                  ? slotAvailability.available <= 0 && !slotAvailability.loading
+                  : false;
+                return {
+                  label: slot,
+                  value: slot,
+                  disabled: isSlotDisabled,
+                };
               })}
-            </>
-          ) : (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Horário
-                </label>
-                <Select
-                  placeholder="Selecione o horário"
-                  allowClear
-                  disabled={disabled}
-                  value={selectedSlot}
-                  open={openSlotKey === "single"}
-                  onOpenChange={(open) => setOpenSlotKey(open ? "single" : null)}
-                  onSelect={() => setOpenSlotKey(null)}
-                  onChange={(value) => onSlotChange(value)}
-                  options={availableSlots.map((slot) => {
-                    const slotAvailability = slotAvailabilityMap?.[slot];
-                    const isSlotDisabled = slotAvailability
-                      ? slotAvailability.available <= 0 && !slotAvailability.loading
-                      : false;
-                    return {
-                      label: slot,
-                      value: slot,
-                      disabled: isSlotDisabled,
-                    };
-                  })}
-                  className="w-full"
-                />
-              </div>
-
-              {selectedSlot && availability && (
-                <div>
-                  {availability.loading ? (
-                    <Tag>Carregando...</Tag>
-                  ) : (
-                    <Tag color={availability.available > 0 ? "green" : "red"}>
-                      {availability.available}/{availability.maxCapacity} disponíveis
+              className="w-full"
+            />
+            {selectedSlots.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedSlots.map((slot) => {
+                  const slotAvailability = slotAvailabilityMap?.[slot];
+                  if (!slotAvailability) return null;
+                  return (
+                    <Tag
+                      key={`${ordinance.id}-${slot}`}
+                      color={slotAvailability.available > 0 ? "green" : "red"}
+                    >
+                      {slot}: {slotAvailability.available}/{slotAvailability.maxCapacity}
                     </Tag>
-                  )}
-                </div>
-              )}
-
-              {!ordinance.name.toLowerCase().includes("batistério") && (
-                <Checkbox
-                  disabled={disabled}
-                  checked={isPersonal}
-                  onChange={(e) => onPersonalChange(e.target.checked)}
-                >
-                  Se for uma ordenança pessoal, marque esta opção
-                </Checkbox>
-              )}
-            </>
-          )}
+                  );
+                })}
+              </div>
+            )}
+            {!isBaptistry && (
+              <Checkbox
+                disabled={disabled}
+                checked={isPersonal}
+                onChange={(e) => onPersonalChange(e.target.checked)}
+              >
+                Se for uma ordenança pessoal, marque esta opção
+              </Checkbox>
+            )}
+          </div>
         </motion.div>
       )}
     </div>

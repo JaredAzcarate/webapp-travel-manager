@@ -3,6 +3,7 @@
 import { PublicContent } from "@/common/components/PublicContent";
 import { toDate } from "@/common/utils/timestamp.utils";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
+import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import {
   useCancelRegistration,
   useMarkPaymentAsPaid,
@@ -17,6 +18,7 @@ import {
   Card,
   Form,
   Input,
+  Modal,
   Spin,
   Table,
   Tag,
@@ -53,8 +55,11 @@ export default function ConfirmPaymentPage() {
   const { notification, modal } = App.useApp();
   const [form] = Form.useForm<FormValues>();
   const [phone, setPhone] = useState<string>("");
+  const [selectedRegistrationForOrdinances, setSelectedRegistrationForOrdinances] =
+    useState<RegistrationWithId | null>(null);
 
   const { registrations, loading } = useRegistrationsByPhone(phone);
+  const { ordinances } = useOrdinances();
   const { markPaymentAsPaid, isPending: isMarkingPaid } =
     useMarkPaymentAsPaid();
   const { cancelRegistration, isPending: isCancelling } =
@@ -110,6 +115,10 @@ export default function ConfirmPaymentPage() {
       },
     });
   };
+
+  const ordinanceNameById = new Map(
+    ordinances.map((ordinance) => [ordinance.id, ordinance.name])
+  );
 
   const columns: ColumnsType<RegistrationWithId> = [
     {
@@ -178,9 +187,19 @@ export default function ConfirmPaymentPage() {
           record.participationStatus === "ACTIVE";
 
         const canCancel = record.participationStatus === "ACTIVE";
+        const hasRegisteredOrdinances = (record.ordinances?.length ?? 0) > 0;
 
         return (
           <div className="flex flex-col gap-2">
+            {hasRegisteredOrdinances && (
+              <Button
+                size="small"
+                onClick={() => setSelectedRegistrationForOrdinances(record)}
+                block
+              >
+                Ver ordenanças
+              </Button>
+            )}
             {canMarkAsPaid && (
               <Button
                 type="primary"
@@ -215,7 +234,8 @@ export default function ConfirmPaymentPage() {
   ];
 
   return (
-    <PublicContent>
+    <>
+      <PublicContent>
       <AnimatePresence>
         <motion.div
           key="header-section"
@@ -333,7 +353,32 @@ export default function ConfirmPaymentPage() {
           </AnimatePresence>
         </motion.div>
       </AnimatePresence>
-    </PublicContent>
+      </PublicContent>
+      <Modal
+        title="Ordenanças inscritas"
+        open={!!selectedRegistrationForOrdinances}
+        onCancel={() => setSelectedRegistrationForOrdinances(null)}
+        onOk={() => setSelectedRegistrationForOrdinances(null)}
+        okText="Fechar"
+        cancelButtonProps={{ style: { display: "none" } }}
+      >
+        {selectedRegistrationForOrdinances?.ordinances?.length ? (
+          <ul className="list-disc pl-5 space-y-2">
+            {selectedRegistrationForOrdinances.ordinances.map((item, index) => {
+              const ordinanceName =
+                ordinanceNameById.get(item.ordinanceId) ?? item.ordinanceId;
+              return (
+                <li key={`${item.ordinanceId}-${item.slot}-${index}`}>
+                  {ordinanceName} - {item.slot}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-gray-500">Esta inscrição não tem ordenanças.</p>
+        )}
+      </Modal>
+    </>
   );
 }
 

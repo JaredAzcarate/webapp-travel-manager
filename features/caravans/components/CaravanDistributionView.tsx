@@ -1,7 +1,10 @@
 "use client";
 
+import { isDevelopment } from "@/common/utils/env.utils";
 import { parseSlotToMinutes } from "@/common/utils/slotTime.utils";
+import { toDate } from "@/common/utils/timestamp.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
+import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import type { ChapelWithId } from "@/features/chapels/models/chapels.model";
@@ -13,6 +16,7 @@ import {
   useCancelRegistration,
   useCountActiveByBus,
   useCountCancelledByBus,
+  useDeleteRegistration,
   useFilteredRegistrations,
 } from "@/features/registrations/hooks/registrations.hooks";
 import { RegistrationWithId } from "@/features/registrations/models/registrations.model";
@@ -29,9 +33,10 @@ import {
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CaretLeft, FilePdf, FileXls, List, Plus } from "phosphor-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { WaitlistDrawer } from "./WaitlistDrawer";
 
 const { Title } = Typography;
@@ -39,8 +44,12 @@ const { Title } = Typography;
 export const CaravanDistributionView = () => {
   const searchParams = useSearchParams();
   const caravanId = searchParams.get("caravanId");
+  const { data: session } = useSession();
+  const isSecretary = session?.user?.role === "SECRETARY";
+  const secretaryChapelId = session?.user?.chapelId;
   const { notification } = App.useApp();
   const { chapels } = useChapels();
+  const { busStops } = useBusStops();
   const { ordinances } = useOrdinances();
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [waitlistDrawerOpen, setWaitlistDrawerOpen] = useState(false);
@@ -151,6 +160,25 @@ export const CaravanDistributionView = () => {
 
   const [isExportingOrdinances, setIsExportingOrdinances] = useState(false);
 
+  const visibleBusIds = useMemo(() => {
+    if (!selectedCaravan?.busIds?.length) {
+      return [];
+    }
+    if (!isSecretary || !secretaryChapelId) {
+      return selectedCaravan.busIds;
+    }
+
+    const busIdsWithSecretaryStop = new Set(
+      busStops
+        .filter((stop) => stop.chapelId === secretaryChapelId)
+        .map((stop) => stop.busId)
+    );
+
+    return selectedCaravan.busIds.filter((busId) =>
+      busIdsWithSecretaryStop.has(busId)
+    );
+  }, [selectedCaravan, isSecretary, secretaryChapelId, busStops]);
+
   if (!caravanId) {
     return (
       <div className="space-y-4">
@@ -248,14 +276,16 @@ export const CaravanDistributionView = () => {
         </div>
         {selectedCaravan && (
           <Space>
-            <Button
-              type="default"
-              icon={<FileXls size={16} />}
-              onClick={handleExportOrdinancesBySession}
-              loading={isExportingOrdinances}
-            >
-              Exportar para o Templo
-            </Button>
+            {!isSecretary && (
+              <Button
+                type="default"
+                icon={<FileXls size={16} />}
+                onClick={handleExportOrdinancesBySession}
+                loading={isExportingOrdinances}
+              >
+                Exportar para o Templo
+              </Button>
+            )}
             <Button icon={<List size={16} />} onClick={handleOpenWaitlist}>
               Ver Waitlist
             </Button>
@@ -278,8 +308,8 @@ export const CaravanDistributionView = () => {
 
       {!loadingCaravan && selectedCaravan && (
         <div className="space-y-8">
-          {selectedCaravan.busIds && selectedCaravan.busIds.length > 0 ? (
-            selectedCaravan.busIds.map((busId) => (
+          {visibleBusIds.length > 0 ? (
+            visibleBusIds.map((busId) => (
               <BusDistributionCard
                 key={busId}
                 busId={busId}
@@ -288,12 +318,16 @@ export const CaravanDistributionView = () => {
                 chapels={chapels}
                 chapelMap={chapelMap}
                 ordinanceIdToNameMap={ordinanceIdToNameMap}
+                isSecretary={isSecretary}
+                secretaryChapelId={secretaryChapelId}
               />
             ))
           ) : (
             <Card>
               <p className="text-gray-500">
-                Esta viagem não tem autocarros atribuídos.
+                {isSecretary
+                  ? "Não há autocarros desta viagem com paragem na sua unidade."
+                  : "Esta viagem não tem autocarros atribuídos."}
               </p>
             </Card>
           )}
@@ -341,6 +375,8 @@ interface BusDistributionCardProps {
   chapels: ChapelWithId[];
   chapelMap: Map<string, string>;
   ordinanceIdToNameMap: Map<string, string>;
+  isSecretary?: boolean;
+  secretaryChapelId?: string;
 }
 
 const TABLE_LOCALE_PT = {
@@ -361,13 +397,24 @@ const BusDistributionCard = ({
   chapels,
   chapelMap,
   ordinanceIdToNameMap,
+  isSecretary,
+  secretaryChapelId,
 }: BusDistributionCardProps) => {
   const { notification, modal } = App.useApp();
   const { bus, loading: loadingBus } = useBus(busId);
   const { registrations: activeRegistrations, loading: loadingRegistrations } =
     useActiveRegistrationsByBusId(busId, caravanId);
 
-  const [chapelIdFilter, setChapelIdFilter] = useState<string | undefined>(undefined);
+  const [chapelIdFilter, setChapelIdFilter] = useState<string | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    if (isSecretary && secretaryChapelId) {
+      setChapelIdFilter(secretaryChapelId);
+    }
+  }, [isSecretary, secretaryChapelId]);
+
   const [sortField, setSortField] = useState<string | null>("fullName");
   const [sortOrder, setSortOrder] = useState<"ascend" | "descend" | null>("ascend");
 
@@ -411,6 +458,8 @@ const BusDistributionCard = ({
   const { count: cancelledCount } = useCountCancelledByBus(caravanId, busId);
   const { cancelRegistration, isPending: isCancelling } =
     useCancelRegistration();
+  const { deleteRegistration, isPending: isDeleting } = useDeleteRegistration();
+  const showDevActions = isDevelopment();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
@@ -455,6 +504,33 @@ const BusDistributionCard = ({
           notification.error({
             title: "Erro",
             description: `Não foi possível cancelar a participação: ${errorMessage}`,
+          });
+        }
+      },
+    });
+  };
+
+  const handleDeleteRegistration = (registration: RegistrationWithId) => {
+    modal.confirm({
+      title: "Eliminar inscrição (dev)",
+      content: `Eliminar permanentemente a inscrição de ${registration.fullName}? Esta ação não pode ser desfeita.`,
+      okText: "Sim, eliminar",
+      okType: "danger",
+      cancelText: "Não",
+      onOk: async () => {
+        try {
+          await deleteRegistration(registration.id);
+          notification.success({
+            title: "Sucesso",
+            description: "Inscrição eliminada com sucesso",
+          });
+        } catch (error) {
+          console.error("Error deleting registration:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : "Erro desconhecido";
+          notification.error({
+            title: "Erro",
+            description: `Não foi possível eliminar a inscrição: ${errorMessage}`,
           });
         }
       },
@@ -523,8 +599,9 @@ const BusDistributionCard = ({
           "Ordenança 1",
           "Ordenança 2",
           "Ordenança 3",
+          "Data inscrição",
         ];
-        const colWidths = [40, 55, 35, 35, 35];
+        const colWidths = [30, 35, 25, 25, 25, 35];
         const startX = 10;
 
         headers.forEach((header, i) => {
@@ -573,6 +650,7 @@ const BusDistributionCard = ({
             ordinanceLabels[0],
             ordinanceLabels[1],
             ordinanceLabels[2],
+            toDate(registration.createdAt)?.toLocaleDateString("pt-PT") ?? "-",
           ];
 
           rowData.forEach((text, i) => {
@@ -850,6 +928,16 @@ const BusDistributionCard = ({
               Cancelar
             </Button>
           )}
+          {showDevActions && (
+            <Button
+              type="default"
+              danger
+              onClick={() => handleDeleteRegistration(record)}
+              loading={isDeleting}
+            >
+              Eliminar
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -896,7 +984,7 @@ const BusDistributionCard = ({
           </div>
         }
       >
-        {chapels.length > 0 && (
+        {chapels.length > 0 && !isSecretary && (
           <div className="mb-4 flex items-center gap-2">
             <span className="text-gray-600">Filtrar por capela:</span>
             <Select

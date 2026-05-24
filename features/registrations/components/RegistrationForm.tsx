@@ -3,7 +3,10 @@
 import { CardRadioGroup } from "@/common/components/CardRadioGroup";
 import { OrdinancesListField } from "@/common/components/OrdinancesListField";
 import { PrivacyPolicyModal } from "@/common/components/PrivacyPolicyModal";
-import { OrdinanceFormValue } from "@/common/utils/ordinances.utils";
+import {
+  filterOrdinancesByCaravanLimits,
+  OrdinanceFormValue,
+} from "@/common/utils/ordinances.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import {
@@ -13,8 +16,8 @@ import {
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useOrdinances } from "@/features/ordinances/hooks/ordinances.hooks";
 import {
-  useCountActiveByBus,
   useCreateRegistration,
+  usePublicBusSeatSummary,
   useUpdateRegistration,
 } from "@/features/registrations/hooks/registrations.hooks";
 import {
@@ -38,6 +41,7 @@ import {
 } from "antd";
 import { Timestamp } from "firebase/firestore";
 import { AnimatePresence, motion } from "motion/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -89,6 +93,10 @@ export const RegistrationForm = ({
 }: RegistrationFormProps) => {
   const { notification } = App.useApp();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isSecretaryPanel =
+    session?.user?.role === "SECRETARY" && !!session?.user?.chapelId;
+  const secretaryChapelId = session?.user?.chapelId;
   const [form] = Form.useForm<FormValues>();
   const [privacyPolicyModalOpen, setPrivacyPolicyModalOpen] = useState(false);
   const [caravanSelectOpen, setCaravanSelectOpen] = useState(false);
@@ -115,8 +123,15 @@ export const RegistrationForm = ({
   const { caravans: activeCaravans, loading: loadingCaravans } =
     useActiveCaravans();
   const { chapels, loading: loadingChapels } = useChapels();
+
+  const chapelOptions = useMemo(() => {
+    if (isSecretaryPanel && secretaryChapelId) {
+      return chapels.filter((c) => c.id === secretaryChapelId);
+    }
+    return chapels;
+  }, [chapels, isSecretaryPanel, secretaryChapelId]);
   const { busStops } = useBusStops();
-  const { ordinances } = useOrdinances();
+  const { ordinances: allOrdinances } = useOrdinances();
 
   const selectedCaravanId = Form.useWatch("caravanId", form);
   const selectedChapelId = Form.useWatch("chapelId", form);
@@ -131,6 +146,13 @@ export const RegistrationForm = ({
   const skipsOrdinances = Form.useWatch("skipsOrdinances", form);
 
   const { caravan: selectedCaravan } = useCaravan(selectedCaravanId || "");
+
+  const ordinances = useMemo(() => {
+    if (!selectedCaravan) {
+      return [];
+    }
+    return filterOrdinancesByCaravanLimits(selectedCaravan, allOrdinances);
+  }, [selectedCaravan, allOrdinances]);
 
   const assignedBusId = useMemo(() => {
     if (!selectedChapelId || !selectedCaravan || !busStops.length) return null;
@@ -151,23 +173,30 @@ export const RegistrationForm = ({
   }, [selectedChapelId, selectedCaravan, busStops]);
 
   const { bus: assignedBus } = useBus(assignedBusId || "");
-  const { count: occupiedCount } = useCountActiveByBus(
+  const { summary: busSeatSummary } = usePublicBusSeatSummary(
     selectedCaravanId || "",
     assignedBusId || ""
   );
 
   const capacityInfo = useMemo(() => {
-    if (!assignedBus || !selectedCaravanId || !assignedBusId) return null;
-    const available = assignedBus.capacity - occupiedCount;
-    const isFull = occupiedCount >= assignedBus.capacity;
+    if (
+      !assignedBus ||
+      !selectedCaravanId ||
+      !assignedBusId ||
+      !busSeatSummary
+    ) {
+      return null;
+    }
+    const { capacity, occupied, available } = busSeatSummary;
+    const isFull = occupied >= capacity;
     return {
-      occupied: occupiedCount,
-      capacity: assignedBus.capacity,
+      occupied,
+      capacity,
       available,
       isFull,
       busName: assignedBus.name,
     };
-  }, [assignedBus, occupiedCount, selectedCaravanId, assignedBusId]);
+  }, [assignedBus, busSeatSummary, selectedCaravanId, assignedBusId]);
 
   const busAssignmentMessage = useMemo(() => {
     if (!selectedChapelId) return null;
@@ -320,6 +349,12 @@ export const RegistrationForm = ({
       });
     }
   }, [mode, propCaravanId, form]);
+
+  useEffect(() => {
+    if (mode === "create" && isSecretaryPanel && secretaryChapelId) {
+      form.setFieldsValue({ chapelId: secretaryChapelId });
+    }
+  }, [mode, isSecretaryPanel, secretaryChapelId, form]);
 
   useEffect(() => {
     if (mode === "create" && assignedBusId && selectedChapelId) {
@@ -663,11 +698,11 @@ export const RegistrationForm = ({
           <Select
             placeholder={loadingChapels ? "A carregar..." : "Selecione uma capela"}
             loading={loadingChapels}
-            disabled={loadingChapels}
+            disabled={loadingChapels || isSecretaryPanel}
             open={chapelSelectOpen}
             onOpenChange={setChapelSelectOpen}
             onSelect={() => setChapelSelectOpen(false)}
-            options={chapels.map((chapel) => ({
+            options={chapelOptions.map((chapel) => ({
               label: chapel.name,
               value: chapel.id,
             }))}
@@ -1017,7 +1052,11 @@ export const RegistrationForm = ({
                 Ordenanças
               </Title>
 
-              <Paragraph>Por favor, selecione pelo menos uma ordenança que deseja realizar.<strong> Caso não venha a realizar nenhuma, marque a última opção.</strong></Paragraph>
+              <Paragraph>
+                Por favor, selecione as ordenanças que deseja realizar (até 3 tipos diferentes;
+                em cada tipo pode escolher até 3 horários).
+                <strong> Caso não venha a realizar nenhuma, marque a última opção.</strong>
+              </Paragraph>
             </div>
 
             <OrdinancesListField

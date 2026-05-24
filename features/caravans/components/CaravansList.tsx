@@ -2,6 +2,7 @@
 
 import { toDate } from "@/common/utils/timestamp.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
+import { useBusStops } from "@/features/buses/hooks/busStops.hooks";
 import { CaravanForm } from "@/features/caravans/components/CaravanForm";
 import { PaymentStatusDrawer } from "@/features/caravans/components/PaymentStatusDrawer";
 import {
@@ -14,21 +15,53 @@ import { useCountActiveByBus } from "@/features/registrations/hooks/registration
 import { App, Button, Drawer, Space, Spin, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash } from "phosphor-react";
 import { useState } from "react";
 
 const { Title } = Typography;
 
-interface CaravanOccupationProps {
-  caravan: CaravanWithId;
+/** Same rule as the Status column: form open window (not DB flag alone). */
+function isCaravanFormWindowOpen(caravan: CaravanWithId): boolean {
+  const now = new Date();
+  const formOpenAt = toDate(caravan.formOpenAt);
+  const formCloseAt = toDate(caravan.formCloseAt);
+  if (!formOpenAt || !formCloseAt) return false;
+  return now >= formOpenAt && now <= formCloseAt;
 }
 
-const CaravanOccupation = ({ caravan }: CaravanOccupationProps) => {
-  const busIds = caravan.busIds || [];
+interface CaravanOccupationProps {
+  caravan: CaravanWithId;
+  isSecretary?: boolean;
+  secretaryChapelId?: string;
+  busIdsForSecretary?: Set<string>;
+}
+
+const CaravanOccupation = ({
+  caravan,
+  isSecretary,
+  secretaryChapelId,
+  busIdsForSecretary,
+}: CaravanOccupationProps) => {
+  const busIds = (caravan.busIds || []).filter((busId) => {
+    if (!isSecretary) {
+      return true;
+    }
+    if (!secretaryChapelId || !busIdsForSecretary) {
+      return false;
+    }
+    return busIdsForSecretary.has(busId);
+  });
 
   if (busIds.length === 0) {
-    return <span className="text-gray-400">Sem autocarros</span>;
+    return (
+      <span className="text-gray-400">
+        {isSecretary
+          ? "Sem autocarros da sua unidade"
+          : "Sem autocarros"}
+      </span>
+    );
   }
 
   return (
@@ -73,8 +106,12 @@ const BusOccupation = ({ busId, caravanId }: BusOccupationProps) => {
 
 export const CaravansList = () => {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isSecretary = session?.user?.role === "SECRETARY";
+  const secretaryChapelId = session?.user?.chapelId;
   const { notification, modal } = App.useApp();
   const { caravans, loading } = useCaravans();
+  const { busStops } = useBusStops();
   const { deleteCaravan, isPending: isDeleting } = useDeleteCaravan();
 
   const [paymentDrawerOpen, setPaymentDrawerOpen] = useState(false);
@@ -134,14 +171,7 @@ export const CaravansList = () => {
       title: "Status",
       key: "isActive",
       render: (_, record) => {
-        const now = new Date();
-        const formOpenAt = toDate(record.formOpenAt);
-        const formCloseAt = toDate(record.formCloseAt);
-
-        let isActive = false;
-        if (formOpenAt && formCloseAt) {
-          isActive = now >= formOpenAt && now <= formCloseAt;
-        }
+        const isActive = isCaravanFormWindowOpen(record);
 
         return (
           <Tag color={isActive ? "green" : "default"}>
@@ -175,7 +205,19 @@ export const CaravansList = () => {
       title: "Vagas disponíveis",
       key: "occupation",
       render: (_, record) => {
-        return <CaravanOccupation caravan={record} />;
+        const busIdsForSecretary = new Set(
+          busStops
+            .filter((stop) => stop.chapelId === secretaryChapelId)
+            .map((stop) => stop.busId)
+        );
+        return (
+          <CaravanOccupation
+            caravan={record}
+            isSecretary={isSecretary}
+            secretaryChapelId={secretaryChapelId}
+            busIdsForSecretary={busIdsForSecretary}
+          />
+        );
       },
     },
     {
@@ -197,18 +239,24 @@ export const CaravansList = () => {
           >
             Ver pagamentos
           </Button>
-          <Button
-            type="link"
-            icon={<Pencil size={16} />}
-            onClick={() => handleEdit(record.id)}
-          />
-          <Button
-            type="link"
-            danger
-            icon={<Trash size={16} />}
-            onClick={() => handleDelete(record)}
-            loading={isDeleting}
-          />
+          {!isSecretary && (
+            <>
+              {isCaravanFormWindowOpen(record) && (
+                <Button
+                  type="link"
+                  icon={<Pencil size={16} />}
+                  onClick={() => handleEdit(record.id)}
+                />
+              )}
+              <Button
+                type="link"
+                danger
+                icon={<Trash size={16} />}
+                onClick={() => handleDelete(record)}
+                loading={isDeleting}
+              />
+            </>
+          )}
         </Space>
       ),
     },
@@ -220,13 +268,15 @@ export const CaravansList = () => {
         <Title level={4} style={{ margin: 0 }}>
           Lista de Viagens
         </Title>
-        <Button
-          type="primary"
-          icon={<Plus size={16} />}
-          onClick={() => router.push("/admin/caravans/new")}
-        >
-          Nova Viagem
-        </Button>
+        {!isSecretary && (
+          <Button
+            type="primary"
+            icon={<Plus size={16} />}
+            onClick={() => router.push("/admin/caravans/new")}
+          >
+            Nova Viagem
+          </Button>
+        )}
       </div>
       <Table
         columns={columns}

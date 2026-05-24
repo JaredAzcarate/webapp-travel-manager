@@ -138,5 +138,10 @@ service cloud.firestore {
       // Write: Blocked from client (only Admin SDK can write)
       allow write: if false;
     }
+
+    // feedbackTickets — created via API (Admin SDK); no client reads/writes
+    match /feedbackTickets/{ticketId} {
+      allow read, write: if false;
+    }
   }
 }

@@ -9,11 +9,14 @@ import {
 import { OrdinanceWithId } from "@/features/ordinances/models/ordinances.model";
 import { AgeCategory } from "@/features/registrations/models/registrations.model";
 import { Form, FormInstance, Input } from "antd";
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 
 interface FormValuesWithOrdinances {
   ordinances: OrdinanceFormValue[];
 }
+
+const MAX_SESSIONS_PER_ORDINANCE_TYPE = 3;
+const MAX_DISTINCT_ORDINANCE_TYPES = 3;
 
 export interface OrdinancesListFieldProps {
   form: FormInstance<FormValuesWithOrdinances>;
@@ -40,7 +43,6 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
   skipsOrdinances,
   disabled = false,
 }) => {
-  // Filter available ordinances
   const availableOrdinances = useMemo(() => {
     return filterAvailableOrdinances(
       ordinances,
@@ -51,207 +53,80 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
     );
   }, [ordinances, gender, ageCategory, isFirstTimeConvert, hasLessThanOneYearAsMember]);
 
-  // Check if user can select multiple sessions of the same ordinance (only Batistério for YOUTH or members with less than 1 year)
-  const canSelectMultipleSessions = useMemo(() => {
-    return (
-      (ageCategory === "YOUTH" || hasLessThanOneYearAsMember) &&
-      availableOrdinances.length === 1 &&
-      availableOrdinances[0]?.name.toLowerCase().includes("batistério")
-    );
-  }, [ageCategory, hasLessThanOneYearAsMember, availableOrdinances]);
-
-  // Get selected ordinance IDs
-  const selectedOrdinanceIds = useMemo(() => {
-    return ordinancesList
-      .filter((ord): ord is OrdinanceFormValue => ord != null && !!ord.ordinanceId)
-      .map((ord) => ord.ordinanceId!);
+  const uniqueOrdinanceTypeCount = useMemo(() => {
+    const ids = new Set<string>();
+    ordinancesList.forEach((o) => {
+      if (o?.ordinanceId) ids.add(o.ordinanceId);
+    });
+    return ids.size;
   }, [ordinancesList]);
 
-  // Get count of selected sessions for a specific ordinance
-  const getSelectedSessionsCount = (ordinanceId: string) => {
-    return ordinancesList.filter(
-      (ord) => ord && ord.ordinanceId === ordinanceId && ord.slot
-    ).length;
-  };
-
-  // Handle ordinance selection
   const handleSelectOrdinance = (ordinanceId: string) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-
-    // If can select multiple sessions, initialize 2 sessions at once
-    if (canSelectMultipleSessions) {
-      const sessionsCount = getSelectedSessionsCount(ordinanceId);
-      if (sessionsCount >= 2) {
-        return;
-      }
-      // If not selected yet, add 2 sessions at once
-      if (sessionsCount === 0) {
-        const newOrdinances = [
-          ...currentOrdinances,
-          {
-            ordinanceId,
-            slot: undefined,
-            isPersonal: false,
-          },
-          {
-            ordinanceId,
-            slot: undefined,
-            isPersonal: false,
-          },
-        ];
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
-    }
-
-    // Original logic: Check if already selected
-    if (selectedOrdinanceIds.includes(ordinanceId)) {
-      return;
-    }
-
-    // Check maximum 3 ordinances
-    if (currentOrdinances.filter((ord: OrdinanceFormValue) => ord && ord.ordinanceId).length >= 3) {
-      return;
-    }
-
-    // Add new ordinance
-    const newOrdinances = [
-      ...currentOrdinances,
-      {
-        ordinanceId,
-        slot: undefined,
-        isPersonal: false,
-      },
-    ];
-    form.setFieldsValue({ ordinances: newOrdinances });
-  };
-
-  // Handle ordinance deselection
-  const handleDeselectOrdinance = (ordinanceId: string, index?: number) => {
-    const currentOrdinances = form.getFieldValue("ordinances") || [];
-
-    // If can select multiple sessions and index is provided, remove specific session
-    if (canSelectMultipleSessions && index !== undefined) {
-      const ordinanceIndices = currentOrdinances
-        .map((ord: OrdinanceFormValue, idx: number) =>
-          ord && ord.ordinanceId === ordinanceId ? idx : -1
-        )
-        .filter((idx: number) => idx >= 0);
-
-      if (ordinanceIndices[index] !== undefined) {
-        const newOrdinances = currentOrdinances.filter(
-          (_: OrdinanceFormValue, idx: number) => idx !== ordinanceIndices[index]
-        );
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
-    }
-
-    // Original logic: remove all sessions of this ordinance
-    const newOrdinances = currentOrdinances.filter(
-      (ord: OrdinanceFormValue) => ord && ord.ordinanceId !== ordinanceId
+    const hasRowsForType = currentOrdinances.some(
+      (ord: OrdinanceFormValue) => ord?.ordinanceId === ordinanceId
     );
-    form.setFieldsValue({ ordinances: newOrdinances });
-  };
+    if (hasRowsForType) return;
 
-  // Handle slot change
-  const handleSlotChange = (ordinanceId: string, slot: string | undefined, index?: number) => {
-    const currentOrdinances = form.getFieldValue("ordinances") || [];
+    const uniqueTypes = new Set(
+      currentOrdinances
+        .filter((ord: OrdinanceFormValue) => ord?.ordinanceId)
+        .map((ord: OrdinanceFormValue) => ord.ordinanceId!)
+    );
+    if (uniqueTypes.size >= MAX_DISTINCT_ORDINANCE_TYPES) return;
 
-    // If can select multiple sessions and index is provided, update specific session
-    if (canSelectMultipleSessions && index !== undefined) {
-      const ordinanceIndices = currentOrdinances
-        .map((ord: OrdinanceFormValue, idx: number) =>
-          ord && ord.ordinanceId === ordinanceId ? idx : -1
-        )
-        .filter((idx: number) => idx >= 0);
-
-      if (ordinanceIndices[index] !== undefined) {
-        const newOrdinances = [...currentOrdinances];
-        newOrdinances[ordinanceIndices[index]] = {
-          ...newOrdinances[ordinanceIndices[index]],
-          slot,
-        };
-        form.setFieldsValue({ ordinances: newOrdinances });
-        return;
-      }
-    }
-
-    // Original logic: update first matching ordinance
-    const newOrdinances = currentOrdinances.map((ord: OrdinanceFormValue) => {
-      if (ord && ord.ordinanceId === ordinanceId) {
-        return { ...ord, slot };
-      }
-      return ord;
+    form.setFieldsValue({
+      ordinances: [
+        ...currentOrdinances,
+        { ordinanceId, slot: undefined, isPersonal: false },
+      ],
     });
-    form.setFieldsValue({ ordinances: newOrdinances });
   };
 
-  // Handle personal change
+  const handleDeselectOrdinance = (ordinanceId: string) => {
+    const currentOrdinances = form.getFieldValue("ordinances") || [];
+    form.setFieldsValue({
+      ordinances: currentOrdinances.filter(
+        (ord: OrdinanceFormValue) => ord?.ordinanceId !== ordinanceId
+      ),
+    });
+  };
+
+  const handleSlotsChange = (ordinanceId: string, slots: string[]) => {
+    const currentOrdinances = form.getFieldValue("ordinances") || [];
+    const previousRows = currentOrdinances.filter(
+      (ord: OrdinanceFormValue) => ord?.ordinanceId === ordinanceId
+    );
+    const nextRows = slots.slice(0, MAX_SESSIONS_PER_ORDINANCE_TYPE).map((slot) => {
+      const previousForSlot = previousRows.find(
+        (row: OrdinanceFormValue) => row.slot === slot
+      );
+      return {
+        ordinanceId,
+        slot,
+        isPersonal: previousForSlot?.isPersonal ?? false,
+      };
+    });
+
+    form.setFieldsValue({
+      ordinances: [
+        ...currentOrdinances.filter(
+          (ord: OrdinanceFormValue) => ord?.ordinanceId !== ordinanceId
+        ),
+        ...nextRows,
+      ],
+    });
+  };
+
   const handlePersonalChange = (ordinanceId: string, isPersonal: boolean) => {
     const currentOrdinances = form.getFieldValue("ordinances") || [];
-    const newOrdinances = currentOrdinances.map((ord: OrdinanceFormValue) => {
-      if (ord && ord.ordinanceId === ordinanceId) {
+    form.setFieldsValue({
+      ordinances: currentOrdinances.map((ord: OrdinanceFormValue) => {
+        if (ord?.ordinanceId !== ordinanceId) return ord;
         return { ...ord, isPersonal };
-      }
-      return ord;
+      }),
     });
-    form.setFieldsValue({ ordinances: newOrdinances });
   };
-
-  // Sync form fields with selected ordinances
-  // Guard: never clear ordinances when selectedOrdinanceIds is empty but we have data -
-  // this prevents spurious clearing during form validation or re-renders
-  useEffect(() => {
-    const currentOrdinances = form.getFieldValue("ordinances") || [];
-    const currentIds = currentOrdinances
-      .filter((ord: OrdinanceFormValue): ord is OrdinanceFormValue => ord != null)
-      .map((ord: OrdinanceFormValue) => ord.ordinanceId)
-      .filter(Boolean);
-
-    if (
-      selectedOrdinanceIds.length === 0 &&
-      currentOrdinances.length > 0 &&
-      currentOrdinances.some((o: OrdinanceFormValue) => o?.ordinanceId && o?.slot)
-    ) {
-      return;
-    }
-
-    // Check if sync is needed
-    const idsMatch =
-      currentIds.length === selectedOrdinanceIds.length &&
-      currentIds.every((id: string) => selectedOrdinanceIds.includes(id)) &&
-      selectedOrdinanceIds.every((id) => currentIds.includes(id));
-
-    if (idsMatch) return;
-
-    // Remove ordinances that are no longer selected
-    const toRemove: number[] = [];
-    currentOrdinances.forEach((ord: OrdinanceFormValue, index: number) => {
-      if (ord && ord.ordinanceId && !selectedOrdinanceIds.includes(ord.ordinanceId)) {
-        toRemove.push(index);
-      }
-    });
-
-    // Add newly selected ordinances
-    const toAdd = selectedOrdinanceIds.filter((id) => !currentIds.includes(id));
-
-    if (toRemove.length > 0 || toAdd.length > 0) {
-      const newOrdinances = [...currentOrdinances];
-
-      // Remove in reverse order to maintain indices
-      toRemove.reverse().forEach((index) => {
-        newOrdinances.splice(index, 1);
-      });
-
-      // Add new ordinances
-      toAdd.forEach((id) => {
-        newOrdinances.push({ ordinanceId: id, slot: undefined, isPersonal: false });
-      });
-
-      form.setFieldsValue({ ordinances: newOrdinances });
-    }
-  }, [selectedOrdinanceIds, form]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -259,26 +134,36 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
         name="ordinances"
         rules={[
           {
-            validator: async (_, ordinancesList) => {
-              const filledOrdinances = ordinancesList.filter(
+            validator: async (_, list: OrdinanceFormValue[]) => {
+              const filledOrdinances = list.filter(
                 (o: OrdinanceFormValue): o is OrdinanceFormValue =>
                   o != null && !!o.ordinanceId && !!o.slot
               );
 
-              // Minimum 1 ordinance is validated on skipsOrdinances field
-              // If skips ordinances, no minimum required here
               if (skipsOrdinances) {
                 return Promise.resolve();
               }
 
-              // Check maximum 3 ordinances
-              if (filledOrdinances.length > 3) {
+              const byOrdCounts = new Map<string, number>();
+              for (const o of filledOrdinances) {
+                const id = o.ordinanceId!;
+                byOrdCounts.set(id, (byOrdCounts.get(id) || 0) + 1);
+              }
+
+              if (byOrdCounts.size > MAX_DISTINCT_ORDINANCE_TYPES) {
                 return Promise.reject(
-                  new Error("Máximo 3 ordenanças podem ser selecionadas")
+                  new Error("Pode selecionar no máximo 3 tipos de ordenanças")
                 );
               }
 
-              // Check for overlapping time slots
+              for (const count of byOrdCounts.values()) {
+                if (count > MAX_SESSIONS_PER_ORDINANCE_TYPE) {
+                  return Promise.reject(
+                    new Error("Cada ordenança pode ter no máximo 3 horários")
+                  );
+                }
+              }
+
               for (let i = 0; i < filledOrdinances.length; i++) {
                 for (let j = i + 1; j < filledOrdinances.length; j++) {
                   if (
@@ -290,13 +175,13 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                     )
                   ) {
                     return Promise.reject(
-                      new Error(
-                        "Os horários das ordenanças não podem se sobrepor"
-                      )
+                      new Error("Os horários das ordenanças não podem se sobrepor")
                     );
                   }
                 }
               }
+
+              return Promise.resolve();
             },
           },
         ]}
@@ -305,35 +190,38 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
           return (
             <div className="grid grid-cols-1 gap-4">
               {availableOrdinances.map((ordinance) => {
-                // Get all selected sessions for this ordinance
                 const selectedSessions = ordinancesList.filter(
                   (ord) => ord && ord.ordinanceId === ordinance.id
                 );
-                const sessionsCount = selectedSessions.length;
-                const isSelected = sessionsCount > 0;
+                const isSelected = selectedSessions.length > 0;
 
-                // Get all field indices for this ordinance
-                const fieldIndices = fields
+                const fieldIndicesIntoFields = fields
                   .map((field, idx) => {
-                    const fieldValue = form.getFieldValue(["ordinances", field.name, "ordinanceId"]);
+                    const fieldValue = form.getFieldValue([
+                      "ordinances",
+                      field.name,
+                      "ordinanceId",
+                    ]);
                     return fieldValue === ordinance.id ? idx : -1;
                   })
                   .filter((idx) => idx >= 0);
 
+                const disableNewOrdinanceType =
+                  !isSelected &&
+                  uniqueOrdinanceTypeCount >= MAX_DISTINCT_ORDINANCE_TYPES &&
+                  !ordinancesList.some((o) => o?.ordinanceId === ordinance.id);
+
                 return (
                   <div key={ordinance.id}>
-                    {fieldIndices.map((fieldIdx, sessionIdx) => (
-                      <React.Fragment key={`${ordinance.id}-${fieldIdx}`}>
+                    {fieldIndicesIntoFields.map((fieldIdx) => (
+                      <React.Fragment key={`${ordinance.id}-${fields[fieldIdx].key}`}>
                         <Form.Item
                           name={[fields[fieldIdx].name, "ordinanceId"]}
                           hidden
                         >
                           <Input />
                         </Form.Item>
-                        <Form.Item
-                          name={[fields[fieldIdx].name, "slot"]}
-                          hidden
-                        >
+                        <Form.Item name={[fields[fieldIdx].name, "slot"]} hidden>
                           <Input />
                         </Form.Item>
                         <Form.Item
@@ -347,25 +235,17 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
                     <OrdinanceCardWrapper
                       ordinance={ordinance}
                       selected={isSelected}
-                      selectedOrdinance={selectedSessions[0]}
-                      selectedSessions={canSelectMultipleSessions ? selectedSessions : undefined}
+                      selectedSessions={selectedSessions}
                       ordinancesList={ordinancesList}
                       selectedCaravanId={selectedCaravanId}
                       gender={gender}
-                      disabled={
-                        disabled ||
-                        skipsOrdinances ||
-                        (!isSelected &&
-                          !canSelectMultipleSessions &&
-                          selectedOrdinanceIds.length >= 3)
-                      }
+                      disabled={disabled || skipsOrdinances || disableNewOrdinanceType}
                       onSelect={() => handleSelectOrdinance(ordinance.id)}
-                      onDeselect={(index) => handleDeselectOrdinance(ordinance.id, index)}
-                      onSlotChange={(slot, index) => handleSlotChange(ordinance.id, slot, index)}
+                      onDeselect={() => handleDeselectOrdinance(ordinance.id)}
+                      onSlotsChange={(slots) => handleSlotsChange(ordinance.id, slots)}
                       onPersonalChange={(isPersonal) =>
                         handlePersonalChange(ordinance.id, isPersonal)
                       }
-                      canSelectMultipleSessions={canSelectMultipleSessions}
                     />
                   </div>
                 );

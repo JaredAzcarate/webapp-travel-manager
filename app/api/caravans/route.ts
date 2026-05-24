@@ -1,9 +1,15 @@
 import { CreateCaravanInput } from "@/features/caravans/models/caravans.model";
 import { caravanRepositoryServer } from "@/features/caravans/repositories/caravans.repository.server";
+import { requireAdminRole, requirePanelSession } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
+    const auth = await requirePanelSession();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const caravans = await caravanRepositoryServer.getAll();
     return NextResponse.json({ caravans }, { status: 200 });
   } catch (error) {
@@ -17,6 +23,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const input: CreateCaravanInput = await request.json();
 
     if (!input.name) {

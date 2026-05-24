@@ -1,9 +1,16 @@
 import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
+import type { PanelAdminRole } from "@/features/auth/models/admin.model";
+import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json();
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
+    const { username, password, role, chapelId } = await request.json();
 
     if (!username || !password) {
       return NextResponse.json(
@@ -28,8 +35,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const resolvedRole: PanelAdminRole =
+      role === "SECRETARY" ? "SECRETARY" : "ADMIN";
+
+    if (resolvedRole === "SECRETARY" && !chapelId) {
+      return NextResponse.json(
+        { message: "Capela obrigatória para perfil secretário" },
+        { status: 400 }
+      );
+    }
+
     // Create admin
-    const admin = await adminRepositoryServer.create({ username, password });
+    const admin = await adminRepositoryServer.create({
+      username,
+      password,
+      role: resolvedRole,
+      ...(resolvedRole === "SECRETARY" ? { chapelId } : {}),
+    });
 
     return NextResponse.json(
       {

@@ -2,6 +2,7 @@
 
 import { useCaravan } from "@/features/caravans/hooks/caravans.hooks";
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
+import { toDate } from "@/common/utils/timestamp.utils";
 import {
   useFilteredRegistrations,
   useUpdateRegistration,
@@ -17,13 +18,16 @@ import {
   Select,
   Space,
   Spin,
+  Switch,
   Table,
   Tag,
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Timestamp } from "firebase/firestore";
+import { useSession } from "next-auth/react";
 import { FilePdf, Receipt } from "phosphor-react";
+import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 
 const { Title } = Typography;
@@ -40,6 +44,8 @@ export const PaymentStatusDrawer = ({
   caravanId,
 }: PaymentStatusDrawerProps) => {
   const { notification } = App.useApp();
+  const { data: session } = useSession();
+  const isSecretary = session?.user?.role === "SECRETARY";
   const { chapels } = useChapels();
   const { updateRegistration, isPending: isUpdating } = useUpdateRegistration();
   const { caravan } = useCaravan(caravanId);
@@ -48,12 +54,14 @@ export const PaymentStatusDrawer = ({
   const [filterPaymentStatus, setFilterPaymentStatus] = useState<
     PaymentStatus | undefined
   >();
+  const [showCancelled, setShowCancelled] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const { registrations: filteredRegistrations, loading } =
     useFilteredRegistrations(caravanId, {
       chapelId: filterChapelId,
       paymentStatus: filterPaymentStatus,
+      participationStatus: showCancelled ? undefined : "ACTIVE",
     });
 
   const chapelMap = useMemo(() => {
@@ -83,6 +91,14 @@ export const PaymentStatusDrawer = ({
         yPosition += 8;
       }
 
+      if (isSecretary && session?.user?.chapelId) {
+        const chapelLabel =
+          chapelMap.get(session.user.chapelId) ?? session.user.chapelId;
+        doc.setFontSize(12);
+        doc.text(`Unidade: ${chapelLabel}`, 10, yPosition);
+        yPosition += 8;
+      }
+
       const exportDate = new Date().toLocaleDateString("pt-PT", {
         day: "2-digit",
         month: "2-digit",
@@ -103,8 +119,8 @@ export const PaymentStatusDrawer = ({
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
 
-        const headers = ["Nome", "Telefone", "Capela", "Status"];
-        const colWidths = [60, 40, 50, 40];
+        const headers = ["Nome", "Telefone", "Capela", "Data inscrição", "Status"];
+        const colWidths = [45, 30, 40, 35, 35];
         const startX = 10;
 
         headers.forEach((header, i) => {
@@ -143,6 +159,9 @@ export const PaymentStatusDrawer = ({
             registration.fullName || "N/A",
             registration.phone || "N/A",
             chapelName,
+            toDate(registration.createdAt)
+              ? dayjs(toDate(registration.createdAt)).format("DD/MM/YYYY")
+              : "-",
             statusLabel,
           ];
 
@@ -268,17 +287,19 @@ export const PaymentStatusDrawer = ({
         <>
           <div className="mb-4 flex flex-col gap-4">
             <Space wrap>
-              <Select
-                placeholder="Filtrar por Capela"
-                allowClear
-                style={{ width: 200 }}
-                value={filterChapelId}
-                onChange={setFilterChapelId}
-                options={chapels.map((chapel) => ({
-                  label: chapel.name,
-                  value: chapel.id,
-                }))}
-              />
+              {!isSecretary && (
+                <Select
+                  placeholder="Filtrar por Capela"
+                  allowClear
+                  style={{ width: 200 }}
+                  value={filterChapelId}
+                  onChange={setFilterChapelId}
+                  options={chapels.map((chapel) => ({
+                    label: chapel.name,
+                    value: chapel.id,
+                  }))}
+                />
+              )}
               <Select
                 placeholder="Filtrar por Status"
                 allowClear
@@ -289,9 +310,21 @@ export const PaymentStatusDrawer = ({
                   { label: "Pendente", value: "PENDING" },
                   { label: "Pago", value: "PAID" },
                   { label: "Grátis", value: "FREE" },
-                  { label: "Cancelado", value: "CANCELLED" },
+                  ...(showCancelled
+                    ? [{ label: "Cancelado", value: "CANCELLED" as const }]
+                    : []),
                 ]}
               />
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={showCancelled}
+                  onChange={(checked) => {
+                    setShowCancelled(checked);
+                    setFilterPaymentStatus(undefined);
+                  }}
+                />
+                <span className="text-sm text-gray-600">Mostrar cancelados</span>
+              </div>
               <Button
                 type="primary"
                 icon={<FilePdf size={16} />}
@@ -302,6 +335,9 @@ export const PaymentStatusDrawer = ({
               </Button>
             </Space>
           </div>
+          <p className="text-sm text-gray-600 mb-3">
+            Total de participantes (filtro atual): {filteredRegistrations.length}
+          </p>
           <Table
             columns={columns}
             dataSource={filteredRegistrations}

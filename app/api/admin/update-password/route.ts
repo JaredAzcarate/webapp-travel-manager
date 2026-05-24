@@ -1,8 +1,14 @@
 import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
+import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { adminId, newPassword } = await request.json();
 
     if (!adminId || !newPassword) {

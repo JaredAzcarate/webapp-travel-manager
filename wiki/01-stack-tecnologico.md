@@ -11,15 +11,17 @@
 
 ## Backend
 
-- **Firebase Auth** - Autenticación para ADMIN y CHAPEL
-- **Firestore** - Base de datos NoSQL
-- **Firebase Admin SDK** - Para operaciones del servidor (opcional)
+- **NextAuth v5** (Credentials) — Autenticación del panel; credenciales almacenadas en Firestore (`admin`), contraseñas con **bcryptjs**
+- **Firestore** — Base de datos NoSQL
+- **Firebase Admin SDK** — Rutas API y operaciones servidor (`lib/firebase-admin.ts`)
 
 ## Utilidades
 
-- **date-fns** - Manejo de fechas
-- **libphonenumber-js** - Validación de números telefónicos internacionales
-- **pdfkit** - Generación de PDFs en el servidor
+- **date-fns** / **dayjs** — Manejo de fechas
+- **libphonenumber-js** — Validación de números telefónicos internacionales
+- **pdfkit**, **jspdf**, **exceljs** — Exportación PDF / Excel según pantalla
+
+Para el detalle de auth, rutas y colecciones, ver [Implementación actual](./current-implementation.md).
 
 ---
 
