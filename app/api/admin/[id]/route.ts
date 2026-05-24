@@ -1,11 +1,65 @@
+import type { PanelAdminRole } from "@/features/auth/models/admin.model";
 import { adminRepositoryServer } from "@/features/auth/repositories/admin.repository.server";
+import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const role = body.role as PanelAdminRole;
+    const chapelId = body.chapelId as string | undefined;
+
+    if (role !== "ADMIN" && role !== "SECRETARY") {
+      return NextResponse.json(
+        { message: "Perfil inválido" },
+        { status: 400 }
+      );
+    }
+
+    if (role === "SECRETARY" && (!chapelId || typeof chapelId !== "string")) {
+      return NextResponse.json(
+        { message: "Capela obrigatória para perfil secretário" },
+        { status: 400 }
+      );
+    }
+
+    await adminRepositoryServer.updateProfile(id, {
+      role,
+      chapelId: role === "ADMIN" ? null : chapelId,
+    });
+
+    return NextResponse.json(
+      { message: "Gestor atualizado com sucesso" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error updating admin profile:", error);
+    return NextResponse.json(
+      { message: "Erro ao atualizar gestor" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireAdminRole();
+    if (!auth.ok) {
+      return auth.response;
+    }
+
     const { id } = await params;
 
     await adminRepositoryServer.delete(id);

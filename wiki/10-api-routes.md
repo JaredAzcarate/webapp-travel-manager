@@ -35,9 +35,12 @@ return NextResponse.json<ApiResponse>(
 
 ### Autenticación en API Routes
 
-- Middleware `verifyAuth()` para verificar token
-- Middleware `verifyRole()` para verificar roles
-- Extraer usuario con `getUserFromRequest()`
+- **No** hay middlewares globales con nombres fijos como `verifyAuth()` o `getUserFromRequest()` en el repositorio: cada `route.ts` implementa lo que necesita.
+- Muchas rutas bajo `/api/registrations`, `/api/caravans`, GDPR, etc. son **públicas** (formulario de inscripción, consultas por teléfono, etc.).
+- Donde haga falta acceso privilegiado al almacén, suele usarse **Firebase Admin SDK** en el servidor, no el token de Firebase Auth del usuario final del panel.
+- Para el login del panel, el flujo pasa por **NextAuth** (`/api/auth/[...nextauth]`), no por verificación manual en cada API de admin de forma uniforme.
+
+Ver [Implementación actual](./current-implementation.md) y el código de `app/api/`.
 
 ---
 

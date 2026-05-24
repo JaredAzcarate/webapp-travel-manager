@@ -2,6 +2,7 @@
 
 import { useSignOut } from "@/features/auth/hooks/auth.hooks";
 import { Button, Drawer, Layout, Menu } from "antd";
+import { useSession } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import { List, SignOut, X } from "phosphor-react";
 import { useMemo, useState } from "react";
@@ -41,6 +42,17 @@ const menuItems: MenuItem[] = [
         label: "Ordenanças",
         path: "/admin/ordinances",
       },
+    ],
+  },
+  {
+    key: "sistema",
+    label: "Sistema",
+    children: [
+      {
+        key: "feedback-tickets",
+        label: "Feedbacks",
+        path: "/admin/feedback-tickets",
+      },
       {
         key: "managers",
         label: "Gestores",
@@ -64,27 +76,47 @@ const getAllMenuItems = (items: MenuItem[]): MenuItem[] => {
   return result;
 };
 
-const allMenuItems = getAllMenuItems(menuItems);
-
-
 export const AdminSidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
   const { signOut } = useSignOut();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openKeys, setOpenKeys] = useState<string[]>([]);
 
+  const visibleMenuItems = useMemo(() => {
+    if (session?.user?.role === "SECRETARY") {
+      return menuItems.filter((item) => item.key === "caravans");
+    }
+    return menuItems;
+  }, [session?.user?.role]);
+
+  const allMenuItems = useMemo(
+    () => getAllMenuItems(visibleMenuItems),
+    [visibleMenuItems]
+  );
+
   const selectedKey = useMemo(() => {
     const item = allMenuItems.find((item) => pathname?.startsWith(item.path || ""));
     return item?.key || "";
-  }, [pathname]);
+  }, [pathname, allMenuItems]);
 
   // Calculate default openKeys - auto-open configuracoes if subitem is selected
   const defaultOpenKeys = useMemo(() => {
-    if (selectedKey && ["chapels", "buses", "ordinances", "managers"].includes(selectedKey)) {
-      return ["configuracoes"];
+    const keys: string[] = [];
+    if (
+      selectedKey &&
+      ["feedback-tickets", "managers"].includes(selectedKey)
+    ) {
+      keys.push("sistema");
     }
-    return [];
+    if (
+      selectedKey &&
+      ["chapels", "buses", "ordinances"].includes(selectedKey)
+    ) {
+      keys.push("configuracoes");
+    }
+    return keys;
   }, [selectedKey]);
 
   // Initialize openKeys with defaultOpenKeys if empty
@@ -102,7 +134,7 @@ export const AdminSidebar = () => {
 
   // Convert menuItems to Ant Design Menu items format
   const menuItemsForAntd = useMemo(() => {
-    return menuItems.map((item) => {
+    return visibleMenuItems.map((item) => {
       if (item.children) {
         return {
           key: item.key,
@@ -118,7 +150,7 @@ export const AdminSidebar = () => {
         label: item.label,
       };
     });
-  }, []);
+  }, [visibleMenuItems]);
 
   const handleSignOut = () => {
     signOut();

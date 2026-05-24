@@ -18,6 +18,7 @@ import {
   RegistrationWithId,
   UpdateRegistrationInput,
 } from '../models/registrations.model';
+import { validateOrdinanceSelectionRules } from '../services/validateOrdinanceSelections.server';
 
 export class RegistrationRepositoryServer {
   private collectionName = 'registrations';
@@ -68,6 +69,17 @@ export class RegistrationRepositoryServer {
     };
 
     return converted as RegistrationWithId;
+  }
+
+  async getById(id: string): Promise<RegistrationWithId> {
+    const snap = await adminDb.collection(this.collectionName).doc(id).get();
+    if (!snap.exists) {
+      throw new Error(`Registration with id ${id} not found`);
+    }
+    return this.migrateRegistration({
+      id: snap.id,
+      ...snap.data(),
+    });
   }
 
   async getByUuid(uuid: string): Promise<RegistrationWithId | null> {
@@ -284,6 +296,22 @@ export class RegistrationRepositoryServer {
     const participationStatus: ParticipationStatus = isBusFull
       ? 'WAITLIST'
       : input.participationStatus || 'ACTIVE';
+
+    const caravanPrecheckSnap = await adminDb
+      .collection('caravans')
+      .doc(input.caravanId)
+      .get();
+    if (!caravanPrecheckSnap.exists) {
+      throw new Error(`Caravan with id ${input.caravanId} not found`);
+    }
+    const caravanPrecheck = {
+      id: caravanPrecheckSnap.id,
+      ...caravanPrecheckSnap.data(),
+    } as CaravanWithId;
+
+    if (!isBusFull && input.ordinances && input.ordinances.length > 0) {
+      validateOrdinanceSelectionRules(input.ordinances, caravanPrecheck);
+    }
 
     // Generate registration ID before transaction
     const registrationRef = adminDb.collection(this.collectionName).doc();

@@ -1,4 +1,5 @@
 import { registrationRepositoryServer } from "@/features/registrations/repositories/registrations.repository.server";
+import { denySecretaryIfWrongChapel } from "@/lib/auth/registration-access.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -7,6 +8,11 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+
+    const denied = await denySecretaryIfWrongChapel(id);
+    if (denied) {
+      return denied;
+    }
 
     const registration = await registrationRepositoryServer.cancelRegistration(id);
 

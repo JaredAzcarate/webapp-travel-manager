@@ -15,6 +15,7 @@ import {
 import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Alert,
   App,
   Button,
   Form,
@@ -411,6 +412,16 @@ export const BusForm = ({
       >
         <InputNumber placeholder="Ex: 50" min={1} style={{ width: "100%" }} />
       </Form.Item>
+
+      {mode === "edit" && busId && (
+        <Alert
+          type="warning"
+          showIcon
+          title="Paragens partilhadas entre viagens"
+          description="Estas paragens estão ligadas ao modelo de autocarro. Qualquer alteração aqui aplica-se a todas as viagens que usam este autocarro."
+          className="mb-2"
+        />
+      )}
 
       <Form.Item
         label="Paragens do autocarro"

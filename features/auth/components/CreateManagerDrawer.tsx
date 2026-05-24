@@ -1,7 +1,9 @@
 "use client";
 
+import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { useQueryClient } from "@tanstack/react-query";
-import { App, Button, Drawer, Form, Input } from "antd";
+import { App, Button, Drawer, Form, Input, Select } from "antd";
+import type { PanelAdminRole } from "@/features/auth/models/admin.model";
 import { useState } from "react";
 
 interface CreateManagerDrawerProps {
@@ -14,6 +16,8 @@ interface CreateAdminFormValues {
   username: string;
   password: string;
   confirmPassword: string;
+  role: PanelAdminRole;
+  chapelId?: string;
 }
 
 export const CreateManagerDrawer = ({
@@ -25,6 +29,8 @@ export const CreateManagerDrawer = ({
   const queryClient = useQueryClient();
   const [form] = Form.useForm<CreateAdminFormValues>();
   const [loading, setLoading] = useState(false);
+  const { chapels, loading: loadingChapels } = useChapels();
+  const role = Form.useWatch("role", form);
 
   const handleSubmit = async (values: CreateAdminFormValues) => {
     setLoading(true);
@@ -35,6 +41,8 @@ export const CreateManagerDrawer = ({
         body: JSON.stringify({
           username: values.username,
           password: values.password,
+          role: values.role,
+          ...(values.role === "SECRETARY" ? { chapelId: values.chapelId } : {}),
         }),
       });
 
@@ -46,7 +54,7 @@ export const CreateManagerDrawer = ({
 
       notification.success({
         title: "Sucesso",
-        description: "Usuário admin criado com sucesso!",
+        description: "Utilizador criado com sucesso!",
       });
 
       queryClient.invalidateQueries({ queryKey: ["admins"] });
@@ -72,7 +80,13 @@ export const CreateManagerDrawer = ({
       size="large"
       destroyOnClose
     >
-      <Form form={form} layout="vertical" onFinish={handleSubmit} className="flex flex-col gap-4">
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        className="flex flex-col gap-4"
+        initialValues={{ role: "ADMIN" as PanelAdminRole }}
+      >
         <Form.Item
           name="username"
           label="Nome de Usuário"
@@ -97,6 +111,38 @@ export const CreateManagerDrawer = ({
             autoComplete="username"
           />
         </Form.Item>
+
+        <Form.Item
+          name="role"
+          label="Perfil"
+          rules={[{ required: true, message: "Selecione o perfil" }]}
+        >
+          <Select
+            options={[
+              { value: "ADMIN", label: "Administrador" },
+              {
+                value: "SECRETARY",
+                label: "Secretário (apenas inscrições da capela)",
+              },
+            ]}
+          />
+        </Form.Item>
+
+        {role === "SECRETARY" && (
+          <Form.Item
+            name="chapelId"
+            label="Capela"
+            rules={[
+              { required: true, message: "Selecione a capela do secretário" },
+            ]}
+          >
+            <Select
+              placeholder={loadingChapels ? "A carregar..." : "Selecione a capela"}
+              loading={loadingChapels}
+              options={chapels.map((c) => ({ label: c.name, value: c.id }))}
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="password"

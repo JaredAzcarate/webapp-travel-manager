@@ -2,13 +2,14 @@
 
 import { toDate } from "@/common/utils/timestamp.utils";
 import { useAdmins, useDeleteAdmin } from "@/features/auth/hooks/admin.hooks";
-import { AdminWithId } from "@/features/auth/models/admin.model";
+import type { AdminWithId } from "@/features/auth/models/admin.model";
+import { useChapels } from "@/features/chapels/hooks/chapels.hooks";
 import { App, Button, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Pencil, Plus, Trash } from "phosphor-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CreateManagerDrawer } from "./CreateManagerDrawer";
 import { EditManagerDrawer } from "./EditManagerDrawer";
 
@@ -18,6 +19,12 @@ export const ManagersList = () => {
   const { notification, modal } = App.useApp();
   const { admins, loading } = useAdmins();
   const { deleteAdmin, isPending: isDeleting } = useDeleteAdmin();
+  const { chapels } = useChapels();
+  const chapelNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    chapels.forEach((c) => m.set(c.id, c.name));
+    return m;
+  }, [chapels]);
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminWithId | null>(null);
@@ -80,6 +87,20 @@ export const ManagersList = () => {
       title: "Nome de Usuário",
       dataIndex: "username",
       key: "username",
+    },
+    {
+      title: "Perfil",
+      key: "role",
+      render: (_, record) =>
+        record.role === "SECRETARY" ? "Secretário" : "Administrador",
+    },
+    {
+      title: "Capela",
+      key: "chapelId",
+      render: (_, record) =>
+        record.chapelId
+          ? chapelNameById.get(record.chapelId) ?? record.chapelId
+          : "—",
     },
     {
       title: "Data de Criação",

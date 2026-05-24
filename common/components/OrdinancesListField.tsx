@@ -98,7 +98,9 @@ export const OrdinancesListField: React.FC<OrdinancesListFieldProps> = ({
       (ord: OrdinanceFormValue) => ord?.ordinanceId === ordinanceId
     );
     const nextRows = slots.slice(0, MAX_SESSIONS_PER_ORDINANCE_TYPE).map((slot) => {
-      const previousForSlot = previousRows.find((row) => row.slot === slot);
+      const previousForSlot = previousRows.find(
+        (row: OrdinanceFormValue) => row.slot === slot
+      );
       return {
         ordinanceId,
         slot,

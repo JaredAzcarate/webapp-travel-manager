@@ -172,6 +172,42 @@ export class CaravanRepositoryServer {
   async getActive(): Promise<CaravanWithId[]> {
     const allCaravans = await this.getAll();
     const now = Date.now();
+    const toMillis = (value: unknown): number => {
+      if (!value) return 0;
+      if (typeof value === "object" && "toMillis" in (value as object)) {
+        const fn = (value as { toMillis?: () => number }).toMillis;
+        if (typeof fn === "function") {
+          return fn();
+        }
+      }
+      if (typeof value === "object" && "toDate" in (value as object)) {
+        const fn = (value as { toDate?: () => Date }).toDate;
+        if (typeof fn === "function") {
+          return fn().getTime();
+        }
+      }
+      if (typeof value === "object") {
+        const ts = value as {
+          seconds?: number;
+          _seconds?: number;
+          nanoseconds?: number;
+          _nanoseconds?: number;
+        };
+        const seconds = ts.seconds ?? ts._seconds;
+        const nanoseconds = ts.nanoseconds ?? ts._nanoseconds ?? 0;
+        if (typeof seconds === "number") {
+          return seconds * 1000 + nanoseconds / 1_000_000;
+        }
+      }
+      if (value instanceof Date) {
+        return value.getTime();
+      }
+      if (typeof value === "string") {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    };
 
     const activeCaravans = allCaravans.filter((caravan) => {
       const formOpenAt = caravan.formOpenAt;
@@ -179,8 +215,8 @@ export class CaravanRepositoryServer {
 
       if (!formOpenAt || !formCloseAt) return false;
 
-      const openMillis = formOpenAt.toMillis ? formOpenAt.toMillis() : 0;
-      const closeMillis = formCloseAt.toMillis ? formCloseAt.toMillis() : 0;
+      const openMillis = toMillis(formOpenAt);
+      const closeMillis = toMillis(formCloseAt);
 
       return now >= openMillis && now <= closeMillis;
     });
@@ -192,14 +228,14 @@ export class CaravanRepositoryServer {
     const upcomingCaravans = allCaravans.filter((caravan) => {
       const departureAt = caravan.departureAt;
       if (!departureAt) return false;
-      const depMillis = departureAt.toMillis ? departureAt.toMillis() : 0;
+      const depMillis = toMillis(departureAt);
       return depMillis > now;
     });
 
     // Sort by departure date (soonest first)
     return upcomingCaravans.sort((a, b) => {
-      const aMillis = a.departureAt?.toMillis?.() || 0;
-      const bMillis = b.departureAt?.toMillis?.() || 0;
+      const aMillis = toMillis(a.departureAt);
+      const bMillis = toMillis(b.departureAt);
       return aMillis - bMillis;
     });
   }

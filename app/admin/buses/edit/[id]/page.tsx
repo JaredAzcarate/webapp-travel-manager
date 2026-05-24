@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminOnlyGuard } from "@/common/components/AdminOnlyGuard";
 import { BusForm } from "@/features/buses/components/BusForm";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
 import { useBusStopsByBusId } from "@/features/buses/hooks/busStops.hooks";
@@ -25,35 +26,41 @@ export default function EditBusPage() {
 
   if (loadingBus || loadingStops) {
     return (
-      <div className="p-6">
-        <Spin size="large" />
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Spin size="large" />
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   if (!bus) {
     return (
-      <div className="p-6">
-        <Title level={2}>Autocarro não encontrado</Title>
-        <Button onClick={() => router.push("/admin/buses")}>
-          Voltar para lista
-        </Button>
-      </div>
+      <AdminOnlyGuard>
+        <div className="p-6">
+          <Title level={2}>Autocarro não encontrado</Title>
+          <Button onClick={() => router.push("/admin/buses")}>
+            Voltar para lista
+          </Button>
+        </div>
+      </AdminOnlyGuard>
     );
   }
 
   return (
-    <div className="p-6">
-      <Title level={2}>Editar Autocarro</Title>
+    <AdminOnlyGuard>
+      <div className="p-6">
+        <Title level={2}>Editar Autocarro</Title>
 
-      <div className="mt-6">
-        <BusForm
-          mode="edit"
-          busId={busId}
-          initialBusData={bus}
-          initialBusStops={busStops}
-        />
+        <div className="mt-6">
+          <BusForm
+            mode="edit"
+            busId={busId}
+            initialBusData={bus}
+            initialBusStops={busStops}
+          />
+        </div>
       </div>
-    </div>
+    </AdminOnlyGuard>
   );
 }

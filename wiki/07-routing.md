@@ -9,16 +9,22 @@
 
 ### Rutas Públicas
 
-- `/` - Home
-- `/registration` - Registro público
-- `/registration/success` - Confirmación de registro
-- `/confirm-payment` - Confirmación de pago
+- `/` — Home
+- `/registration` — Registro (listado / selección de caravana)
+- `/registration/[caravanId]` — Registro para una caravana concreta
+- `/registration/success` — Confirmación de registro
+- `/confirm-payment` — Confirmación de pago y cancelaciones (por teléfono)
+- `/privacy-and-policy/*` — Privacidad y RGPD
+- `/setup` — Configuración inicial (si aplica al despliegue)
 
-### Rutas Protegidas (Admin)
+### Rutas Protegidas (panel)
 
-- Todas las rutas en `/admin/**` están protegidas
-- Componente `AuthGuard` en el layout de admin
-- Redirección automática a `/admin/login` si no autenticado
+- Todas las rutas bajo `/admin/**` requieren sesión **NextAuth**
+- **`app/admin/layout.tsx`** comprueba `useSession` y redirige a **`/auth/login`** si no hay sesión (no existe `AuthGuard` con ese nombre ni login en `/admin/login`)
+
+### Otras rutas de autenticación
+
+- `/auth/login` — Inicio de sesión del panel (NextAuth Credentials)
 
 ## Filtros y Búsquedas
 

@@ -6,68 +6,62 @@ El proyecto está organizado siguiendo un patrón de **features** donde cada fea
 
 ```
 /
-├── app/                          # Next.js App Router
-│   ├── (public)/                 # Rutas públicas
-│   │   ├── page.tsx             # Home
-│   │   ├── registration/        # Registro público
-│   │   └── confirm-payment/     # Confirmación de pago
-│   ├── admin/                   # Área admin (protegida)
-│   │   ├── layout.tsx          # Layout con protección
-│   │   ├── login/              # Login
-│   │   ├── caravans/           # Gestión de caravanas
-│   │   ├── chapels/            # Gestión de capillas
-│   │   ├── users/              # Gestión de usuarios
-│   │   └── buses/              # Gestión de buses
-│   └── api/                     # API Routes (server-side)
-│       └── auth/               # Endpoints de autenticación
+├── app/                              # Next.js App Router
+│   ├── page.tsx                      # Home
+│   ├── layout.tsx
+│   ├── auth/login/                   # Login del panel (NextAuth)
+│   ├── registration/                 # Registro público (+ [caravanId], success)
+│   ├── confirm-payment/
+│   ├── privacy-and-policy/           # RGPD / privacidad
+│   ├── setup/
+│   ├── admin/                        # Panel (layout con sesión NextAuth)
+│   │   ├── layout.tsx
+│   │   ├── caravans/                 # Lista, new, edit, distribution
+│   │   ├── chapels/
+│   │   ├── buses/
+│   │   ├── ordinances/
+│   │   └── managers/                 # Usuarios admin (colección admin)
+│   └── api/                          # Route handlers (route.ts)
+│       ├── auth/[...nextauth]/       # NextAuth
+│       ├── admin/                    # CRUD / contraseñas admin
+│       ├── caravans/, chapels/, buses/, bus-stops/, ordinances/
+│       ├── registrations/
+│       └── gdpr/
 │
-├── features/                     # Features de la aplicación
-│   ├── auth/                    # Feature de autenticación
-│   │   ├── models/             # Modelos específicos (user.model.ts)
-│   │   ├── repositories/       # Repositorios específicos (user.repository.ts)
-│   │   ├── hooks/              # Hooks específicos (user.hooks.ts)
-│   │   └── components/         # Componentes específicos (opcional)
-│   ├── caravans/               # Feature de caravanas
-│   │   ├── models/
-│   │   ├── repositories/
-│   │   ├── hooks/
-│   │   └── components/
-│   ├── chapels/                # Feature de capillas
-│   │   ├── models/
-│   │   ├── repositories/
-│   │   ├── hooks/
-│   │   └── components/
-│   └── [otras-features]/       # Otras features siguiendo el mismo patrón
+├── features/                         # Dominio por feature
+│   ├── auth/                         # admin.model, admin.repository, hooks, componentes gestores
+│   ├── caravans/
+│   ├── chapels/
+│   ├── buses/
+│   ├── ordinances/
+│   └── registrations/
 │
-├── common/                      # Código compartido entre features
-│   ├── models/                 # Modelos compartidos y helpers genéricos
-│   │   ├── index.ts            # Helper types genéricos (WithId, CreateInput, UpdateInput)
-│   │   └── roles.model.ts      # Modelo de roles
-│   ├── repositories/           # Repositorios compartidos
-│   │   └── roles.repository.ts # Repository de roles
-│   ├── hooks/                  # Hooks compartidos
-│   │   └── roles.hooks.ts      # useRoles
-│   ├── components/             # Componentes reutilizables globales
-│   │   ├── layout/             # Componentes de layout
-│   │   └── shared/             # Componentes compartidos genéricos
-│   ├── providers/              # Providers de React (Ant Design, React Query)
-│   │   ├── antd-provider.tsx
-│   │   └── query-provider.tsx
-│   ├── lib/                    # Configuración y utilidades base
-│   │   └── firebase.js         # Configuración de Firebase
-│   └── utils/                  # Utilidades generales
-│       └── firestore/          # Utilidades de Firestore
+├── common/                           # Compartido
+│   ├── models/
+│   ├── repositories/                 # ej. roles.repository
+│   ├── hooks/
+│   ├── components/
+│   ├── lib/firebase.js               # Cliente Firestore (browser)
+│   └── utils/
 │
-└── wiki/                        # Documentación
-    ├── project.md              # Especificación funcional
-    └── development.md          # Índice de desarrollo
+├── lib/                              # Auth y servidor
+│   ├── auth/config.ts                # NextAuth
+│   └── firebase-admin.ts             # Admin SDK
+│
+├── providers/                        # SessionProvider (NextAuth), etc.
+├── utils/firestore/errors.ts         # Errores Firestore (raíz)
+├── proxy.ts                          # Lógica tipo middleware (no sustituye middleware.ts)
+└── wiki/
+    ├── development.md
+    ├── current-implementation.md     # Fuente de verdad técnica
+    └── project.md
 ```
 
 ## Principios de Organización
 
 ### Cuándo usar `features/`
 
-- Código específico de una feature de negocio (auth, caravans, chapels, users, buses)
+- Código específico de una feature de negocio (auth, caravans, chapels, buses, ordinances, registrations)
 - Models, repositories, hooks y components que solo se usan en esa feature
 - Ejemplo: `features/auth/` contiene todo lo relacionado con autenticación
 
@@ -110,12 +104,14 @@ features/[feature]/
 ```
 features/auth/
   ├── models/
-  │   └── user.model.ts          # User, CreateUserInput, UpdateUserInput, UserWithId
+  │   ├── admin.model.ts         # Credenciales del panel (NextAuth)
+  │   └── user.model.ts          # Modelo User (colección users; reservado / no usado en login actual)
   ├── repositories/
-  │   └── user.repository.ts     # UserRepository con métodos CRUD
+  │   ├── admin.repository.ts
+  │   └── admin.repository.server.ts
   ├── hooks/
-  │   └── user.hooks.ts          # useCreateUser, etc. (usan repository directamente)
-  └── components/                 # Componentes específicos de auth (opcional)
+  │   └── auth.hooks.ts          # useSession, signOut (NextAuth)
+  └── components/                # Gestores, drawers de admin, etc.
 ```
 
 ### Feature: `features/chapels/`
@@ -154,29 +150,29 @@ common/
 **Ejemplo de flujo:**
 
 ```typescript
-// 1. Modelo
-export interface User {
+// 1. Modelo (ejemplo genérico)
+export interface Chapel {
   /* ... */
 }
-export type CreateUserInput = CreateInput<User>;
+export type CreateChapelInput = CreateInput<Chapel>;
 
 // 2. Repository
-export class UserRepository {
-  async create(input: CreateUserInput): Promise<UserWithId> {
+export class ChapelRepository {
+  async create(input: CreateChapelInput): Promise<ChapelWithId> {
     /* ... */
   }
 }
 
 // 3. Hook
-export const useCreateUser = () => {
-  const repository = new UserRepository();
+export const useCreateChapel = () => {
+  const repository = new ChapelRepository();
   return useMutation({
-    mutationFn: (input: CreateUserInput) => repository.create(input),
+    mutationFn: (input: CreateChapelInput) => repository.create(input),
   });
 };
 
 // 4. Componente
-const { createUser } = useCreateUser();
+const { mutate: createChapel } = useCreateChapel();
 ```
 
 ## Beneficios de esta Estructura
@@ -189,4 +185,4 @@ const { createUser } = useCreateUser();
 
 ---
 
-**Ver también**: [Convenciones de Código](./04-convenciones-codigo.md) | [Índice](./development.md)
+**Ver también**: [Implementación actual](./current-implementation.md) | [Convenciones de Código](./04-convenciones-codigo.md) | [Índice](./development.md)
