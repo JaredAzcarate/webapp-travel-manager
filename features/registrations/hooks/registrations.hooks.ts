@@ -405,8 +405,8 @@ export const useDeleteRegistration = () => {
     },
   });
 
-  const deleteRegistration = (id: string) => {
-    mutation.mutate(id);
+  const deleteRegistration = async (id: string) => {
+    return mutation.mutateAsync(id);
   };
 
   return {

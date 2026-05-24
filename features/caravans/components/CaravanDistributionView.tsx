@@ -1,5 +1,6 @@
 "use client";
 
+import { isDevelopment } from "@/common/utils/env.utils";
 import { parseSlotToMinutes } from "@/common/utils/slotTime.utils";
 import { toDate } from "@/common/utils/timestamp.utils";
 import { useBus } from "@/features/buses/hooks/buses.hooks";
@@ -15,6 +16,7 @@ import {
   useCancelRegistration,
   useCountActiveByBus,
   useCountCancelledByBus,
+  useDeleteRegistration,
   useFilteredRegistrations,
 } from "@/features/registrations/hooks/registrations.hooks";
 import { RegistrationWithId } from "@/features/registrations/models/registrations.model";
@@ -456,6 +458,8 @@ const BusDistributionCard = ({
   const { count: cancelledCount } = useCountCancelledByBus(caravanId, busId);
   const { cancelRegistration, isPending: isCancelling } =
     useCancelRegistration();
+  const { deleteRegistration, isPending: isDeleting } = useDeleteRegistration();
+  const showDevActions = isDevelopment();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
@@ -500,6 +504,33 @@ const BusDistributionCard = ({
           notification.error({
             title: "Erro",
             description: `Não foi possível cancelar a participação: ${errorMessage}`,
+          });
+        }
+      },
+    });
+  };
+
+  const handleDeleteRegistration = (registration: RegistrationWithId) => {
+    modal.confirm({
+      title: "Eliminar inscrição (dev)",
+      content: `Eliminar permanentemente a inscrição de ${registration.fullName}? Esta ação não pode ser desfeita.`,
+      okText: "Sim, eliminar",
+      okType: "danger",
+      cancelText: "Não",
+      onOk: async () => {
+        try {
+          await deleteRegistration(registration.id);
+          notification.success({
+            title: "Sucesso",
+            description: "Inscrição eliminada com sucesso",
+          });
+        } catch (error) {
+          console.error("Error deleting registration:", error);
+          const errorMessage =
+            error instanceof Error ? error.message : "Erro desconhecido";
+          notification.error({
+            title: "Erro",
+            description: `Não foi possível eliminar a inscrição: ${errorMessage}`,
           });
         }
       },
@@ -895,6 +926,16 @@ const BusDistributionCard = ({
               loading={isCancelling}
             >
               Cancelar
+            </Button>
+          )}
+          {showDevActions && (
+            <Button
+              type="default"
+              danger
+              onClick={() => handleDeleteRegistration(record)}
+              loading={isDeleting}
+            >
+              Eliminar
             </Button>
           )}
         </Space>

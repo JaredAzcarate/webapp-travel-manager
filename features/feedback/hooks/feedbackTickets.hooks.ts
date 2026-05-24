@@ -67,3 +67,22 @@ export function useUpdateFeedbackTicket() {
     },
   });
 }
+
+export function useDeleteFeedbackTicket() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/feedback-tickets/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || "Erro ao eliminar");
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feedbackTickets"] });
+    },
+  });
+}

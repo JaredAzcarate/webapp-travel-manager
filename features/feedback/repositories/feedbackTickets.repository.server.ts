@@ -59,6 +59,10 @@ export class FeedbackTicketsRepositoryServer {
         updatedAt: AdminTimestamp.now(),
       });
   }
+
+  async delete(id: string): Promise<void> {
+    await adminDb.collection(this.collectionName).doc(id).delete();
+  }
 }
 
 export const feedbackTicketsRepositoryServer = new FeedbackTicketsRepositoryServer();

@@ -1,11 +1,13 @@
 "use client";
 
+import { isDevelopment } from "@/common/utils/env.utils";
 import { toDate } from "@/common/utils/timestamp.utils";
 import type {
   FeedbackTicketStatus,
   FeedbackTicketWithId,
 } from "@/features/feedback/models/feedbackTickets.model";
 import {
+  useDeleteFeedbackTicket,
   useFeedbackTicketsList,
   useUpdateFeedbackTicket,
 } from "@/features/feedback/hooks/feedbackTickets.hooks";
@@ -16,11 +18,36 @@ import { useMemo, useState } from "react";
 const { Paragraph } = Typography;
 
 export function FeedbackTicketsTable() {
-  const { notification } = App.useApp();
+  const { notification, modal } = App.useApp();
   const { data: tickets = [], isLoading, error, refetch } = useFeedbackTicketsList();
   const { mutateAsync: updateTicket, isPending: updating } =
     useUpdateFeedbackTicket();
+  const { mutateAsync: deleteTicket, isPending: deleting } =
+    useDeleteFeedbackTicket();
+  const showDevActions = isDevelopment();
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+
+  const handleDeleteTicket = (row: FeedbackTicketWithId) => {
+    modal.confirm({
+      title: "Eliminar feedback (dev)",
+      content:
+        "Eliminar permanentemente este feedback? Esta ação não pode ser desfeita.",
+      okText: "Sim, eliminar",
+      okType: "danger",
+      cancelText: "Não",
+      onOk: async () => {
+        try {
+          await deleteTicket(row.id);
+          notification.success({ title: "Feedback eliminado" });
+        } catch (e) {
+          notification.error({
+            title: "Erro",
+            description: e instanceof Error ? e.message : "Falha ao eliminar",
+          });
+        }
+      },
+    });
+  };
 
   const columns = useMemo(
     () => [
@@ -131,8 +158,26 @@ export function FeedbackTicketsTable() {
           </Space.Compact>
         ),
       },
+      ...(showDevActions
+        ? [
+            {
+              title: "Ações",
+              key: "actions",
+              width: 120,
+              render: (_: unknown, row: FeedbackTicketWithId) => (
+                <Button
+                  danger
+                  loading={deleting}
+                  onClick={() => handleDeleteTicket(row)}
+                >
+                  Eliminar
+                </Button>
+              ),
+            },
+          ]
+        : []),
     ],
-    [notesDraft, notification, updateTicket, updating]
+    [notesDraft, notification, updateTicket, updating, showDevActions, deleting]
   );
 
   if (error) {

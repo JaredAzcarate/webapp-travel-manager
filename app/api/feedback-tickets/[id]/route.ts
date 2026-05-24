@@ -1,5 +1,6 @@
 import { feedbackTicketsRepositoryServer } from "@/features/feedback/repositories/feedbackTickets.repository.server";
 import { requireAdminRole } from "@/lib/auth/panel-session.server";
+import { developmentOnlyResponse } from "@/lib/dev-only.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(
@@ -36,6 +37,33 @@ export async function PATCH(
     console.error("PATCH feedback-tickets:", error);
     return NextResponse.json(
       { message: "Erro ao atualizar" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const devOnly = developmentOnlyResponse();
+  if (devOnly) {
+    return devOnly;
+  }
+
+  const authResult = await requireAdminRole();
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  const { id } = await context.params;
+  try {
+    await feedbackTicketsRepositoryServer.delete(id);
+    return NextResponse.json({ message: "Feedback eliminado" }, { status: 200 });
+  } catch (error) {
+    console.error("DELETE feedback-tickets:", error);
+    return NextResponse.json(
+      { message: "Erro ao eliminar feedback" },
       { status: 500 }
     );
   }

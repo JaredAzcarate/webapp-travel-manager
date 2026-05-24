@@ -4,6 +4,7 @@ import { UpdateRegistrationInput } from "@/features/registrations/models/registr
 import { validateOrdinanceSelectionRules } from "@/features/registrations/services/validateOrdinanceSelections.server";
 import { denySecretaryIfWrongChapel } from "@/lib/auth/registration-access.server";
 import { requirePanelSession } from "@/lib/auth/panel-session.server";
+import { developmentOnlyResponse } from "@/lib/dev-only.server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(
@@ -65,6 +66,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const devOnly = developmentOnlyResponse();
+  if (devOnly) {
+    return devOnly;
+  }
+
   try {
     const auth = await requirePanelSession();
     if (!auth.ok) {
