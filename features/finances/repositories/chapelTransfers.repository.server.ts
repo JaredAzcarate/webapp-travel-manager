@@ -86,11 +86,17 @@ export class ChapelTransferRepositoryServer {
     notes?: string;
   }): Promise<ChapelTransferWithId> {
     const now = Timestamp.now();
-    const docRef = await adminDb.collection(this.collectionName).add({
-      ...input,
+    const { notes, ...rest } = input;
+    const payload: Record<string, unknown> = {
+      ...rest,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    if (notes?.trim()) {
+      payload.notes = notes.trim();
+    }
+
+    const docRef = await adminDb.collection(this.collectionName).add(payload);
     const docSnap = await docRef.get();
     return this.mapDoc(docSnap.id, docSnap.data()!);
   }

@@ -84,7 +84,7 @@ export function ChapelTransferDrawer({
         chapelId: row.chapelId,
         amount: values.amount,
         transferredAt: values.transferredAt.toISOString(),
-        notes: values.notes,
+        ...(values.notes?.trim() ? { notes: values.notes.trim() } : {}),
       });
       notification.success({
         title: "Sucesso",

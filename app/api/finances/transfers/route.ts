@@ -61,13 +61,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const trimmedNotes =
+      typeof notes === "string" ? notes.trim() : "";
+
     const transfer = await chapelTransferRepositoryServer.create({
       caravanId,
       chapelId,
       amount: Math.round(parsedAmount * 100) / 100,
       transferredAt: Timestamp.fromDate(new Date(transferredAt)),
       registeredBy: auth.user.id,
-      notes: notes || undefined,
+      ...(trimmedNotes ? { notes: trimmedNotes } : {}),
     });
 
     return NextResponse.json(
