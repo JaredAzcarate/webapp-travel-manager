@@ -24,6 +24,11 @@ const menuItems: MenuItem[] = [
     path: "/admin/caravans",
   },
   {
+    key: "finances",
+    label: "Finanças",
+    path: "/admin/finances",
+  },
+  {
     key: "configuracoes",
     label: "Configurações",
     children: [

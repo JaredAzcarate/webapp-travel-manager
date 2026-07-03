@@ -1,6 +1,13 @@
 import { CreateInput, UpdateInput, WithId } from "@/common/models/index";
 import { Timestamp } from "firebase/firestore";
 
+export type CaravanFinancialStatus = "OPEN" | "CLOSED";
+
+export interface CaravanPricing {
+  adultPrice: number;
+  childPrice: number;
+}
+
 export interface Caravan {
   name: string;
   departureAt: Timestamp;
@@ -9,6 +16,9 @@ export interface Caravan {
   formCloseAt: Timestamp;
   isActive: boolean;
   busIds: string[]; // references to buses.id
+  pricing?: CaravanPricing;
+  financialStatus?: CaravanFinancialStatus;
+  financialClosedAt?: Timestamp;
   ordinanceCapacityLimits?: {
     [ordinanceId: string]: {
       [slot: string]: number | { M: number; F: number }; // límite máximo por sesión (simple o por género)

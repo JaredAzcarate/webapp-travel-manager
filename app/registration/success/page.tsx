@@ -1,11 +1,17 @@
 "use client";
 
 import { PublicContent } from "@/common/components/PublicContent";
-import { Alert, Button, Card, Steps, Typography } from "antd";
+import {
+  formatEuroAmount,
+  resolveCaravanPricing,
+} from "@/common/utils/tripPrice.utils";
+import { useActiveCaravans, useCaravan } from "@/features/caravans/hooks/caravans.hooks";
+import { Alert, Button, Card, Spin, Steps, Typography } from "antd";
 import { AnimatePresence, motion } from "motion/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo } from "react";
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 const sectionAnimation = {
   initial: { opacity: 0, y: 20 },
@@ -21,8 +27,23 @@ function sectionTransition(delay = 0) {
   };
 }
 
-export default function RegistrationSuccessPage() {
+function RegistrationSuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const caravanIdFromUrl = searchParams.get("caravanId") ?? "";
+
+  const { caravan: caravanFromUrl, loading: loadingFromUrl } =
+    useCaravan(caravanIdFromUrl);
+  const { caravans: activeCaravans, loading: loadingActive } =
+    useActiveCaravans();
+
+  const caravan = caravanFromUrl ?? activeCaravans[0];
+  const loading = caravanIdFromUrl ? loadingFromUrl : loadingActive;
+
+  const pricing = useMemo(
+    () => (caravan ? resolveCaravanPricing(caravan) : resolveCaravanPricing({})),
+    [caravan]
+  );
 
   const steps = [
     {
@@ -39,10 +60,13 @@ export default function RegistrationSuccessPage() {
       status: "process" as const,
       content: (
         <span>
-          O valor da viagem é de <strong>10€</strong> para jovens e crianças
-          (1-17 anos) ou <strong>25€</strong> para adultos (18+). O pagamento
-          deve ser efetuado através da papeleta de doações na coluna
-          &quot;outros&quot; na sua unidade.
+          O valor da viagem é de{" "}
+          <strong>{formatEuroAmount(pricing.childPrice)}</strong> para jovens e
+          crianças (1-17 anos) ou{" "}
+          <strong>{formatEuroAmount(pricing.adultPrice)}</strong> para adultos
+          (18+). Recém-conversos com menos de 1 ano como membro têm a viagem
+          gratuita. O pagamento deve ser efetuado através da papeleta de
+          doações na coluna &quot;outros&quot; na sua unidade.
         </span>
       ),
     },
@@ -51,7 +75,6 @@ export default function RegistrationSuccessPage() {
       status: "process" as const,
       content: (
         <div className="flex flex-col gap-2">
-
           <span>
             Após realizar o pagamento, pode confirmar através da página de
             confirmação de pagamento.
@@ -64,7 +87,6 @@ export default function RegistrationSuccessPage() {
             >
               Confirmar pagamento
             </Button>
-
           </div>
         </div>
       ),
@@ -74,12 +96,11 @@ export default function RegistrationSuccessPage() {
       status: "process" as const,
       content: (
         <div className="flex flex-col gap-2">
-
           <span>
-            Preparamos um instrutivo para a viagem que pode ser descarregado abaixo.
+            Preparamos um instrutivo para a viagem que pode ser descarregado
+            abaixo.
           </span>
           <div>
-
             <Button
               type="default"
               size="middle"
@@ -88,12 +109,21 @@ export default function RegistrationSuccessPage() {
             >
               Ver instruções
             </Button>
-
           </div>
         </div>
       ),
     },
   ];
+
+  if (loading) {
+    return (
+      <PublicContent>
+        <div className="flex justify-center py-16">
+          <Spin size="large" />
+        </div>
+      </PublicContent>
+    );
+  }
 
   return (
     <PublicContent>
@@ -124,11 +154,7 @@ export default function RegistrationSuccessPage() {
           <Card>
             <div className="flex flex-col gap-4">
               <Title level={4}>Próximos passos:</Title>
-              <Steps
-                orientation="vertical"
-                items={steps}
-                size="default"
-              />
+              <Steps orientation="vertical" items={steps} size="default" />
             </div>
           </Card>
         </motion.div>
@@ -142,15 +168,27 @@ export default function RegistrationSuccessPage() {
           transition={sectionTransition(0.3)}
           className="mt-6"
         >
-          <Button
-            type="link"
-            size="large"
-            onClick={() => router.push("/")}
-          >
+          <Button type="link" size="large" onClick={() => router.push("/")}>
             Voltar ao início
           </Button>
         </motion.div>
       </AnimatePresence>
     </PublicContent>
+  );
+}
+
+export default function RegistrationSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <PublicContent>
+          <div className="flex justify-center py-16">
+            <Spin size="large" />
+          </div>
+        </PublicContent>
+      }
+    >
+      <RegistrationSuccessContent />
+    </Suspense>
   );
 }

@@ -34,7 +34,7 @@ export default function PublicRegistrationPage() {
       title: "Sucesso",
       description: "A inscrição foi criada com sucesso",
     });
-    router.push("/registration/success");
+    router.push(`/registration/success?caravanId=${encodeURIComponent(caravanId)}`);
   };
 
   if (loading) {

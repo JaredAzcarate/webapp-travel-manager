@@ -543,27 +543,32 @@ const BusDistributionCard = ({
 
       const jsPDF = (await import("jspdf")).default;
 
-      const doc = new jsPDF();
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageBottom = pageHeight - 12;
+      const TABLE_FONT_SIZE = 8;
+      const TABLE_LINE_HEIGHT = 3.8;
       let yPosition = 20;
 
-      doc.setFontSize(20);
-      doc.text("Distribuição de Passageiros", 105, yPosition, {
+      doc.setFontSize(18);
+      doc.text("Distribuição de Passageiros", pageWidth / 2, yPosition, {
         align: "center",
       });
-      yPosition += 10;
+      yPosition += 9;
 
-      doc.setFontSize(14);
+      doc.setFontSize(12);
       doc.text(`Viagem: ${caravanName}`, 10, yPosition);
-      yPosition += 8;
+      yPosition += 7;
 
       if (bus?.name) {
         doc.text(`Autocarro: ${bus.name}`, 10, yPosition);
-        yPosition += 8;
+        yPosition += 7;
       }
 
       if (chapelIdFilter && chapelMap.get(chapelIdFilter)) {
         doc.text(`Capela: ${chapelMap.get(chapelIdFilter)}`, 10, yPosition);
-        yPosition += 8;
+        yPosition += 7;
       }
 
       const exportDate = new Date().toLocaleDateString("pt-PT", {
@@ -573,24 +578,24 @@ const BusDistributionCard = ({
         hour: "2-digit",
         minute: "2-digit",
       });
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.text(`Exportado em: ${exportDate}`, 10, yPosition);
-      yPosition += 15;
+      yPosition += 12;
 
       if (sortedRegistrationsForDisplay.length === 0) {
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.text(
           chapelIdFilter
             ? "Nenhum passageiro desta capela neste autocarro."
             : "Nenhum passageiro registrado neste autocarro.",
-          105,
+          pageWidth / 2,
           yPosition,
           {
             align: "center",
           }
         );
       } else {
-        doc.setFontSize(10);
+        doc.setFontSize(TABLE_FONT_SIZE);
         doc.setFont("helvetica", "bold");
 
         const headers = [
@@ -601,28 +606,34 @@ const BusDistributionCard = ({
           "Ordenança 3",
           "Data inscrição",
         ];
-        const colWidths = [30, 35, 25, 25, 25, 35];
-        const startX = 10;
+        const marginX = 10;
+        const tableWidth = pageWidth - marginX * 2;
+        const columnRatios = [0.14, 0.22, 0.18, 0.18, 0.18, 0.1];
+        const colWidths = columnRatios.map((ratio) => ratio * tableWidth);
+        const startX = marginX;
 
-        headers.forEach((header, i) => {
+        const headerLines = headers.map((header, i) =>
+          doc.splitTextToSize(header, colWidths[i])
+        );
+        const headerRowLines = Math.max(
+          1,
+          ...headerLines.map((lines) => lines.length)
+        );
+
+        headerLines.forEach((lines, i) => {
           const xPos =
             startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-          doc.text(header, xPos, yPosition);
+          doc.text(lines, xPos, yPosition);
         });
 
-        yPosition += 7;
+        yPosition += headerRowLines * TABLE_LINE_HEIGHT + 1;
         doc.setLineWidth(0.5);
-        doc.line(10, yPosition, 200, yPosition);
-        yPosition += 5;
+        doc.line(marginX, yPosition, pageWidth - marginX, yPosition);
+        yPosition += 4;
 
         doc.setFont("helvetica", "normal");
 
         sortedRegistrationsForDisplay.forEach((registration) => {
-          if (yPosition > 280) {
-            doc.addPage();
-            yPosition = 20;
-          }
-
           const ordinances = registration.ordinances || [];
           const chapelName = chapelMap.get(registration.chapelId) || registration.chapelId;
 
@@ -653,15 +664,27 @@ const BusDistributionCard = ({
             toDate(registration.createdAt)?.toLocaleDateString("pt-PT") ?? "-",
           ];
 
-          rowData.forEach((text, i) => {
+          const cellLines = rowData.map((text, i) =>
+            doc.splitTextToSize(text || "", colWidths[i])
+          );
+          const rowLineCount = Math.max(
+            1,
+            ...cellLines.map((lines) => lines.length)
+          );
+          const rowHeight = rowLineCount * TABLE_LINE_HEIGHT;
+
+          if (yPosition + rowHeight > pageBottom) {
+            doc.addPage();
+            yPosition = 20;
+          }
+
+          cellLines.forEach((lines, i) => {
             const xPos =
               startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-            doc.text(text || "", xPos, yPosition, {
-              maxWidth: colWidths[i],
-            });
+            doc.text(lines, xPos, yPosition);
           });
 
-          yPosition += 7;
+          yPosition += rowHeight + 1;
         });
       }
 
