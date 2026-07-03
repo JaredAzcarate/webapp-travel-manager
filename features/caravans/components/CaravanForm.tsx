@@ -1,6 +1,9 @@
 "use client";
 
 import { toDate } from "@/common/utils/timestamp.utils";
+import {
+  DEFAULT_CARAVAN_PRICING,
+} from "@/common/utils/tripPrice.utils";
 import { useBuses } from "@/features/buses/hooks/buses.hooks";
 import {
   useCreateCaravan,
@@ -11,7 +14,7 @@ import {
   CreateCaravanInput,
   UpdateCaravanInput,
 } from "@/features/caravans/models/caravans.model";
-import { App, Button, DatePicker, Form, Input, Select } from "antd";
+import { App, Button, DatePicker, Form, Input, InputNumber, Select } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { Timestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -25,6 +28,8 @@ interface FormValues {
   formOpenAt: Dayjs;
   formCloseAt: Dayjs;
   busIds?: { busId: string }[];
+  adultPrice: number;
+  childPrice: number;
 }
 
 interface CaravanFormProps {
@@ -76,6 +81,10 @@ export const CaravanForm = ({
           ? dayjs(toDate(initialCaravanData.formCloseAt))
           : undefined,
         busIds: initialCaravanData.busIds?.map((busId) => ({ busId })) ?? [],
+        adultPrice:
+          initialCaravanData.pricing?.adultPrice ?? DEFAULT_CARAVAN_PRICING.adultPrice,
+        childPrice:
+          initialCaravanData.pricing?.childPrice ?? DEFAULT_CARAVAN_PRICING.childPrice,
       });
     }
   }, [mode, initialCaravanData, form]);
@@ -150,6 +159,11 @@ export const CaravanForm = ({
       now.toMillis() >= formOpenAt.toMillis() &&
       now.toMillis() <= formCloseAt.toMillis();
 
+    const pricing = {
+      adultPrice: values.adultPrice,
+      childPrice: values.childPrice,
+    };
+
     if (mode === "create") {
       const input: CreateCaravanInput = {
         name: values.name,
@@ -159,6 +173,8 @@ export const CaravanForm = ({
         formCloseAt,
         isActive,
         busIds: busIdsArray,
+        pricing,
+        financialStatus: "OPEN",
       };
       createCaravan(input);
     } else if (mode === "edit" && caravanId) {
@@ -170,6 +186,7 @@ export const CaravanForm = ({
         formCloseAt,
         isActive,
         busIds: busIdsArray,
+        pricing,
       };
       updateCaravan(caravanId, input);
     }
@@ -185,6 +202,8 @@ export const CaravanForm = ({
       style={{ width: "100%" }}
       initialValues={{
         busIds: [],
+        adultPrice: DEFAULT_CARAVAN_PRICING.adultPrice,
+        childPrice: DEFAULT_CARAVAN_PRICING.childPrice,
       }}
       onValuesChange={(changedValues, allValues) => {
         if (changedValues.busIds) {
@@ -295,6 +314,53 @@ export const CaravanForm = ({
           style={{ width: "100%" }}
         />
       </Form.Item>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Form.Item
+          name="adultPrice"
+          label="Preço por adulto (€)"
+          rules={[
+            { required: true, message: "Por favor, insira o preço por adulto" },
+            {
+              type: "number",
+              min: 0,
+              message: "O preço deve ser zero ou superior",
+            },
+          ]}
+        >
+          <InputNumber
+            min={0}
+            step={0.01}
+            precision={2}
+            className="w-full!"
+            suffix="€"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="childPrice"
+          label="Preço por jovem/criança (€)"
+          rules={[
+            {
+              required: true,
+              message: "Por favor, insira o preço por jovem/criança",
+            },
+            {
+              type: "number",
+              min: 0,
+              message: "O preço deve ser zero ou superior",
+            },
+          ]}
+        >
+          <InputNumber
+            min={0}
+            step={0.01}
+            precision={2}
+            className="w-full!"
+            suffix="€"
+          />
+        </Form.Item>
+      </div>
 
       <Form.Item
         label="Autocarros"
