@@ -20,7 +20,7 @@ export function FinanceOverviewView() {
       key: "chapelName",
     },
     {
-      title: "Saldo pendente (viagens abertas)",
+      title: "Saldo pendente",
       dataIndex: "openBalance",
       key: "openBalance",
       align: "right",
@@ -35,8 +35,8 @@ export function FinanceOverviewView() {
   return (
     <div className="flex flex-col gap-4">
       <Text type="secondary">
-        Saldo acumulado por ala em viagens com finanças abertas. Clique numa viagem
-        para ver o detalhe.
+        Saldo acumulado por ala em viagens com finanças em seguimento. Clique numa
+        viagem para ver o detalhe.
       </Text>
 
       {loading ? (
@@ -53,7 +53,7 @@ export function FinanceOverviewView() {
             expandedRowRender: (record) => (
               <div className="flex flex-col gap-2 py-1">
                 {record.caravans.length === 0 ? (
-                  <Text type="secondary">Sem viagens abertas</Text>
+                  <Text type="secondary">Sem viagens em seguimento</Text>
                 ) : (
                   record.caravans.map((caravan) => (
                     <div
@@ -68,7 +68,7 @@ export function FinanceOverviewView() {
                     >
                       <div className="flex items-center gap-2">
                         <Text>{caravan.caravanName}</Text>
-                        <Tag color="blue">Aberta</Tag>
+                        <Tag color="blue">Em seguimento</Tag>
                       </div>
                       <Text
                         className={
