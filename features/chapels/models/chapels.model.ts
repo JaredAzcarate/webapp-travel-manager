@@ -8,6 +8,8 @@ export interface Chapel {
   email?: string;
   address?: string;
   busDepartureLocation?: string;
+  /** Chapel-level credit box (saldo a favor) in euros */
+  creditBalance?: number;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

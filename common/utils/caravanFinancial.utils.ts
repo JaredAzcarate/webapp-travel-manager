@@ -25,6 +25,82 @@ export interface ChapelFinanceRow extends ChapelFinanceCounts, ChapelFinanceAmou
   chapelName: string;
 }
 
+/** Pending amount owed by the chapel (positive balance only). */
+export function pendingFromBalance(balance: number): number {
+  return roundEuroAmount(Math.max(balance, 0));
+}
+
+/** Credit in favor of the chapel (absolute value of negative balance). */
+export function creditFromBalance(balance: number): number {
+  return roundEuroAmount(Math.max(-balance, 0));
+}
+
+export function getActiveParticipantCount(row: ChapelFinanceCounts): number {
+  return row.adults + row.youth + row.children;
+}
+
+/** A credit-generating transfer can be deleted only if none of its credit was used. */
+export function canDeleteChapelTransfer(transfer: {
+  creditGenerated?: number;
+  creditRemaining?: number;
+}): boolean {
+  const generated = roundEuroAmount(transfer.creditGenerated ?? 0);
+  if (generated <= 0) {
+    return true;
+  }
+  const remaining = roundEuroAmount(
+    transfer.creditRemaining ?? generated
+  );
+  return remaining >= generated;
+}
+
+export function getChapelCreditBalance(
+  chapel: { creditBalance?: number } | null | undefined
+): number {
+  return roundEuroAmount(Math.max(chapel?.creditBalance ?? 0, 0));
+}
+
+/**
+ * Splits a payment into credit used from the chapel box, amount toward trip due,
+ * and excess that generates new chapel credit.
+ */
+export function allocateChapelTransferCredit(params: {
+  amount: number;
+  pendingBalance: number;
+  chapelCreditBalance: number;
+  applyCreditAmount?: number;
+}): {
+  creditUsed: number;
+  creditGenerated: number;
+  creditBalanceAfter: number;
+} {
+  const amount = roundEuroAmount(Math.max(params.amount, 0));
+  const pending = roundEuroAmount(Math.max(params.pendingBalance, 0));
+  const chapelCredit = roundEuroAmount(Math.max(params.chapelCreditBalance, 0));
+  const requestedCredit = roundEuroAmount(
+    Math.max(params.applyCreditAmount ?? 0, 0)
+  );
+
+  const creditUsed = roundEuroAmount(
+    Math.min(requestedCredit, chapelCredit, amount, pending)
+  );
+  const newMoney = roundEuroAmount(amount - creditUsed);
+  const pendingAfterCredit = roundEuroAmount(pending - creditUsed);
+  const towardDueFromNewMoney = roundEuroAmount(
+    Math.min(newMoney, pendingAfterCredit)
+  );
+  const creditGenerated = roundEuroAmount(newMoney - towardDueFromNewMoney);
+  const creditBalanceAfter = roundEuroAmount(
+    Math.max(chapelCredit - creditUsed + creditGenerated, 0)
+  );
+
+  return {
+    creditUsed,
+    creditGenerated,
+    creditBalanceAfter,
+  };
+}
+
 export function computeRegistrationTripAmount(
   registration: RegistrationWithId,
   pricing: ReturnType<typeof resolveCaravanPricing>

@@ -1,7 +1,10 @@
-import { chapelTransferRepositoryServer } from "@/features/finances/repositories/chapelTransfers.repository.server";
+import {
+  createChapelTransferWithCreditBox,
+} from "@/features/finances/services/financeSummary.server";
 import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
+import { chapelTransferRepositoryServer } from "@/features/finances/repositories/chapelTransfers.repository.server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,7 +47,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { caravanId, chapelId, amount, transferredAt, notes } = body;
+    const {
+      caravanId,
+      chapelId,
+      amount,
+      transferredAt,
+      notes,
+      applyCreditAmount,
+    } = body;
 
     if (!caravanId || !chapelId || amount === undefined || !transferredAt) {
       return NextResponse.json(
@@ -61,27 +71,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const trimmedNotes =
-      typeof notes === "string" ? notes.trim() : "";
-
-    const transfer = await chapelTransferRepositoryServer.create({
+    const creditRequested = Number(applyCreditAmount ?? 0);
+    const result = await createChapelTransferWithCreditBox({
       caravanId,
       chapelId,
       amount: Math.round(parsedAmount * 100) / 100,
       transferredAt: Timestamp.fromDate(new Date(transferredAt)),
       registeredBy: auth.user.id,
-      ...(trimmedNotes ? { notes: trimmedNotes } : {}),
+      ...(typeof notes === "string" && notes.trim()
+        ? { notes: notes.trim() }
+        : {}),
+      ...(!Number.isNaN(creditRequested) && creditRequested > 0
+        ? { applyCreditAmount: Math.round(creditRequested * 100) / 100 }
+        : {}),
     });
 
     return NextResponse.json(
-      { message: "Transferência registada com sucesso", transfer },
+      {
+        message: "Transferência registada com sucesso",
+        transfer: result.transfer,
+        creditUsed: result.creditUsed,
+        creditGenerated: result.creditGenerated,
+        chapelCreditBalance: result.chapelCreditBalance,
+      },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error creating chapel transfer:", error);
-    return NextResponse.json(
-      { message: "Erro ao registar transferência" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Erro ao registar transferência";
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

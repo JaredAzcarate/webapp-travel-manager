@@ -72,6 +72,29 @@ export class ChapelTransferRepositoryServer {
       );
   }
 
+  async getByChapelId(chapelId: string): Promise<ChapelTransferWithId[]> {
+    const snapshot = await adminDb
+      .collection(this.collectionName)
+      .where("chapelId", "==", chapelId)
+      .get();
+
+    return snapshot.docs
+      .map((doc) => this.mapDoc(doc.id, doc.data()))
+      .sort(
+        (a, b) =>
+          (b.transferredAt?.toMillis?.() ?? 0) -
+          (a.transferredAt?.toMillis?.() ?? 0)
+      );
+  }
+
+  async getById(id: string): Promise<ChapelTransferWithId> {
+    const docSnap = await adminDb.collection(this.collectionName).doc(id).get();
+    if (!docSnap.exists) {
+      throw new Error(`Chapel transfer with id ${id} not found`);
+    }
+    return this.mapDoc(docSnap.id, docSnap.data()!);
+  }
+
   async getAll(): Promise<ChapelTransferWithId[]> {
     const snapshot = await adminDb.collection(this.collectionName).get();
     return snapshot.docs.map((doc) => this.mapDoc(doc.id, doc.data()));
@@ -84,9 +107,20 @@ export class ChapelTransferRepositoryServer {
     transferredAt: Timestamp;
     registeredBy: string;
     notes?: string;
+    creditGenerated?: number;
+    creditRemaining?: number;
+    creditUsed?: number;
+    creditAllocations?: Array<{ transferId: string; amount: number }>;
   }): Promise<ChapelTransferWithId> {
     const now = Timestamp.now();
-    const { notes, ...rest } = input;
+    const {
+      notes,
+      creditGenerated,
+      creditRemaining,
+      creditUsed,
+      creditAllocations,
+      ...rest
+    } = input;
     const payload: Record<string, unknown> = {
       ...rest,
       createdAt: now,
@@ -95,10 +129,36 @@ export class ChapelTransferRepositoryServer {
     if (notes?.trim()) {
       payload.notes = notes.trim();
     }
+    if (creditGenerated && creditGenerated > 0) {
+      payload.creditGenerated = creditGenerated;
+      payload.creditRemaining =
+        creditRemaining ?? creditGenerated;
+    }
+    if (creditUsed && creditUsed > 0) {
+      payload.creditUsed = creditUsed;
+    }
+    if (creditAllocations && creditAllocations.length > 0) {
+      payload.creditAllocations = creditAllocations;
+    }
 
     const docRef = await adminDb.collection(this.collectionName).add(payload);
     const docSnap = await docRef.get();
     return this.mapDoc(docSnap.id, docSnap.data()!);
+  }
+
+  async update(
+    id: string,
+    input: {
+      creditRemaining?: number;
+      notes?: string;
+    }
+  ): Promise<ChapelTransferWithId> {
+    const now = Timestamp.now();
+    await adminDb.collection(this.collectionName).doc(id).update({
+      ...input,
+      updatedAt: now,
+    });
+    return this.getById(id);
   }
 
   async delete(id: string): Promise<void> {
