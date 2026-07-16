@@ -1,4 +1,7 @@
-import { closeCaravanFinances } from "@/features/finances/services/financeSummary.server";
+import {
+  closeCaravanFinances,
+  reopenCaravanFinances,
+} from "@/features/finances/services/financeSummary.server";
 import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -9,7 +12,7 @@ export async function POST(request: NextRequest) {
       return auth.response;
     }
 
-    const { caravanId } = await request.json();
+    const { caravanId, action = "close" } = await request.json();
 
     if (!caravanId) {
       return NextResponse.json(
@@ -18,16 +21,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const caravan = await closeCaravanFinances(caravanId);
+    if (action !== "close" && action !== "reopen") {
+      return NextResponse.json(
+        { message: "action deve ser 'close' ou 'reopen'" },
+        { status: 400 }
+      );
+    }
+
+    const caravan =
+      action === "reopen"
+        ? await reopenCaravanFinances(caravanId)
+        : await closeCaravanFinances(caravanId);
 
     return NextResponse.json(
-      { message: "Acompanhamento da viagem finalizado com sucesso", caravan },
+      {
+        message:
+          action === "reopen"
+            ? "Acompanhamento da viagem reaberto com sucesso"
+            : "Acompanhamento da viagem finalizado com sucesso",
+        caravan,
+      },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error closing caravan finances:", error);
+    console.error("Error updating caravan finances status:", error);
     return NextResponse.json(
-      { message: "Erro ao finalizar o acompanhamento da viagem" },
+      { message: "Erro ao atualizar o acompanhamento da viagem" },
       { status: 500 }
     );
   }

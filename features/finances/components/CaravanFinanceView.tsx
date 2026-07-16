@@ -9,6 +9,7 @@ import { ChapelTransferDrawer } from "@/features/finances/components/ChapelTrans
 import {
   useCaravanFinanceSummary,
   useCloseCaravanFinances,
+  useReopenCaravanFinances,
 } from "@/features/finances/hooks/finances.hooks";
 import {
   App,
@@ -22,7 +23,7 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock } from "phosphor-react";
+import { Lock, LockOpen } from "phosphor-react";
 import { useEffect, useMemo, useState } from "react";
 
 const { Text } = Typography;
@@ -39,6 +40,7 @@ export function CaravanFinanceView() {
   const { caravans, loading: loadingCaravans } = useCaravans();
   const { summary, loading: loadingSummary } = useCaravanFinanceSummary(caravanId);
   const { closeFinances, isPending: isClosing } = useCloseCaravanFinances();
+  const { reopenFinances, isPending: isReopening } = useReopenCaravanFinances();
   const [selectedRow, setSelectedRow] = useState<ChapelFinanceRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -88,6 +90,28 @@ export function CaravanFinanceView() {
             error instanceof Error
               ? error.message
               : "Não foi possível finalizar o acompanhamento",
+        });
+      },
+    });
+  };
+
+  const handleReopenFinances = () => {
+    if (!caravanId) return;
+    reopenFinances(caravanId, {
+      onSuccess: () => {
+        notification.success({
+          title: "Sucesso",
+          description:
+            "O acompanhamento desta viagem foi reaberto e voltará a aparecer na visão geral",
+        });
+      },
+      onError: (error) => {
+        notification.error({
+          title: "Erro",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Não foi possível reabrir o acompanhamento",
         });
       },
     });
@@ -187,13 +211,27 @@ export function CaravanFinanceView() {
         {summary?.financialStatus === "OPEN" && caravanId && (
           <Popconfirm
             title="Finalizar o acompanhamento desta viagem?"
-            description="Esta viagem deixará de aparecer nos saldos pendentes da visão geral. Os registos de transferências mantêm-se. Pode reverter editando a viagem."
+            description="Esta viagem deixará de aparecer nos saldos pendentes da visão geral. Os registos de transferências mantêm-se. Pode reabrir o acompanhamento a partir desta página."
             okText="Finalizar"
             cancelText="Cancelar"
             onConfirm={handleCloseFinances}
           >
             <Button icon={<Lock size={16} />} loading={isClosing}>
               Finalizar acompanhamento
+            </Button>
+          </Popconfirm>
+        )}
+
+        {summary?.financialStatus === "CLOSED" && caravanId && (
+          <Popconfirm
+            title="Reabrir o acompanhamento desta viagem?"
+            description="Esta viagem voltará a aparecer nos saldos pendentes da visão geral. Os registos de transferências mantêm-se."
+            okText="Reabrir"
+            cancelText="Cancelar"
+            onConfirm={handleReopenFinances}
+          >
+            <Button icon={<LockOpen size={16} />} loading={isReopening}>
+              Reabrir acompanhamento
             </Button>
           </Popconfirm>
         )}
