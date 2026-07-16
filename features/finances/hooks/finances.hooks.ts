@@ -167,7 +167,7 @@ export const useCloseCaravanFinances = () => {
       const response = await fetch("/api/finances/close-caravan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ caravanId }),
+        body: JSON.stringify({ caravanId, action: "close" }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
@@ -184,6 +184,36 @@ export const useCloseCaravanFinances = () => {
 
   return {
     closeFinances: mutation.mutate,
+    isPending: mutation.isPending,
+    error: mutation.error,
+  };
+};
+
+export const useReopenCaravanFinances = () => {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (caravanId: string) => {
+      const response = await fetch("/api/finances/close-caravan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caravanId, action: "reopen" }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.message || "Erro ao reabrir o acompanhamento");
+      }
+      return response.json();
+    },
+    onSuccess: (_, caravanId) => {
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["caravans", caravanId] });
+      queryClient.invalidateQueries({ queryKey: ["caravans"] });
+    },
+  });
+
+  return {
+    reopenFinances: mutation.mutate,
     isPending: mutation.isPending,
     error: mutation.error,
   };

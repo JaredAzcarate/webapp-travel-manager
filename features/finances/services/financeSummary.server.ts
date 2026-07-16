@@ -168,3 +168,11 @@ export async function closeCaravanFinances(
     financialClosedAt: Timestamp.now() as unknown as CaravanWithId["financialClosedAt"],
   });
 }
+
+export async function reopenCaravanFinances(
+  caravanId: string
+): Promise<CaravanWithId> {
+  return caravanRepositoryServer.update(caravanId, {
+    financialStatus: "OPEN",
+  });
+}
