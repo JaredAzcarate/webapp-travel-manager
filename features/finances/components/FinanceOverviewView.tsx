@@ -20,12 +20,31 @@ export function FinanceOverviewView() {
       key: "chapelName",
     },
     {
-      title: "Saldo pendente",
-      dataIndex: "openBalance",
-      key: "openBalance",
+      title: "Saldo a favor",
+      dataIndex: "creditBalance",
+      key: "creditBalance",
       align: "right",
+      width: 140,
       render: (value: number) => (
-        <Text className={value > 0 ? "text-orange-600 font-medium" : "text-green-600"}>
+        <Text
+          className={value > 0 ? "text-green-600 font-medium" : "text-gray-500"}
+        >
+          {formatEuroAmount(value)}
+        </Text>
+      ),
+    },
+    {
+      title: "Saldo pendente",
+      dataIndex: "pendingBalance",
+      key: "pendingBalance",
+      align: "right",
+      width: 140,
+      render: (value: number) => (
+        <Text
+          className={
+            value > 0 ? "text-orange-600 font-medium" : "text-gray-500"
+          }
+        >
           {formatEuroAmount(value)}
         </Text>
       ),
@@ -35,7 +54,8 @@ export function FinanceOverviewView() {
   return (
     <div className="flex flex-col gap-4">
       <Text type="secondary">
-        Saldo acumulado por ala em viagens com finanças em seguimento. Clique numa
+        Saldo acumulado por ala em viagens com finanças em seguimento. O saldo a
+        favor é a caixa da unidade e pode usar-se em qualquer viagem. Clique numa
         viagem para ver o detalhe.
       </Text>
 
@@ -60,23 +80,34 @@ export function FinanceOverviewView() {
                       key={caravan.caravanId}
                       className="flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
                       onClick={() => {
-                        const params = new URLSearchParams(searchParams.toString());
+                        const params = new URLSearchParams(
+                          searchParams.toString()
+                        );
                         params.set("caravanId", caravan.caravanId);
                         params.delete("view");
                         router.push(`/admin/finances?${params.toString()}`);
                       }}
                     >
-                      <div className="flex items-center gap-2">
-                        <Text>{caravan.caravanName}</Text>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Text className="truncate">{caravan.caravanName}</Text>
                         <Tag color="blue">Em seguimento</Tag>
                       </div>
-                      <Text
-                        className={
-                          caravan.balance > 0 ? "text-orange-600" : "text-green-600"
-                        }
-                      >
-                        {formatEuroAmount(caravan.balance)}
-                      </Text>
+                      <div className="flex items-center gap-6 shrink-0">
+                        <div className="flex flex-col items-end w-[120px]">
+                          <Text type="secondary" className="text-xs">
+                            Pendente
+                          </Text>
+                          <Text
+                            className={
+                              caravan.pendingBalance > 0
+                                ? "text-orange-600"
+                                : "text-gray-500"
+                            }
+                          >
+                            {formatEuroAmount(caravan.pendingBalance)}
+                          </Text>
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}

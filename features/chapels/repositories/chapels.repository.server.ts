@@ -52,6 +52,7 @@ export class ChapelRepositoryServer {
     const now = Timestamp.now();
     const docRef = await adminDb.collection(this.collectionName).add({
       ...input,
+      creditBalance: input.creditBalance ?? 0,
       createdAt: now,
       updatedAt: now,
     });
@@ -73,6 +74,19 @@ export class ChapelRepositoryServer {
       updatedAt: now,
     });
 
+    return this.getById(id);
+  }
+
+  async setCreditBalance(
+    id: string,
+    creditBalance: number
+  ): Promise<ChapelWithId> {
+    const now = Timestamp.now();
+    const safeBalance = Math.round(Math.max(creditBalance, 0) * 100) / 100;
+    await adminDb.collection(this.collectionName).doc(id).update({
+      creditBalance: safeBalance,
+      updatedAt: now,
+    });
     return this.getById(id);
   }
 

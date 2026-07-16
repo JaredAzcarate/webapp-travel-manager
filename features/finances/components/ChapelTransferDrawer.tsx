@@ -1,14 +1,20 @@
 "use client";
 
-import { formatEuroAmount, roundEuroAmount } from "@/common/utils/tripPrice.utils";
+import {
+  canDeleteChapelTransfer,
+  pendingFromBalance,
+  type ChapelFinanceRow,
+} from "@/common/utils/caravanFinancial.utils";
 import { toDate } from "@/common/utils/timestamp.utils";
-import type { ChapelFinanceRow } from "@/common/utils/caravanFinancial.utils";
+import { formatEuroAmount, roundEuroAmount } from "@/common/utils/tripPrice.utils";
 import {
   useChapelTransfers,
   useCreateChapelTransfer,
   useDeleteChapelTransfer,
+  useFinanceOverview,
 } from "@/features/finances/hooks/finances.hooks";
 import {
+  Alert,
   App,
   Button,
   DatePicker,
@@ -23,7 +29,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import dayjs, { type Dayjs } from "dayjs";
 import { Plus, Trash } from "phosphor-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const { Text } = Typography;
 
@@ -48,12 +54,17 @@ export function ChapelTransferDrawer({
 }: ChapelTransferDrawerProps) {
   const { notification } = App.useApp();
   const [form] = Form.useForm<TransferFormValues>();
+  const [creditSuggestionDismissed, setCreditSuggestionDismissed] =
+    useState(false);
+  const [creditAppliedAmount, setCreditAppliedAmount] = useState(0);
 
   const chapelId = row?.chapelId ?? "";
   const { transfers, loading } = useChapelTransfers(caravanId, chapelId);
+  const { overview } = useFinanceOverview();
   const { createTransferAsync, isPending: isCreating } =
     useCreateChapelTransfer();
-  const { deleteTransfer, isPending: isDeleting } = useDeleteChapelTransfer();
+  const { deleteTransferAsync, isPending: isDeleting } =
+    useDeleteChapelTransfer();
 
   const totalPaid = useMemo(
     () =>
@@ -68,15 +79,50 @@ export function ChapelTransferDrawer({
     return roundEuroAmount(row.totalDue - totalPaid);
   }, [row, totalPaid]);
 
+  const pendingBalance = pendingFromBalance(balance);
+
+  const chapelCreditBalance = useMemo(() => {
+    if (!row) return 0;
+    const chapelOverview = overview.find((item) => item.chapelId === row.chapelId);
+    return roundEuroAmount(Math.max(chapelOverview?.creditBalance ?? 0, 0));
+  }, [overview, row]);
+
+  const displayedCreditBalance = useMemo(
+    () =>
+      roundEuroAmount(Math.max(chapelCreditBalance - creditAppliedAmount, 0)),
+    [chapelCreditBalance, creditAppliedAmount]
+  );
+
+  const suggestedAmount = useMemo(() => {
+    if (pendingBalance <= 0 || chapelCreditBalance <= 0) return 0;
+    return roundEuroAmount(Math.min(pendingBalance, chapelCreditBalance));
+  }, [pendingBalance, chapelCreditBalance]);
+
+  const showCreditSuggestion =
+    suggestedAmount > 0 && !creditSuggestionDismissed;
+
   useEffect(() => {
     if (open) {
       form.resetFields();
       form.setFieldsValue({ transferredAt: dayjs() });
+      setCreditSuggestionDismissed(false);
+      setCreditAppliedAmount(0);
     }
   }, [open, form, row?.chapelId]);
 
+  const handleUseCreditSuggestion = () => {
+    form.setFieldsValue({ amount: suggestedAmount });
+    setCreditAppliedAmount(suggestedAmount);
+    setCreditSuggestionDismissed(true);
+  };
+
   const handleSubmit = async (values: TransferFormValues) => {
     if (!row) return;
+
+    const creditToApply =
+      creditAppliedAmount > 0
+        ? roundEuroAmount(Math.min(values.amount, creditAppliedAmount))
+        : 0;
 
     try {
       await createTransferAsync({
@@ -85,6 +131,7 @@ export function ChapelTransferDrawer({
         amount: values.amount,
         transferredAt: values.transferredAt.toISOString(),
         ...(values.notes?.trim() ? { notes: values.notes.trim() } : {}),
+        ...(creditToApply > 0 ? { applyCreditAmount: creditToApply } : {}),
       });
       notification.success({
         title: "Sucesso",
@@ -92,6 +139,8 @@ export function ChapelTransferDrawer({
       });
       form.resetFields();
       form.setFieldsValue({ transferredAt: dayjs() });
+      setCreditAppliedAmount(0);
+      setCreditSuggestionDismissed(false);
     } catch (error) {
       notification.error({
         title: "Erro",
@@ -129,28 +178,48 @@ export function ChapelTransferDrawer({
       title: "Ações",
       key: "actions",
       width: 80,
-      render: (_, record) => (
-        <Popconfirm
-          title="Eliminar transferência?"
-          description="Esta ação não pode ser desfeita."
-          okText="Eliminar"
-          cancelText="Cancelar"
-          onConfirm={() =>
-            deleteTransfer({
-              id: record.id,
-              caravanId,
-              chapelId: row!.chapelId,
-            })
-          }
-        >
-          <Button
-            type="text"
-            danger
-            icon={<Trash size={16} />}
-            loading={isDeleting}
-          />
-        </Popconfirm>
-      ),
+      render: (_, record) => {
+        if (!canDeleteChapelTransfer(record)) {
+          return (
+            <Text type="secondary" className="text-xs">
+              Em uso
+            </Text>
+          );
+        }
+
+        return (
+          <Popconfirm
+            title="Eliminar transferência?"
+            description="Se este pagamento gerou saldo a favor já utilizado noutra viagem, a eliminação será bloqueada."
+            okText="Eliminar"
+            cancelText="Cancelar"
+            onConfirm={async () => {
+              try {
+                await deleteTransferAsync({
+                  id: record.id,
+                  caravanId,
+                  chapelId: row!.chapelId,
+                });
+              } catch (error) {
+                notification.error({
+                  title: "Não foi possível eliminar",
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : "Erro ao eliminar transferência",
+                });
+              }
+            }}
+          >
+            <Button
+              type="text"
+              danger
+              icon={<Trash size={16} />}
+              loading={isDeleting}
+            />
+          </Popconfirm>
+        );
+      },
     },
   ];
 
@@ -164,7 +233,7 @@ export function ChapelTransferDrawer({
     >
       {row && (
         <div className="flex flex-col gap-8">
-          <div className="grid grid-cols-3 gap-4 p-5 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 p-5 bg-gray-50 rounded-lg">
             <div className="flex flex-col gap-1">
               <Text type="secondary" className="text-xs">
                 Total por pagar
@@ -187,12 +256,60 @@ export function ChapelTransferDrawer({
               </Text>
               <Text
                 strong
-                className={`text-base ${balance > 0 ? "text-orange-600" : "text-green-600"}`}
+                className={`text-base ${
+                  pendingBalance > 0 ? "text-orange-600" : "text-gray-500"
+                }`}
               >
-                {formatEuroAmount(balance)}
+                {formatEuroAmount(pendingBalance)}
               </Text>
             </div>
+            <div className="flex flex-col gap-1">
+              <Text type="secondary" className="text-xs">
+                Saldo a favor
+              </Text>
+              <Text
+                strong
+                className={`text-base ${
+                  displayedCreditBalance > 0
+                    ? "text-green-600"
+                    : "text-gray-500"
+                }`}
+              >
+                {formatEuroAmount(displayedCreditBalance)}
+              </Text>
+              {creditAppliedAmount > 0 && (
+                <Text type="secondary" className="text-xs">
+                  A usar {formatEuroAmount(creditAppliedAmount)} do saldo a
+                  favor
+                </Text>
+              )}
+            </div>
           </div>
+
+          {showCreditSuggestion && (
+            <Alert
+              type="info"
+              showIcon
+              title="Saldo a favor disponível"
+              description={
+                <div className="flex flex-col gap-3">
+                  <Text>
+                    A unidade tem {formatEuroAmount(chapelCreditBalance)} a
+                    favor. Queres usar {formatEuroAmount(suggestedAmount)} desse
+                    saldo para saldar o pendente desta viagem?
+                  </Text>
+                  <Button
+                    type="primary"
+                    size="small"
+                    className="self-start"
+                    onClick={handleUseCreditSuggestion}
+                  >
+                    Sim, preencher o montante
+                  </Button>
+                </div>
+              }
+            />
+          )}
 
           <div className="flex flex-col gap-5">
             <Text strong className="text-base">

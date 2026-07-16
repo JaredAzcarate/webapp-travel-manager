@@ -82,6 +82,7 @@ interface CreateTransferInput {
   amount: number;
   transferredAt: string;
   notes?: string;
+  applyCreditAmount?: number;
 }
 
 export const useCreateChapelTransfer = () => {
@@ -101,6 +102,8 @@ export const useCreateChapelTransfer = () => {
       return response.json();
     },
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["chapels"] });
       queryClient.invalidateQueries({
         queryKey: ["finances", "transfers", variables.caravanId, variables.chapelId],
       });
@@ -142,6 +145,8 @@ export const useDeleteChapelTransfer = () => {
       return { caravanId, chapelId };
     },
     onSuccess: (variables) => {
+      queryClient.invalidateQueries({ queryKey: ["finances"] });
+      queryClient.invalidateQueries({ queryKey: ["chapels"] });
       queryClient.invalidateQueries({
         queryKey: ["finances", "transfers", variables.caravanId, variables.chapelId],
       });
@@ -154,6 +159,7 @@ export const useDeleteChapelTransfer = () => {
 
   return {
     deleteTransfer: mutation.mutate,
+    deleteTransferAsync: mutation.mutateAsync,
     isPending: mutation.isPending,
     error: mutation.error,
   };

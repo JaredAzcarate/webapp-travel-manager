@@ -1,4 +1,4 @@
-import { chapelTransferRepositoryServer } from "@/features/finances/repositories/chapelTransfers.repository.server";
+import { deleteChapelTransferWithCreditBox } from "@/features/finances/services/financeSummary.server";
 import { requireAdminRole } from "@/lib/auth/panel-session.server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,7 +13,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await chapelTransferRepositoryServer.delete(id);
+    await deleteChapelTransferWithCreditBox(id);
 
     return NextResponse.json(
       { message: "Transferência eliminada com sucesso" },
@@ -21,9 +21,17 @@ export async function DELETE(
     );
   } catch (error) {
     console.error("Error deleting chapel transfer:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Erro ao eliminar transferência";
+    const isCreditInUse =
+      error instanceof Error &&
+      error.message.includes("Não é possível eliminar");
+
     return NextResponse.json(
-      { message: "Erro ao eliminar transferência" },
-      { status: 500 }
+      { message },
+      { status: isCreditInUse ? 409 : 500 }
     );
   }
 }
